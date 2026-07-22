@@ -1,0 +1,75 @@
+services:
+  app:
+    build:
+      context: ./docker/php
+    container_name: allo_backend
+    volumes:
+      - ./backend:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - db
+    networks:
+      - allo_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: allo_nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - allo_network
+
+  db:
+    image: mysql:8.0
+    container_name: allo_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: allo_delivery
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: allo
+      MYSQL_PASSWORD: allo
+    ports:
+      - "3306:3306"
+    volumes:
+      - allo_db_data:/var/lib/mysql
+    networks:
+      - allo_network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: allo_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_USER: allo
+      PMA_PASSWORD: allo
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    networks:
+      - allo_network
+
+  frontend:
+    image: node:20-alpine
+    container_name: allo_frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+    networks:
+      - allo_network
+
+networks:
+  allo_network:
+    driver: bridge
+
+volumes:
+  allo_db_data:
