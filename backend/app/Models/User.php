@@ -15,6 +15,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     const ROLE_CLIENT = 'client';
+
     const ROLE_DRIVER = 'driver';
 
     protected $fillable = [
@@ -24,6 +25,16 @@ class User extends Authenticatable
         'role',
         'phone',
     ];
+
+    public function isClient(): bool
+    {
+        return $this->role === self::ROLE_CLIENT;
+    }
+
+    public function isDriver(): bool
+    {
+        return $this->role === self::ROLE_DRIVER;
+    }
 
     protected function casts(): array
     {
