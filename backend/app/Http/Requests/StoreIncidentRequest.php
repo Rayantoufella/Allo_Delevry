@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreNotificationRequest extends FormRequest
+class StoreIncidentRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,11 +14,10 @@ class StoreNotificationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'delivery_request_id' => ['required', 'exists:delivery_requests,id'],
             'type' => ['required', 'string', 'max:50'],
-            'title' => ['required', 'string', 'max:255'],
-            'body' => ['nullable', 'string'],
-            'delivery_request_id' => ['nullable', 'exists:delivery_requests,id'],
-            'read_at' => ['nullable', 'date'],
+            'description' => ['required', 'string'],
+            'status' => ['sometimes', 'string', 'in:open,in_progress,resolved'],
         ];
     }
 }
