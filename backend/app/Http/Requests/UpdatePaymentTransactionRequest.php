@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreNotificationRequest extends FormRequest
+class UpdatePaymentTransactionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,11 +23,13 @@ class StoreNotificationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'delivery_request_id' => ['nullable', 'exists:delivery_requests,id'],
-            'type' => ['required', 'string', 'max:100'],
-            'title' => ['required', 'string', 'max:255'],
-            'body' => ['nullable', 'string'],
-            'read_at' => ['nullable', 'date'],
+            'delivery_request_id' => ['sometimes', 'exists:delivery_requests,id'],
+            'provider' => ['sometimes', 'string', 'max:255'],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'amount' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'status' => ['nullable', 'string', 'max:50'],
+            'environment' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

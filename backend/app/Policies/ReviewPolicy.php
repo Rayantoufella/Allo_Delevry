@@ -19,9 +19,9 @@ class ReviewPolicy
             || $this->isParticipant($review->deliveryRequest, $user);
     }
 
-    public function create(User $user): bool
+    public function create(User $user, DeliveryRequest $deliveryRequest): bool
     {
-        return true;
+        return $this->isParticipant($deliveryRequest, $user);
     }
 
     public function update(User $user, Review $review): bool

@@ -5,14 +5,14 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreDelevryZonesRequest extends FormRequest
+class StoreChatMessageRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,10 @@ class StoreDelevryZonesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'delivery_request_id' => ['required', 'exists:delivery_requests,id'],
+            'message_type' => ['nullable', 'string', 'max:50'],
+            'content' => ['required', 'string'],
+            'is_read' => ['boolean'],
         ];
     }
 }
