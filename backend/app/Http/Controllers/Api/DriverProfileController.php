@@ -20,6 +20,8 @@ class DriverProfileController extends Controller
 
     public function store(StoreDriverProfileRequest $request)
     {
+        $this->authorize('create', DriverProfile::class);
+
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
 
@@ -28,14 +30,19 @@ class DriverProfileController extends Controller
 
     public function show($id, Request $request)
     {
-        return new DriverProfileResource(
-            DriverProfile::where('user_id', $request->user()->id)->findOrFail($id)
-        );
+        $profile = DriverProfile::findOrFail($id);
+
+        $this->authorize('view', $profile);
+
+        return new DriverProfileResource($profile);
     }
 
     public function update(UpdateDriverProfileRequest $request, $id)
     {
-        $profile = DriverProfile::where('user_id', $request->user()->id)->findOrFail($id);
+        $profile = DriverProfile::findOrFail($id);
+
+        $this->authorize('update', $profile);
+
         $profile->update($request->validated());
 
         return new DriverProfileResource($profile->refresh());
@@ -43,7 +50,11 @@ class DriverProfileController extends Controller
 
     public function destroy($id, Request $request)
     {
-        DriverProfile::where('user_id', $request->user()->id)->findOrFail($id)->delete();
+        $profile = DriverProfile::findOrFail($id);
+
+        $this->authorize('delete', $profile);
+
+        $profile->delete();
 
         return response()->json(['message' => 'Profil supprimé avec succès']);
     }

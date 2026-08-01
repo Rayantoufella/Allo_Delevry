@@ -20,6 +20,8 @@ class ServiceController extends Controller
 
     public function store(StoreServiceRequest $request)
     {
+        $this->authorize('create', Service::class);
+
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
 
@@ -28,14 +30,19 @@ class ServiceController extends Controller
 
     public function show($id, Request $request)
     {
-        return new ServiceResource(
-            Service::where('user_id', $request->user()->id)->findOrFail($id)
-        );
+        $service = Service::findOrFail($id);
+
+        $this->authorize('view', $service);
+
+        return new ServiceResource($service);
     }
 
     public function update(UpdateServiceRequest $request, $id)
     {
-        $service = Service::where('user_id', $request->user()->id)->findOrFail($id);
+        $service = Service::findOrFail($id);
+
+        $this->authorize('update', $service);
+
         $service->update($request->validated());
 
         return new ServiceResource($service->refresh());
@@ -43,7 +50,11 @@ class ServiceController extends Controller
 
     public function destroy($id, Request $request)
     {
-        Service::where('user_id', $request->user()->id)->findOrFail($id)->delete();
+        $service = Service::findOrFail($id);
+
+        $this->authorize('delete', $service);
+
+        $service->delete();
 
         return response()->json(['message' => 'Service supprimé avec succès']);
     }

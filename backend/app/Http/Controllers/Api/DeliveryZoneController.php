@@ -20,6 +20,8 @@ class DeliveryZoneController extends Controller
 
     public function store(StoreDeliveryZoneRequest $request)
     {
+        $this->authorize('create', DeliveryZone::class);
+
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
 
@@ -28,14 +30,19 @@ class DeliveryZoneController extends Controller
 
     public function show($id, Request $request)
     {
-        return new DeliveryZoneResource(
-            DeliveryZone::where('user_id', $request->user()->id)->findOrFail($id)
-        );
+        $zone = DeliveryZone::findOrFail($id);
+
+        $this->authorize('view', $zone);
+
+        return new DeliveryZoneResource($zone);
     }
 
     public function update(UpdateDeliveryZoneRequest $request, $id)
     {
-        $zone = DeliveryZone::where('user_id', $request->user()->id)->findOrFail($id);
+        $zone = DeliveryZone::findOrFail($id);
+
+        $this->authorize('update', $zone);
+
         $zone->update($request->validated());
 
         return new DeliveryZoneResource($zone->refresh());
@@ -43,14 +50,21 @@ class DeliveryZoneController extends Controller
 
     public function destroy($id, Request $request)
     {
-        DeliveryZone::where('user_id', $request->user()->id)->findOrFail($id)->delete();
+        $zone = DeliveryZone::findOrFail($id);
+
+        $this->authorize('delete', $zone);
+
+        $zone->delete();
 
         return response()->json(['message' => 'Zone supprimée avec succès']);
     }
 
     public function toggleActive($id, Request $request)
     {
-        $zone = DeliveryZone::where('user_id', $request->user()->id)->findOrFail($id);
+        $zone = DeliveryZone::findOrFail($id);
+
+        $this->authorize('update', $zone);
+
         $zone->update(['is_active' => !$zone->is_active]);
 
         return new DeliveryZoneResource($zone->refresh());

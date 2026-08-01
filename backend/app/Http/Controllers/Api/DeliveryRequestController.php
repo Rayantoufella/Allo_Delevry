@@ -28,6 +28,8 @@ class DeliveryRequestController extends Controller
 
     public function store(StoreDeliveryRequest $request)
     {
+        $this->authorize('create', DeliveryRequest::class);
+
         $data = $request->validated();
         $data['client_id'] = $request->user()->id;
         $data['tracking_number'] = 'DLV-' . strtoupper(Str::random(10));
@@ -45,15 +47,15 @@ class DeliveryRequestController extends Controller
             'incidents', 'gpsLocations', 'paymentTransactions',
         ])->findOrFail($id);
 
-        $this->checkAccess($deliveryRequest, $request->user());
+        $this->authorize('view', $deliveryRequest);
 
         return new DeliveryRequestResource($deliveryRequest);
     }
 
-    public function update(UpdateDeliveryRequest $request, $id)
+    public function update(UpdateDeliveryRequest $request, DeliveryRequest $deliveryRequest)
     {
-        $deliveryRequest = DeliveryRequest::findOrFail($id);
-        $this->checkAccess($deliveryRequest, $request->user());
+        $this->authorize('update', $deliveryRequest);
+
         $deliveryRequest->update($request->validated());
 
         return new DeliveryRequestResource($deliveryRequest->refresh());
@@ -62,7 +64,9 @@ class DeliveryRequestController extends Controller
     public function destroy($id, Request $request)
     {
         $deliveryRequest = DeliveryRequest::findOrFail($id);
-        $this->checkAccess($deliveryRequest, $request->user());
+
+        $this->authorize('delete', $deliveryRequest);
+
         $deliveryRequest->delete();
 
         return response()->json(['message' => 'Demande de livraison supprimée avec succès']);
@@ -76,7 +80,8 @@ class DeliveryRequestController extends Controller
         ]);
 
         $deliveryRequest = DeliveryRequest::findOrFail($id);
-        $this->checkAccess($deliveryRequest, $request->user());
+
+        $this->authorize('update', $deliveryRequest);
 
         $oldStatus = $deliveryRequest->status;
         $deliveryRequest->update(['status' => $validated['status']]);
@@ -89,15 +94,5 @@ class DeliveryRequestController extends Controller
         ]);
 
         return new DeliveryRequestResource($deliveryRequest->refresh());
-    }
-
-    private function checkAccess(DeliveryRequest $deliveryRequest, $user): void
-    {
-        if ($user->isClient() && $deliveryRequest->client_id !== $user->id) {
-            abort(403, 'Action non autorisée.');
-        }
-        if ($user->isDriver() && $deliveryRequest->driver_id !== $user->id) {
-            abort(403, 'Action non autorisée.');
-        }
     }
 }

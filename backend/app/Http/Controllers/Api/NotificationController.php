@@ -18,14 +18,19 @@ class NotificationController extends Controller
 
     public function show($id, Request $request)
     {
-        $notification = Notification::where('user_id', $request->user()->id)->findOrFail($id);
+        $notification = Notification::findOrFail($id);
+
+        $this->authorize('view', $notification);
 
         return new NotificationResource($notification);
     }
 
     public function markAsRead($id, Request $request)
     {
-        $notification = Notification::where('user_id', $request->user()->id)->findOrFail($id);
+        $notification = Notification::findOrFail($id);
+
+        $this->authorize('update', $notification);
+
         $notification->update(['read_at' => now()]);
 
         return new NotificationResource($notification->refresh());

@@ -20,6 +20,8 @@ class AiRequestDraftController extends Controller
 
     public function store(StoreAiRequestDraftRequest $request)
     {
+        $this->authorize('create', AiRequestDraft::class);
+
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
 
@@ -28,14 +30,19 @@ class AiRequestDraftController extends Controller
 
     public function show($id, Request $request)
     {
-        return new AiRequestDraftResource(
-            AiRequestDraft::where('user_id', $request->user()->id)->findOrFail($id)
-        );
+        $draft = AiRequestDraft::findOrFail($id);
+
+        $this->authorize('view', $draft);
+
+        return new AiRequestDraftResource($draft);
     }
 
     public function update(UpdateAiRequestDraftRequest $request, $id)
     {
-        $draft = AiRequestDraft::where('user_id', $request->user()->id)->findOrFail($id);
+        $draft = AiRequestDraft::findOrFail($id);
+
+        $this->authorize('update', $draft);
+
         $draft->update($request->validated());
 
         return new AiRequestDraftResource($draft->refresh());
@@ -43,7 +50,11 @@ class AiRequestDraftController extends Controller
 
     public function destroy($id, Request $request)
     {
-        AiRequestDraft::where('user_id', $request->user()->id)->findOrFail($id)->delete();
+        $draft = AiRequestDraft::findOrFail($id);
+
+        $this->authorize('delete', $draft);
+
+        $draft->delete();
 
         return response()->json(['message' => 'Brouillon IA supprimé avec succès']);
     }

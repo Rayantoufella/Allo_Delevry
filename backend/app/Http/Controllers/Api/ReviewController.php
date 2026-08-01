@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreReviewRequest;
 use App\Http\Requests\UpdateReviewRequest;
 use App\Http\Resources\ReviewResource;
+use App\Models\DeliveryRequest;
 use App\Models\Review;
 use Illuminate\Http\Request;
 
@@ -20,6 +21,9 @@ class ReviewController extends Controller
 
     public function store(StoreReviewRequest $request)
     {
+        $deliveryRequest = DeliveryRequest::findOrFail($request->validated()['delivery_request_id']);
+        $this->authorize('create', [Review::class, $deliveryRequest]);
+
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
 
@@ -28,12 +32,19 @@ class ReviewController extends Controller
 
     public function show($id, Request $request)
     {
-        return new ReviewResource(Review::findOrFail($id));
+        $review = Review::findOrFail($id);
+
+        $this->authorize('view', $review);
+
+        return new ReviewResource($review);
     }
 
     public function update(UpdateReviewRequest $request, $id)
     {
         $review = Review::findOrFail($id);
+
+        $this->authorize('update', $review);
+
         $review->update($request->validated());
 
         return new ReviewResource($review->refresh());
@@ -41,7 +52,11 @@ class ReviewController extends Controller
 
     public function destroy($id, Request $request)
     {
-        Review::findOrFail($id)->delete();
+        $review = Review::findOrFail($id);
+
+        $this->authorize('delete', $review);
+
+        $review->delete();
 
         return response()->json(['message' => 'Avis supprimé avec succès']);
     }
