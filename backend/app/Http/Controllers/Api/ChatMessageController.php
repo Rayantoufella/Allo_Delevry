@@ -11,17 +11,23 @@ use App\Models\DeliveryRequest;
 use Illuminate\Http\Request;
 
 class ChatMessageController extends Controller
+public function index(Request $request)
 {
-    public function index(Request $request)
-    {
+    $userId = $request->user()->id;
         $query = ChatMessage::query();
-
-        if ($request->has('delivery_request_id')) {
-            $deliveryRequest = DeliveryRequest::findOrFail($request->delivery_request_id);
+    $query = ChatMessage::query()
+        ->whereHas('deliveryRequest', function ($q) use ($userId) {
+            $q->where('client_id', $userId)
+                ->orWhere('driver_id', $userId);
+        });
             $this->authorize('view', $deliveryRequest);
-            $query->where('delivery_request_id', $deliveryRequest->id);
+    if ($request->has('delivery_request_id')) {
+        $query->where('delivery_request_id', $request->delivery_request_id);
         } else {
             $user = $request->user();
+    return ChatMessageResource::collection($query->latest()->paginate(20));
+}
+
             $query->whereHas('deliveryRequest', function ($q) use ($user) {
                 $q->where('client_id', $user->id)->orWhere('driver_id', $user->id);
             });
