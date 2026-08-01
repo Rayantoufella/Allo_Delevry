@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRequestStatusHistoryRequest;
 use App\Http\Requests\UpdateRequestStatusHistoryRequest;
 use App\Http\Resources\RequestStatusHistoryResource;
+use App\Models\DeliveryRequest;
 use App\Models\RequestStatusHistory;
 use Illuminate\Http\Request;
 
@@ -16,7 +17,14 @@ class RequestStatusHistoryController extends Controller
         $query = RequestStatusHistory::query();
 
         if ($request->has('delivery_request_id')) {
-            $query->where('delivery_request_id', $request->delivery_request_id);
+            $deliveryRequest = DeliveryRequest::findOrFail($request->delivery_request_id);
+            $this->authorize('view', $deliveryRequest);
+            $query->where('delivery_request_id', $deliveryRequest->id);
+        } else {
+            $user = $request->user();
+            $query->whereHas('deliveryRequest', function ($q) use ($user) {
+                $q->where('client_id', $user->id)->orWhere('driver_id', $user->id);
+            });
         }
 
         return RequestStatusHistoryResource::collection($query->latest()->get());
@@ -24,7 +32,8 @@ class RequestStatusHistoryController extends Controller
 
     public function store(StoreRequestStatusHistoryRequest $request)
     {
-        $this->authorize('create', RequestStatusHistory::class);
+        $deliveryRequest = DeliveryRequest::findOrFail($request->validated()['delivery_request_id']);
+        $this->authorize('create', [RequestStatusHistory::class, $deliveryRequest]);
 
         $data = $request->validated();
         $data['changed_by'] = $request->user()->id;

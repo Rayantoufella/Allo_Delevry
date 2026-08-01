@@ -7,6 +7,7 @@ use App\Http\Requests\StoreDeliveryProofRequest;
 use App\Http\Requests\UpdateDeliveryProofRequest;
 use App\Http\Resources\DeliveryProofResource;
 use App\Models\DeliveryProof;
+use App\Models\DeliveryRequest;
 use Illuminate\Http\Request;
 
 class DeliveryProofController extends Controller
@@ -16,7 +17,14 @@ class DeliveryProofController extends Controller
         $query = DeliveryProof::query();
 
         if ($request->has('delivery_request_id')) {
-            $query->where('delivery_request_id', $request->delivery_request_id);
+            $deliveryRequest = DeliveryRequest::findOrFail($request->delivery_request_id);
+            $this->authorize('view', $deliveryRequest);
+            $query->where('delivery_request_id', $deliveryRequest->id);
+        } else {
+            $user = $request->user();
+            $query->whereHas('deliveryRequest', function ($q) use ($user) {
+                $q->where('client_id', $user->id)->orWhere('driver_id', $user->id);
+            });
         }
 
         return DeliveryProofResource::collection($query->latest()->get());
@@ -24,7 +32,8 @@ class DeliveryProofController extends Controller
 
     public function store(StoreDeliveryProofRequest $request)
     {
-        $this->authorize('create', DeliveryProof::class);
+        $deliveryRequest = DeliveryRequest::findOrFail($request->validated()['delivery_request_id']);
+        $this->authorize('create', [DeliveryProof::class, $deliveryRequest]);
 
         $data = $request->validated();
         $data['uploaded_by'] = $request->user()->id;

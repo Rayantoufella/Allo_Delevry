@@ -5,14 +5,14 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateRequestStatusHistoriesRequest extends FormRequest
+class UpdateReviewRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,9 @@ class UpdateRequestStatusHistoriesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'delivery_request_id' => ['sometimes', 'exists:delivery_requests,id'],
+            'rating' => ['sometimes', 'integer', 'between:1,5'],
+            'comment' => ['nullable', 'string'],
         ];
     }
 }

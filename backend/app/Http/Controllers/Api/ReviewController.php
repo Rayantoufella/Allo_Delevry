@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreReviewRequest;
 use App\Http\Requests\UpdateReviewRequest;
 use App\Http\Resources\ReviewResource;
+use App\Models\DeliveryRequest;
 use App\Models\Review;
 use Illuminate\Http\Request;
 
@@ -20,7 +21,8 @@ class ReviewController extends Controller
 
     public function store(StoreReviewRequest $request)
     {
-        $this->authorize('create', Review::class);
+        $deliveryRequest = DeliveryRequest::findOrFail($request->validated()['delivery_request_id']);
+        $this->authorize('create', [Review::class, $deliveryRequest]);
 
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;

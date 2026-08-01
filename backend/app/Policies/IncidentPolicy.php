@@ -18,9 +18,9 @@ class IncidentPolicy
         return $this->isParticipant($incident->deliveryRequest, $user);
     }
 
-    public function create(User $user): bool
+    public function create(User $user, DeliveryRequest $deliveryRequest): bool
     {
-        return true;
+        return $this->isParticipant($deliveryRequest, $user);
     }
 
     public function update(User $user, Incident $incident): bool
