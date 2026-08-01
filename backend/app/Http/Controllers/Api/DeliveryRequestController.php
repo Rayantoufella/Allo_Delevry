@@ -52,10 +52,8 @@ class DeliveryRequestController extends Controller
         return new DeliveryRequestResource($deliveryRequest);
     }
 
-    public function update(UpdateDeliveryRequest $request, $id)
+    public function update(UpdateDeliveryRequest $request, DeliveryRequest $deliveryRequest)
     {
-        $deliveryRequest = DeliveryRequest::findOrFail($id);
-
         $this->authorize('update', $deliveryRequest);
 
         $deliveryRequest->update($request->validated());
