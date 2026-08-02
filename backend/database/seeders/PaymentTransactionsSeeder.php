@@ -2,13 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\DeliveryProof;
 use App\Models\DeliveryRequest;
-use App\Models\User;
+use App\Models\PaymentTransaction;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-class DeliveryProofsSeeder extends Seeder
+class PaymentTransactionsSeeder extends Seeder
 {
     use WithoutModelEvents;
 
@@ -17,25 +16,19 @@ class DeliveryProofsSeeder extends Seeder
      */
     public function run(): void
     {
-        if (DeliveryProof::exists()) {
+        if (PaymentTransaction::exists()) {
             return;
         }
 
-        $deliveries = DeliveryRequest::where('status', DeliveryRequest::STATUS_LIVREE)->get();
+        $deliveries = DeliveryRequest::all();
 
         if ($deliveries->isEmpty()) {
             $deliveries = DeliveryRequest::factory()->count(10)->delivered()->create();
         }
 
-        $users = User::all();
-
-        if ($users->isEmpty()) {
-            $users = User::factory()->count(5)->create();
-        }
-
-        DeliveryProof::factory()
-            ->count(15)
-            ->recycle([$deliveries, $users])
+        PaymentTransaction::factory()
+            ->count(20)
+            ->recycle($deliveries)
             ->create();
     }
 }
