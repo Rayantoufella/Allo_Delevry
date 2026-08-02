@@ -10,6 +10,20 @@
                 "/mnt/d/AlloDelevry/backend/artisan",
                 "boost:mcp"
             ]
+        },
+        "jira" : {
+            "type": "local",
+            "enabled": true,
+            "command": ["npx", "-y", "mcp-remote", "https://mcp.atlassian.com/v1/mcp/authv2"]
+        },
+        "chrome-devtools": {
+            "type": "local",
+            "command": [
+                "npx",
+                "-y",
+                "chrome-devtools-mcp@latest"
+            ],
+            "enabled": true
         }
     }
 }
