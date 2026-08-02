@@ -65,7 +65,7 @@ class DeliveryZoneController extends Controller
 
         $this->authorize('update', $zone);
 
-        $zone->update(['is_active' => !$zone->is_active]);
+        $zone->update(['is_active' => ! $zone->is_active]);
 
         return new DeliveryZoneResource($zone->refresh());
     }

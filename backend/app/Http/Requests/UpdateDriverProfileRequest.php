@@ -24,7 +24,7 @@ class UpdateDriverProfileRequest extends FormRequest
     {
         return [
             'brand_name' => ['sometimes', 'string', 'max:255'],
-            'slug' => ['sometimes', 'string', 'max:255', 'unique:driver_profiles,slug,' . $this->route('driver_profile')],
+            'slug' => ['sometimes', 'string', 'max:255', 'unique:driver_profiles,slug,'.$this->route('driver_profile')],
             'logo_path' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
             'rib' => ['nullable', 'string', 'max:255'],

@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\RequestStatusHistory;
 use App\Models\DeliveryRequest;
+use App\Models\RequestStatusHistory;
 use App\Models\User;
 
 class RequestStatusHistoryPolicy

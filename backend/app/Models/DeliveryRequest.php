@@ -10,13 +10,21 @@ class DeliveryRequest extends Model
     use HasFactory;
 
     const STATUS_EN_ATTENTE = 'en_attente';
+
     const STATUS_PRIX_PROPOSE = 'prix_propose';
+
     const STATUS_CONFIRMEE = 'confirmee';
+
     const STATUS_COLIS_RECUPERE = 'colis_recupere';
+
     const STATUS_EN_LIVRAISON = 'en_livraison';
+
     const STATUS_LIVREE = 'livree';
+
     const STATUS_REFUSEE = 'refusee';
+
     const STATUS_ECHEC = 'echec';
+
     const STATUS_ANNULEE = 'annulee';
 
     protected $fillable = [

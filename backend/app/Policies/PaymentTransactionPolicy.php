@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\PaymentTransaction;
 use App\Models\DeliveryRequest;
+use App\Models\PaymentTransaction;
 use App\Models\User;
 
 class PaymentTransactionPolicy

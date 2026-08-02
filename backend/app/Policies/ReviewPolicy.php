@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\Review;
 use App\Models\DeliveryRequest;
+use App\Models\Review;
 use App\Models\User;
 
 class ReviewPolicy

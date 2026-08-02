@@ -10,7 +10,9 @@ class AiRequestDraft extends Model
     use HasFactory;
 
     const STATUS_PENDING = 'pending';
+
     const STATUS_DONE = 'done';
+
     const STATUS_FAILED = 'failed';
 
     protected $fillable = [

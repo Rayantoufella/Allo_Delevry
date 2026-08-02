@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\PaymentTransaction;
 use App\Models\DeliveryRequest;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

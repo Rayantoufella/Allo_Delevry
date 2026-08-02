@@ -32,7 +32,7 @@ class DeliveryRequestController extends Controller
 
         $data = $request->validated();
         $data['client_id'] = $request->user()->id;
-        $data['tracking_number'] = 'DLV-' . strtoupper(Str::random(10));
+        $data['tracking_number'] = 'DLV-'.strtoupper(Str::random(10));
         $data['private_token'] = Str::random(32);
         $data['status'] = DeliveryRequest::STATUS_EN_ATTENTE;
 

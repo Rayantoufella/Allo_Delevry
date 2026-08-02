@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\GpsLocation;
 use App\Models\DeliveryRequest;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

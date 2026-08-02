@@ -37,7 +37,7 @@ class GpsLocationController extends Controller
 
         $data = $request->validated();
 
-        if (!isset($data['recorded_at'])) {
+        if (! isset($data['recorded_at'])) {
             $data['recorded_at'] = now();
         }
 

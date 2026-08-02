@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\GpsLocation;
 use App\Models\DeliveryRequest;
+use App\Models\GpsLocation;
 use App\Models\User;
 
 class GpsLocationPolicy
