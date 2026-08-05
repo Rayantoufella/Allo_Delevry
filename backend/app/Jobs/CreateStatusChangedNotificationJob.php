@@ -20,8 +20,7 @@ class CreateStatusChangedNotificationJob implements ShouldQueue
         public DeliveryRequest $deliveryRequest,
         public string $newStatus,
         public ?int $changedBy = null,
-    ) {
-    }
+    ) {}
 
     public function backoff(): array
     {

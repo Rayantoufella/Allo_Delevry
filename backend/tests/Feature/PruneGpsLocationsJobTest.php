@@ -24,7 +24,7 @@ it('deletes GPS locations older than 7 days and keeps recent ones', function () 
         'created_at' => now(),
     ]);
 
-    (new PruneGpsLocationsJob())->handle();
+    (new PruneGpsLocationsJob)->handle();
 
     $this->assertDatabaseMissing('gps_locations', ['id' => $old->id]);
     $this->assertDatabaseHas('gps_locations', ['id' => $recent->id]);
@@ -40,7 +40,7 @@ it('keeps GPS locations recorded exactly at the retention boundary', function ()
         'created_at' => now()->subDays(7),
     ]);
 
-    (new PruneGpsLocationsJob())->handle();
+    (new PruneGpsLocationsJob)->handle();
 
     $this->assertDatabaseHas('gps_locations', ['id' => $boundary->id]);
 });

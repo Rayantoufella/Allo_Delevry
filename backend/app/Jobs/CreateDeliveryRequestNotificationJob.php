@@ -16,9 +16,7 @@ class CreateDeliveryRequestNotificationJob implements ShouldQueue
 
     public int $timeout = 30;
 
-    public function __construct(public DeliveryRequest $deliveryRequest)
-    {
-    }
+    public function __construct(public DeliveryRequest $deliveryRequest) {}
 
     public function backoff(): array
     {

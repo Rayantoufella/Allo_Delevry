@@ -17,9 +17,7 @@ class CreateChatMessageNotificationJob implements ShouldQueue
 
     public int $timeout = 30;
 
-    public function __construct(public ChatMessage $chatMessage)
-    {
-    }
+    public function __construct(public ChatMessage $chatMessage) {}
 
     public function backoff(): array
     {

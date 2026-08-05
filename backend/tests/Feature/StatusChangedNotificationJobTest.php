@@ -3,15 +3,16 @@
 use App\Jobs\CreateStatusChangedNotificationJob;
 use App\Models\DeliveryRequest;
 use App\Models\DriverProfile;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
 
-function statusDriver(): \App\Models\User
+function statusDriver(): User
 {
-    $driver = \App\Models\User::factory()->driver()->create();
+    $driver = User::factory()->driver()->create();
     DriverProfile::factory()->create([
         'user_id' => $driver->id,
         'slug' => 'status-driver-slug',
@@ -23,7 +24,7 @@ function statusDriver(): \App\Models\User
 it('dispatches a status change notification job when a driver updates the status', function () {
     Queue::fake();
 
-    $client = \App\Models\User::factory()->client()->create();
+    $client = User::factory()->client()->create();
     $driver = statusDriver();
 
     $deliveryRequest = DeliveryRequest::factory()
@@ -45,7 +46,7 @@ it('dispatches a status change notification job when a driver updates the status
 it('creates a notification for the client when the driver changes the status', function () {
     Queue::fake();
 
-    $client = \App\Models\User::factory()->client()->create();
+    $client = User::factory()->client()->create();
     $driver = statusDriver();
 
     $deliveryRequest = DeliveryRequest::factory()
@@ -68,7 +69,7 @@ it('creates a notification for the client when the driver changes the status', f
 it('creates a notification for the driver when the client confirms the price', function () {
     Queue::fake();
 
-    $client = \App\Models\User::factory()->client()->create();
+    $client = User::factory()->client()->create();
     $driver = statusDriver();
 
     $deliveryRequest = DeliveryRequest::factory()
@@ -92,7 +93,7 @@ it('creates a notification for the driver when the client confirms the price', f
 it('does nothing when changedBy is null', function () {
     Queue::fake();
 
-    $client = \App\Models\User::factory()->client()->create();
+    $client = User::factory()->client()->create();
     $driver = statusDriver();
 
     $deliveryRequest = DeliveryRequest::factory()

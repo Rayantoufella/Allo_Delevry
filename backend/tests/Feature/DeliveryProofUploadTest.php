@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\DeliveryProof;
 use App\Models\DeliveryRequest;
 use App\Models\DriverProfile;
 use App\Models\User;
