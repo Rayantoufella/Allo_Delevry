@@ -11,6 +11,19 @@ services:
     networks:
       - allo_network
 
+  queue:
+    build:
+      context: ./docker/php
+    container_name: allo_queue
+    volumes:
+      - ./backend:/var/www/html
+    working_dir: /var/www/html
+    command: php artisan queue:work database --tries=3 --sleep=3 --timeout=60
+    depends_on:
+      - db
+    networks:
+      - allo_network
+
   nginx:
     image: nginx:alpine
     container_name: allo_nginx

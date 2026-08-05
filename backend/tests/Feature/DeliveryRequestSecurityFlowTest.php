@@ -5,6 +5,9 @@ use App\Models\DeliveryRequest;
 use App\Models\DriverProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
@@ -27,6 +30,8 @@ function flowDriver(): User
 }
 
 it('performs the full RG06 flow with client-side delivery confirmation', function () {
+    Queue::fake();
+
     $client = flowClient();
     $driver = flowDriver();
 
@@ -64,10 +69,11 @@ it('performs the full RG06 flow with client-side delivery confirmation', functio
         'status' => DeliveryRequest::STATUS_EN_LIVRAISON,
     ])->assertSuccessful();
 
+    Storage::fake('public');
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
         'proof_type' => 'signature',
-        'file_path' => 'proofs/signature.jpg',
+        'file' => UploadedFile::fake()->image('signature.jpg'),
     ])->assertCreated();
 
     Sanctum::actingAs($client);
@@ -152,18 +158,20 @@ it('only allows the driver to attach a delivery proof', function () {
         ->inDelivery()
         ->create();
 
+    Storage::fake('public');
+
     Sanctum::actingAs($client);
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
         'proof_type' => 'signature',
-        'file_path' => 'proofs/signature.jpg',
+        'file' => UploadedFile::fake()->image('signature.jpg'),
     ])->assertForbidden();
 
     Sanctum::actingAs($driver);
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
         'proof_type' => 'signature',
-        'file_path' => 'proofs/signature.jpg',
+        'file' => UploadedFile::fake()->image('signature.jpg'),
     ])->assertCreated();
 
     expect(DeliveryProof::count())->toBe(1);

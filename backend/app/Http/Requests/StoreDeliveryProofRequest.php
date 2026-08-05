@@ -25,7 +25,7 @@ class StoreDeliveryProofRequest extends FormRequest
         return [
             'delivery_request_id' => ['required', 'exists:delivery_requests,id'],
             'proof_type' => ['required', 'string', 'max:50'],
-            'file_path' => ['required', 'string', 'max:255'],
+            'file' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'receiver_name' => ['nullable', 'string', 'max:255'],
         ];
     }

@@ -7,10 +7,11 @@ use App\Http\Requests\StoreDeliveryRequest;
 use App\Http\Requests\UpdateDeliveryRequest;
 use App\Http\Resources\DeliveryRequestResource;
 use App\Http\Resources\PublicTrackingResource;
+use App\Jobs\CreateDeliveryRequestNotificationJob;
+use App\Jobs\ExpireConfirmationCodeJob;
 use App\Models\DeliveryRequest;
 use App\Models\DeliveryZone;
 use App\Models\DriverProfile;
-use App\Models\Notification;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -52,13 +53,7 @@ class DeliveryRequestController extends Controller
 
         $deliveryRequest = DeliveryRequest::create($data);
 
-        Notification::create([
-            'user_id' => $profile->user_id,
-            'delivery_request_id' => $deliveryRequest->id,
-            'type' => 'delivery_request_created',
-            'title' => 'Nouvelle demande de livraison',
-            'body' => 'Un client a créé une demande ('.$deliveryRequest->tracking_number.').',
-        ]);
+        CreateDeliveryRequestNotificationJob::dispatch($deliveryRequest)->afterCommit();
 
         return response()->json(new DeliveryRequestResource($deliveryRequest), 201);
     }
@@ -217,6 +212,10 @@ class DeliveryRequestController extends Controller
             'confirmation_code_expires_at' => now()->addMinutes(30),
             'confirmation_code_attempts' => 0,
         ]);
+
+        ExpireConfirmationCodeJob::dispatch($deliveryRequest)
+            ->delay(now()->addMinutes(30))
+            ->afterCommit();
 
         return response()->json(['code' => $code]);
     }

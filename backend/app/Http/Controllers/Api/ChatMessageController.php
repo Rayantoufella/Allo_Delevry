@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreChatMessageRequest;
 use App\Http\Requests\UpdateChatMessageRequest;
 use App\Http\Resources\ChatMessageResource;
+use App\Jobs\CreateChatMessageNotificationJob;
 use App\Models\ChatMessage;
 use App\Models\DeliveryRequest;
 use Illuminate\Http\Request;
@@ -38,7 +39,11 @@ class ChatMessageController extends Controller
         $data = $request->validated();
         $data['sender_id'] = $request->user()->id;
 
-        return response()->json(new ChatMessageResource(ChatMessage::create($data)), 201);
+        $message = ChatMessage::create($data);
+
+        CreateChatMessageNotificationJob::dispatch($message)->afterCommit();
+
+        return response()->json(new ChatMessageResource($message), 201);
     }
 
     public function show($id, Request $request)

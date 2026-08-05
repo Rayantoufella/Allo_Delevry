@@ -24,7 +24,7 @@ class UpdateDeliveryProofRequest extends FormRequest
     {
         return [
             'proof_type' => ['sometimes', 'string', 'max:50'],
-            'file_path' => ['sometimes', 'string', 'max:255'],
+            'file' => ['sometimes', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'receiver_name' => ['nullable', 'string', 'max:255'],
         ];
     }
