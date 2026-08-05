@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\CreateStatusChangedNotificationJob;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -134,7 +135,11 @@ class DeliveryRequest extends Model
             ]);
         });
 
-        return $this->refresh();
+        $this->refresh();
+
+        CreateStatusChangedNotificationJob::dispatch($this, $newStatus, $changedBy)->afterCommit();
+
+        return $this;
     }
 
     protected $fillable = [
