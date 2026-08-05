@@ -9,6 +9,7 @@ use App\Http\Resources\DeliveryProofResource;
 use App\Models\DeliveryProof;
 use App\Models\DeliveryRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class DeliveryProofController extends Controller
 {
@@ -37,6 +38,8 @@ class DeliveryProofController extends Controller
 
         $data = $request->validated();
         $data['uploaded_by'] = $request->user()->id;
+        $data['file_path'] = $request->file('file')->store('proofs', 'public');
+        unset($data['file']);
 
         return response()->json(new DeliveryProofResource(DeliveryProof::create($data)), 201);
     }
@@ -56,7 +59,17 @@ class DeliveryProofController extends Controller
 
         $this->authorize('update', $proof);
 
-        $proof->update($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('file')) {
+            if ($proof->file_path) {
+                Storage::disk('public')->delete($proof->file_path);
+            }
+            $data['file_path'] = $request->file('file')->store('proofs', 'public');
+            unset($data['file']);
+        }
+
+        $proof->update($data);
 
         return new DeliveryProofResource($proof->refresh());
     }
