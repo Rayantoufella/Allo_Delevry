@@ -23,7 +23,6 @@ class UpdateReviewRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'delivery_request_id' => ['sometimes', 'exists:delivery_requests,id'],
             'rating' => ['sometimes', 'integer', 'between:1,5'],
             'comment' => ['nullable', 'string'],
         ];

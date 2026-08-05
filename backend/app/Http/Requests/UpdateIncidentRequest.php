@@ -23,7 +23,6 @@ class UpdateIncidentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'delivery_request_id' => ['sometimes', 'exists:delivery_requests,id'],
             'type' => ['sometimes', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'string', 'max:50'],

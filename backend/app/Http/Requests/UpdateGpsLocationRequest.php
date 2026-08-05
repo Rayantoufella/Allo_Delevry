@@ -23,7 +23,6 @@ class UpdateGpsLocationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'delivery_request_id' => ['sometimes', 'exists:delivery_requests,id'],
             'latitude' => ['sometimes', 'numeric', 'between:-90,90'],
             'longitude' => ['sometimes', 'numeric', 'between:-180,180'],
             'recorded_at' => ['nullable', 'date'],

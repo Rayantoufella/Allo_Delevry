@@ -26,7 +26,6 @@ class UpdateDeliveryRequest extends FormRequest
             'service_id' => ['sometimes', 'exists:services,id'],
             'delivery_zone_id' => ['nullable', 'exists:delivery_zones,id'],
             'ai_request_draft_id' => ['nullable', 'exists:ai_request_drafts,id'],
-            'driver_id' => ['nullable', 'exists:users,id'],
             'recipient_name' => ['sometimes', 'string', 'max:255'],
             'recipient_phone' => ['sometimes', 'string', 'max:20'],
             'pickup_address' => ['sometimes', 'string', 'max:255'],
@@ -34,7 +33,6 @@ class UpdateDeliveryRequest extends FormRequest
             'package_description' => ['nullable', 'string'],
             'product_amount' => ['nullable', 'numeric', 'min:0'],
             'amount_to_collect' => ['nullable', 'numeric', 'min:0'],
-            'proposed_price' => ['nullable', 'numeric', 'min:0'],
             'scheduled_at' => ['nullable', 'date'],
         ];
     }
