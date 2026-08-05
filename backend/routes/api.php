@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ChatMessageController;
 use App\Http\Controllers\Api\DeliveryProofController;
 use App\Http\Controllers\Api\DeliveryRequestController;
 use App\Http\Controllers\Api\DeliveryZoneController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DriverProfileController;
 use App\Http\Controllers\Api\GpsLocationController;
 use App\Http\Controllers\Api\IncidentController;
@@ -30,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
 
     Route::middleware('role:driver')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index']);
         Route::apiResource('services', ServiceController::class);
         Route::apiResource('delivery-zones', DeliveryZoneController::class);
         Route::patch('/delivery-zones/{deliveryZone}/toggle-active', [DeliveryZoneController::class, 'toggleActive']);
