@@ -41,6 +41,8 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
+        $this->authorize('view', $request->user());
+
         return $this->success(data: ['user' => $request->user()]);
     }
 
