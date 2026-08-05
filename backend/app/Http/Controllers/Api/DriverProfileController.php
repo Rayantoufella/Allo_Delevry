@@ -68,6 +68,26 @@ class DriverProfileController extends Controller
         return new DriverProfileResource($profile->refresh());
     }
 
+    public function myProfile(Request $request)
+    {
+        $profile = DriverProfile::where('user_id', $request->user()->id)->firstOrFail();
+
+        $this->authorize('view', $profile);
+
+        return new DriverProfileResource($profile);
+    }
+
+    public function updateMyProfile(UpdateDriverProfileRequest $request)
+    {
+        $profile = DriverProfile::where('user_id', $request->user()->id)->firstOrFail();
+
+        $this->authorize('update', $profile);
+
+        $profile->update($request->validated());
+
+        return new DriverProfileResource($profile->refresh());
+    }
+
     public function destroy($id, Request $request)
     {
         $profile = DriverProfile::findOrFail($id);

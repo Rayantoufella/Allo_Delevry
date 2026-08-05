@@ -24,10 +24,25 @@ Route::get('/drivers/{slug}/qr', [DriverProfileController::class, 'qrCode'])->mi
 
 Route::get('/tracking/{privateToken}', [DeliveryRequestController::class, 'tracking'])->middleware('throttle:60,1');
 
+/*
+|--------------------------------------------------------------------------
+| Routes authentifiées
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/drivers/{slug}/delivery-requests', [DeliveryRequestController::class, 'storeForDriver']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    Route::get('/profile', [DriverProfileController::class, 'myProfile']);
+    Route::put('/profile', [DriverProfileController::class, 'updateMyProfile']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Routes réservées aux chauffeurs
+    |--------------------------------------------------------------------------
+    */
 
     Route::middleware('role:driver')->group(function () {
         Route::apiResource('services', ServiceController::class);
@@ -43,10 +58,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/delivery-requests/{deliveryRequest}/generate-code', [DeliveryRequestController::class, 'generateCode']);
     Route::post('/delivery-requests/{deliveryRequest}/confirm-delivery', [DeliveryRequestController::class, 'confirmDelivery']);
 
+    // Notifications
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'show']);
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
+    // Autres ressources
     Route::apiResource('ai-request-drafts', AiRequestDraftController::class);
     Route::apiResource('chat-messages', ChatMessageController::class);
     Route::apiResource('reviews', ReviewController::class);
