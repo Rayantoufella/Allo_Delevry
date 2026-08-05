@@ -21,7 +21,7 @@ class ReviewPolicy
 
     public function create(User $user, DeliveryRequest $deliveryRequest): bool
     {
-        return $this->isParticipant($deliveryRequest, $user);
+        return $deliveryRequest->client_id === $user->id;
     }
 
     public function update(User $user, Review $review): bool

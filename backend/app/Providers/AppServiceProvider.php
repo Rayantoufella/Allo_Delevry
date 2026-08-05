@@ -15,6 +15,7 @@ use App\Models\PaymentTransaction;
 use App\Models\RequestStatusHistory;
 use App\Models\Review;
 use App\Models\Service;
+use App\Models\User;
 use App\Policies\AiRequestDraftPolicy;
 use App\Policies\ChatMessagePolicy;
 use App\Policies\DeliveryProofPolicy;
@@ -28,6 +29,7 @@ use App\Policies\PaymentTransactionPolicy;
 use App\Policies\RequestStatusHistoryPolicy;
 use App\Policies\ReviewPolicy;
 use App\Policies\ServicePolicy;
+use App\Policies\UserPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -53,5 +55,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(GpsLocation::class, GpsLocationPolicy::class);
         Gate::policy(PaymentTransaction::class, PaymentTransactionPolicy::class);
         Gate::policy(RequestStatusHistory::class, RequestStatusHistoryPolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
     }
 }

@@ -23,7 +23,6 @@ class UpdateChatMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'delivery_request_id' => ['sometimes', 'exists:delivery_requests,id'],
             'message_type' => ['nullable', 'string', 'max:50'],
             'content' => ['sometimes', 'string'],
             'is_read' => ['boolean'],

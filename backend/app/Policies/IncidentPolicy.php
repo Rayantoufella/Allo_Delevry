@@ -25,12 +25,12 @@ class IncidentPolicy
 
     public function update(User $user, Incident $incident): bool
     {
-        return $this->isParticipant($incident->deliveryRequest, $user);
+        return $incident->reported_by === $user->id;
     }
 
     public function delete(User $user, Incident $incident): bool
     {
-        return $this->isParticipant($incident->deliveryRequest, $user);
+        return $incident->reported_by === $user->id;
     }
 
     private function isParticipant(DeliveryRequest $deliveryRequest, User $user): bool

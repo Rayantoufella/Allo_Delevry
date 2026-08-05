@@ -25,12 +25,12 @@ class ChatMessagePolicy
 
     public function update(User $user, ChatMessage $chatMessage): bool
     {
-        return $this->isParticipant($chatMessage->deliveryRequest, $user);
+        return $chatMessage->sender_id === $user->id;
     }
 
     public function delete(User $user, ChatMessage $chatMessage): bool
     {
-        return $this->isParticipant($chatMessage->deliveryRequest, $user);
+        return $chatMessage->sender_id === $user->id;
     }
 
     private function isParticipant(DeliveryRequest $deliveryRequest, User $user): bool

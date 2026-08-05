@@ -20,7 +20,7 @@ class DeliveryProofPolicy
 
     public function create(User $user, DeliveryRequest $deliveryRequest): bool
     {
-        return $this->isParticipant($deliveryRequest, $user);
+        return $deliveryRequest->driver_id === $user->id;
     }
 
     public function update(User $user, DeliveryProof $deliveryProof): bool

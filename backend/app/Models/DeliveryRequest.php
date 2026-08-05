@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class DeliveryRequest extends Model
 {
@@ -27,6 +28,115 @@ class DeliveryRequest extends Model
 
     const STATUS_ANNULEE = 'annulee';
 
+    /** Statuts atteignables depuis chaque statut (machine à états). */
+    private const TRANSITIONS = [
+        self::STATUS_EN_ATTENTE => [self::STATUS_PRIX_PROPOSE, self::STATUS_REFUSEE],
+        self::STATUS_PRIX_PROPOSE => [self::STATUS_REFUSEE],
+        self::STATUS_CONFIRMEE => [self::STATUS_COLIS_RECUPERE],
+        self::STATUS_COLIS_RECUPERE => [self::STATUS_EN_LIVRAISON],
+        self::STATUS_EN_LIVRAISON => [self::STATUS_ECHEC],
+    ];
+
+    private const CANCELLABLE_STATUSES = [
+        self::STATUS_EN_ATTENTE,
+        self::STATUS_PRIX_PROPOSE,
+    ];
+
+    /** Statuts verrouillés : plus modifiables ni supprimables en cours de route. */
+    private const IMMUTABLE_STATUSES = [
+        self::STATUS_COLIS_RECUPERE,
+        self::STATUS_EN_LIVRAISON,
+        self::STATUS_LIVREE,
+        self::STATUS_ECHEC,
+    ];
+
+    private const TERMINAL_STATUSES = [
+        self::STATUS_LIVREE,
+        self::STATUS_REFUSEE,
+        self::STATUS_ECHEC,
+        self::STATUS_ANNULEE,
+    ];
+
+    private const CODABLE_STATUSES = [
+        self::STATUS_CONFIRMEE,
+        self::STATUS_COLIS_RECUPERE,
+        self::STATUS_EN_LIVRAISON,
+    ];
+
+    /** Tous les statuts possibles. */
+    public static function statuses(): array
+    {
+        return [
+            self::STATUS_EN_ATTENTE,
+            self::STATUS_PRIX_PROPOSE,
+            self::STATUS_CONFIRMEE,
+            self::STATUS_COLIS_RECUPERE,
+            self::STATUS_EN_LIVRAISON,
+            self::STATUS_LIVREE,
+            self::STATUS_REFUSEE,
+            self::STATUS_ECHEC,
+            self::STATUS_ANNULEE,
+        ];
+    }
+
+    public function canTransitionTo(string $newStatus): bool
+    {
+        return in_array($newStatus, self::TRANSITIONS[$this->status] ?? [], true);
+    }
+
+    public function canBeCancelled(): bool
+    {
+        return in_array($this->status, self::CANCELLABLE_STATUSES, true);
+    }
+
+    public function isEditable(): bool
+    {
+        return ! in_array($this->status, self::IMMUTABLE_STATUSES, true);
+    }
+
+    public function isTerminal(): bool
+    {
+        return in_array($this->status, self::TERMINAL_STATUSES, true);
+    }
+
+    public function canGenerateCode(): bool
+    {
+        return in_array($this->status, self::CODABLE_STATUSES, true);
+    }
+
+    /**
+     * Applique un changement de statut, met à jour les horodatages liés
+     * et journalise l'historique, le tout de façon atomique.
+     */
+    public function transitionTo(string $newStatus, ?int $changedBy = null, ?string $comment = null): static
+    {
+        $oldStatus = $this->status;
+
+        DB::transaction(function () use ($newStatus, $oldStatus, $changedBy, $comment): void {
+            $this->status = $newStatus;
+
+            if (in_array($newStatus, [self::STATUS_COLIS_RECUPERE, self::STATUS_EN_LIVRAISON], true)
+                && $this->picked_up_at === null) {
+                $this->picked_up_at = now();
+            }
+
+            if ($newStatus === self::STATUS_LIVREE && $this->delivered_at === null) {
+                $this->delivered_at = now();
+            }
+
+            $this->save();
+
+            $this->statusHistories()->create([
+                'changed_by' => $changedBy,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'comment' => $comment,
+            ]);
+        });
+
+        return $this->refresh();
+    }
+
     protected $fillable = [
         'tracking_number',
         'private_token',
@@ -44,6 +154,8 @@ class DeliveryRequest extends Model
         'amount_to_collect',
         'proposed_price',
         'confirmation_code_hash',
+        'confirmation_code_expires_at',
+        'confirmation_code_attempts',
         'scheduled_at',
         'picked_up_at',
         'delivered_at',
@@ -64,6 +176,8 @@ class DeliveryRequest extends Model
             'scheduled_at' => 'datetime',
             'picked_up_at' => 'datetime',
             'delivered_at' => 'datetime',
+            'confirmation_code_expires_at' => 'datetime',
+            'confirmation_code_attempts' => 'integer',
         ];
     }
 

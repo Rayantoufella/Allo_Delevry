@@ -9,6 +9,7 @@ use App\Http\Resources\ReviewResource;
 use App\Models\DeliveryRequest;
 use App\Models\Review;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class ReviewController extends Controller
 {
@@ -23,6 +24,18 @@ class ReviewController extends Controller
     {
         $deliveryRequest = DeliveryRequest::findOrFail($request->validated()['delivery_request_id']);
         $this->authorize('create', [Review::class, $deliveryRequest]);
+
+        if ($deliveryRequest->status !== DeliveryRequest::STATUS_LIVREE) {
+            throw ValidationException::withMessages([
+                'delivery_request_id' => 'Un avis ne peut être laissé que sur une demande livrée.',
+            ]);
+        }
+
+        if (Review::where('delivery_request_id', $deliveryRequest->id)->where('user_id', $request->user()->id)->exists()) {
+            throw ValidationException::withMessages([
+                'delivery_request_id' => 'Vous avez déjà laissé un avis pour cette demande.',
+            ]);
+        }
 
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
