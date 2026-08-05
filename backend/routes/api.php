@@ -14,17 +14,18 @@ use App\Http\Controllers\Api\PaymentTransactionController;
 use App\Http\Controllers\Api\RequestStatusHistoryController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\ServiceController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-});
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::get('/drivers/{slug}', [DriverProfileController::class, 'showPublic'])->middleware('throttle:60,1');
+Route::get('/drivers/{slug}/qr', [DriverProfileController::class, 'qrCode'])->middleware('throttle:60,1');
+
+Route::get('/tracking/{privateToken}', [DeliveryRequestController::class, 'tracking'])->middleware('throttle:60,1');
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/drivers/{slug}/delivery-requests', [DeliveryRequestController::class, 'storeForDriver']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
@@ -35,8 +36,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('driver-profiles', DriverProfileController::class);
     });
 
-    Route::apiResource('delivery-requests', DeliveryRequestController::class);
+    Route::apiResource('delivery-requests', DeliveryRequestController::class)->except(['store']);
     Route::patch('/delivery-requests/{deliveryRequest}/status', [DeliveryRequestController::class, 'updateStatus']);
+    Route::post('/delivery-requests/{deliveryRequest}/confirm-price', [DeliveryRequestController::class, 'confirmPrice']);
+    Route::post('/delivery-requests/{deliveryRequest}/cancel', [DeliveryRequestController::class, 'cancel']);
+    Route::post('/delivery-requests/{deliveryRequest}/generate-code', [DeliveryRequestController::class, 'generateCode']);
+    Route::post('/delivery-requests/{deliveryRequest}/confirm-delivery', [DeliveryRequestController::class, 'confirmDelivery']);
 
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'show']);
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
@@ -49,5 +54,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('incidents', IncidentController::class);
     Route::apiResource('gps-locations', GpsLocationController::class);
     Route::apiResource('payment-transactions', PaymentTransactionController::class);
-    Route::apiResource('request-status-histories', RequestStatusHistoryController::class);
+    Route::apiResource('request-status-histories', RequestStatusHistoryController::class)->only(['index', 'show']);
 });

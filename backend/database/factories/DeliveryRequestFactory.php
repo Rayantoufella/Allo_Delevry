@@ -2,10 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\AiRequestDraft;
 use App\Models\DeliveryRequest;
-use App\Models\DeliveryZone;
-use App\Models\Service;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,9 +15,9 @@ class DeliveryRequestFactory extends Factory
             'private_token' => fake()->unique()->sha256(),
             'client_id' => User::factory()->client(),
             'driver_id' => User::factory()->driver(),
-            'service_id' => Service::factory(),
-            'delivery_zone_id' => DeliveryZone::factory(),
-            'ai_request_draft_id' => AiRequestDraft::factory(),
+            'service_id' => null,
+            'delivery_zone_id' => null,
+            'ai_request_draft_id' => null,
             'recipient_name' => fake()->name(),
             'recipient_phone' => fake()->phoneNumber(),
             'pickup_address' => fake()->address(),
@@ -35,6 +32,20 @@ class DeliveryRequestFactory extends Factory
             'delivered_at' => fake()->optional()->dateTimeBetween('-1 days', 'now'),
             'status' => DeliveryRequest::STATUS_EN_ATTENTE,
         ];
+    }
+
+    public function forClient(User $client): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'client_id' => $client->id,
+        ]);
+    }
+
+    public function forDriver(User $driver): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'driver_id' => $driver->id,
+        ]);
     }
 
     public function confirmed(): static
