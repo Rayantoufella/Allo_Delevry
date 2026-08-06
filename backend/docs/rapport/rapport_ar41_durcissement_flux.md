@@ -4,7 +4,7 @@
 **Périmètre :** `D:\AlloDelevry\backend`
 **Référence :** Cahier des charges RG06 (flux de livraison), audits AR-05
 **Statut :** Terminé
-**Branche :** `feature/AR41-durcissement` — commit(s) : `6096502` (code) puis commit docs
+**Branche :** `feature/AR41-durcissement` — commit(s) : `6096502` (code), `31cbb3a` (docs)
 
 ## 1. Contexte
 
