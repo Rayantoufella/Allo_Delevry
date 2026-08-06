@@ -9,6 +9,7 @@ use App\Http\Resources\DeliveryRequestResource;
 use App\Http\Resources\PublicTrackingResource;
 use App\Jobs\CreateDeliveryRequestNotificationJob;
 use App\Jobs\ExpireConfirmationCodeJob;
+use App\Models\AiRequestDraft;
 use App\Models\DeliveryRequest;
 use App\Models\DeliveryZone;
 use App\Models\DriverProfile;
@@ -44,6 +45,8 @@ class DeliveryRequestController extends Controller
         $data = $request->validated();
 
         $this->ensureOwnedByDriver($profile, $data);
+
+        $this->ensureDraftOwnedByClient($data['ai_request_draft_id'] ?? null, $request->user()->id);
 
         $data['client_id'] = $request->user()->id;
         $data['driver_id'] = $profile->user_id;
@@ -291,6 +294,16 @@ class DeliveryRequestController extends Controller
     private function ensureOwnedByDriver(DriverProfile $profile, array $data): void
     {
         $this->ensureBelongsToDriver($profile->user_id, $data);
+    }
+
+    private function ensureDraftOwnedByClient(?int $draftId, int $clientUserId): void
+    {
+        if ($draftId !== null
+            && ! AiRequestDraft::where('id', $draftId)->where('user_id', $clientUserId)->exists()) {
+            throw ValidationException::withMessages([
+                'ai_request_draft_id' => 'Ce brouillon IA n\'appartient pas à ce client.',
+            ]);
+        }
     }
 
     private function ensureBelongsToDriver(int $driverUserId, array $data): void
