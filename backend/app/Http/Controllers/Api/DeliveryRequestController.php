@@ -13,6 +13,7 @@ use App\Models\DeliveryRequest;
 use App\Models\DeliveryZone;
 use App\Models\DriverProfile;
 use App\Models\Service;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -271,6 +272,42 @@ class DeliveryRequestController extends Controller
         );
 
         return new DeliveryRequestResource($deliveryRequest);
+    }
+
+    /**
+     * Génère le ticket PDF d'une demande de livraison (AR-37).
+     * Accessible aux participants (client ou livreur) via la policy "view".
+     */
+    public function ticket(DeliveryRequest $deliveryRequest)
+    {
+        $this->authorize('view', $deliveryRequest);
+
+        $deliveryRequest->load([
+            'client:id,name,email,phone',
+            'driver:id,name,phone',
+            'driver.driverProfile',
+            'service',
+            'deliveryZone',
+        ]);
+
+        $statusLabels = [
+            DeliveryRequest::STATUS_EN_ATTENTE => 'en attente',
+            DeliveryRequest::STATUS_PRIX_PROPOSE => 'prix proposé',
+            DeliveryRequest::STATUS_CONFIRMEE => 'confirmée',
+            DeliveryRequest::STATUS_COLIS_RECUPERE => 'colis récupéré',
+            DeliveryRequest::STATUS_EN_LIVRAISON => 'en livraison',
+            DeliveryRequest::STATUS_LIVREE => 'livrée',
+            DeliveryRequest::STATUS_REFUSEE => 'refusée',
+            DeliveryRequest::STATUS_ECHEC => 'échec',
+            DeliveryRequest::STATUS_ANNULEE => 'annulée',
+        ];
+
+        $pdf = Pdf::loadView('tickets.ticket', [
+            'deliveryRequest' => $deliveryRequest,
+            'statusLabel' => $statusLabels[$deliveryRequest->status] ?? $deliveryRequest->status,
+        ]);
+
+        return $pdf->stream('ticket-'.$deliveryRequest->tracking_number.'.pdf');
     }
 
     private function ensureOwnedByDriver(DriverProfile $profile, array $data): void

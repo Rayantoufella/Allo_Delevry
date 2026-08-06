@@ -3,10 +3,10 @@
 use App\Http\Controllers\Api\AiRequestDraftController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatMessageController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DeliveryProofController;
 use App\Http\Controllers\Api\DeliveryRequestController;
 use App\Http\Controllers\Api\DeliveryZoneController;
-use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DriverProfileController;
 use App\Http\Controllers\Api\GpsLocationController;
 use App\Http\Controllers\Api\IncidentController;
@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::apiResource('delivery-requests', DeliveryRequestController::class)->except(['store']);
+    Route::get('/delivery-requests/{deliveryRequest}/ticket', [DeliveryRequestController::class, 'ticket']);
     Route::patch('/delivery-requests/{deliveryRequest}/status', [DeliveryRequestController::class, 'updateStatus']);
     Route::post('/delivery-requests/{deliveryRequest}/confirm-price', [DeliveryRequestController::class, 'confirmPrice']);
     Route::post('/delivery-requests/{deliveryRequest}/cancel', [DeliveryRequestController::class, 'cancel']);
