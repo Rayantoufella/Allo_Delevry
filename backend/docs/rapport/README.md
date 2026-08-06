@@ -13,7 +13,7 @@ Rapport de chaque tâche réalisée sur le projet, pour la révision complète d
 | AR-05 | Correction de sécurité (16 corrections B1–B11, RG06) | [rapport_correction_delivery.md](rapport_correction_delivery.md) | Terminé |
 | AR-30 | Jobs queue asynchrones + uploads des preuves | [rapport_ar30_queues_uploads.md](rapport_ar30_queues_uploads.md) | Terminé |
 | AR-39 | Tableau de bord livreur (indicateurs, CA, missions) | [rapport_ar39_dashboard.md](rapport_ar39_dashboard.md) | Terminé |
-| AR-37 | Ticket PDF d'une demande de livraison | [rapport_ar37_ticket_pdf.md](rapport_ar37_ticket_pdf.md) | Terminé |
+| AR-37 | Récupération, ticket (preuve) et tracking privé (F11) | [rapport_ar37_recuperation_tracking.md](rapport_ar37_recuperation_tracking.md) | Terminé |
 
 ## Tâches déjà présentes sur `main` / couvertes (vérifiées, marquées Terminé dans Jira)
 
@@ -26,5 +26,6 @@ Rapport de chaque tâche réalisée sur le projet, pour la révision complète d
 ## Suivi du projet
 
 - Conventions d'équipe : `.opencode/team-notes.md`
-- Branches de travail : `feature/Queue-Jobs` (AR-30) → `feature/DashbordDriver` (AR-39, AR-37)
-- PR : https://github.com/Rayantoufella/Allo_Delevry/pull/new/feature/DashbordDriver
+- Branches de travail : `feature/Queue-Jobs` (AR-30) → `feature/DashbordDriver` (AR-39) → `feature/PDF` (AR-37 : tracking F11 complété, PDF annulé)
+- Branche dédiée à venir : `feature/Reverb` (F12 temps réel)
+- PR : https://github.com/Rayantoufella/Allo_Delevry/pull/new/feature/PDF
