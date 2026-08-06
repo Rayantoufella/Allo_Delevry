@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\ChatMessageReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreChatMessageRequest;
 use App\Http\Requests\UpdateChatMessageRequest;
@@ -42,6 +43,9 @@ class ChatMessageController extends Controller
         $message = ChatMessage::create($data);
 
         CreateChatMessageNotificationJob::dispatch($message)->afterCommit();
+
+        // Temps réel (F12) : diffusion du message sur le canal privé de la conversation.
+        broadcast(new ChatMessageReceived($message));
 
         return response()->json(new ChatMessageResource($message), 201);
     }
