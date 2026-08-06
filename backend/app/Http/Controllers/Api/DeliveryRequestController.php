@@ -13,7 +13,6 @@ use App\Models\DeliveryRequest;
 use App\Models\DeliveryZone;
 use App\Models\DriverProfile;
 use App\Models\Service;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -185,11 +184,26 @@ class DeliveryRequestController extends Controller
         return new DeliveryRequestResource($deliveryRequest);
     }
 
+    /**
+     * Suivi privé d'une demande de livraison (F11 — AR-37/40).
+     *
+     * Accessible sans authentification via le jeton privé (throttle:60,1).
+     * Charge tout le contexte requis par la page de suivi : historique des
+     * statuts, participants (client/livreur + marque), service, zone,
+     * chat et preuves de livraison.
+     * La position GPS reste hors périmètre (bonus à implémenter plus tard).
+     */
     public function tracking(string $privateToken)
     {
-        $deliveryRequest = DeliveryRequest::with(['statusHistories'])
-            ->where('private_token', $privateToken)
-            ->firstOrFail();
+        $deliveryRequest = DeliveryRequest::with([
+            'statusHistories',
+            'client',
+            'driver.driverProfile',
+            'service',
+            'deliveryZone',
+            'chatMessages.sender',
+            'proofs',
+        ])->where('private_token', $privateToken)->firstOrFail();
 
         return new PublicTrackingResource($deliveryRequest);
     }
@@ -272,42 +286,6 @@ class DeliveryRequestController extends Controller
         );
 
         return new DeliveryRequestResource($deliveryRequest);
-    }
-
-    /**
-     * Génère le ticket PDF d'une demande de livraison (AR-37).
-     * Accessible aux participants (client ou livreur) via la policy "view".
-     */
-    public function ticket(DeliveryRequest $deliveryRequest)
-    {
-        $this->authorize('view', $deliveryRequest);
-
-        $deliveryRequest->load([
-            'client:id,name,email,phone',
-            'driver:id,name,phone',
-            'driver.driverProfile',
-            'service',
-            'deliveryZone',
-        ]);
-
-        $statusLabels = [
-            DeliveryRequest::STATUS_EN_ATTENTE => 'en attente',
-            DeliveryRequest::STATUS_PRIX_PROPOSE => 'prix proposé',
-            DeliveryRequest::STATUS_CONFIRMEE => 'confirmée',
-            DeliveryRequest::STATUS_COLIS_RECUPERE => 'colis récupéré',
-            DeliveryRequest::STATUS_EN_LIVRAISON => 'en livraison',
-            DeliveryRequest::STATUS_LIVREE => 'livrée',
-            DeliveryRequest::STATUS_REFUSEE => 'refusée',
-            DeliveryRequest::STATUS_ECHEC => 'échec',
-            DeliveryRequest::STATUS_ANNULEE => 'annulée',
-        ];
-
-        $pdf = Pdf::loadView('tickets.ticket', [
-            'deliveryRequest' => $deliveryRequest,
-            'statusLabel' => $statusLabels[$deliveryRequest->status] ?? $deliveryRequest->status,
-        ]);
-
-        return $pdf->stream('ticket-'.$deliveryRequest->tracking_number.'.pdf');
     }
 
     private function ensureOwnedByDriver(DriverProfile $profile, array $data): void

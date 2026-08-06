@@ -24,6 +24,23 @@ services:
     networks:
       - allo_network
 
+  # Serveur WebSocket Reverb (F12 — temps réel) : diffusion chat + statuts.
+  reverb:
+    build:
+      context: ./docker/php
+    container_name: allo_reverb
+    volumes:
+      - ./backend:/var/www/html
+    working_dir: /var/www/html
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080 --no-interaction
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - app
+    networks:
+      - allo_network
+
   nginx:
     image: nginx:alpine
     container_name: allo_nginx

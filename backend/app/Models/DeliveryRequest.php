@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\DeliveryRequestStatusUpdated;
 use App\Jobs\CreateStatusChangedNotificationJob;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -138,6 +139,9 @@ class DeliveryRequest extends Model
         $this->refresh();
 
         CreateStatusChangedNotificationJob::dispatch($this, $newStatus, $changedBy)->afterCommit();
+
+        // Temps réel (F12) : diffusion du nouveau statut sur le canal privé.
+        broadcast(new DeliveryRequestStatusUpdated($this, $changedBy, $comment));
 
         return $this;
     }
