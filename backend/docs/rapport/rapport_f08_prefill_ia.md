@@ -4,7 +4,7 @@
 **Périmètre :** `D:\AlloDelevry\backend`
 **Référence :** Cahier des charges — F08 (préremplissage IA), §9.2 (workflow IA), RG11 (services actifs)
 **Statut :** Terminé
-**Branche :** `feature/AI-Laravel` — commit(s) : `906deb1` (v1 xAI/Grok) + bascule OpenRouter (à venir)
+**Branche :** `feature/AI-Laravel` — commit(s) : `906deb1` (v1 xAI/Grok) + `4f77285` (bascule OpenRouter)
 
 ## 1. Contexte
 
@@ -32,7 +32,7 @@ F08 : le client saisit un **message libre** (« Livrer demain à Sara à Al Houd
 | `config/services.php` | Configuration du fournisseur IA | Bloc `openrouter` : `base_url` (env `OPENROUTER_BASE_URL`, défaut `https://openrouter.ai/api/v1`), `api_key` (env `OPENROUTER_API_KEY`), `model` (env `OPENROUTER_MODEL`, défaut `nvidia/nemotron-3-super-120b-a12b:free`) |
 | `.env` | Secrets (gitignore) | `OPENROUTER_API_KEY` + `OPENROUTER_MODEL=…` ; **jamais commité** |
 | `.env.example` | Modèle de configuration | Variables OpenRouter vides (aucun secret) |
-| `app/Services/AiRequestAnalyzer.php` | **Service d'analyse IA** | `analyze(string $freeText, array $activeServiceNames): array` ; POST `/chat/completions` avec `response_format: json_object` ; headers OpenRouter `HTTP-Referer` + `X-Title` ; contrat 9 clés : `recipient_name`, `recipient_phone`, `pickup_address`, `delivery_address`, `package_description`, `product_amount` (float\|null), `amount_to_collect` (float\|null), `scheduled_at`, `service` ; **RG11** : `service` filtré par noms actifs (insensible casse) ; normalise les montants en float ; **très zéro accès DB** ; erreurs levées en `AiAnalysisException` |
+| `app/Services/AiRequestAnalyzer.php` | **Service d'analyse IA** | `analyze(string $freeText, array $activeServiceNames): array` ; POST `/chat/completions` avec `response_format: json_object` ; headers OpenRouter `HTTP-Referer` + `X-Title` ; contrat 9 clés : `recipient_name`, `recipient_phone`, `pickup_address`, `delivery_address`, `package_description`, `product_amount` (float\|null), `amount_to_collect` (float\|null), `scheduled_at`, `service` ; **RG11** : `service` filtré par noms actifs (insensible casse) ; normalise les montants en float ; **zéro accès DB** ; erreurs levées en `AiAnalysisException` |
 | `app/Exceptions/AiAnalysisException.php` | Exception métier IA | `extends RuntimeException` ; messages FR : « Clé API OpenRouter non configurée (OPENROUTER_API_KEY). », « Erreur API OpenRouter (HTTP {status}). » (détail du corps loggé au canal `jobs`), « Réponse IA vide ou format inattendu. », « JSON invalide retourné par l'IA. » |
 | `app/Jobs/AnalyzeAiRequestDraftJob.php` | **Job d'analyse asynchrone** | `__construct(AiRequestDraft $draft, int $driverUserId)` ; `tries=3`, `timeout=60`, `backoff=[10,60]` ; no-op si statut ≠ `pending` ; relit les services actifs en base (double garde RG11) ; résout `service_id` (fallback `LOWER(name)`) ; écrit `done`/`failed` + `error_message` contrôlé (CA05) ; erreurs loggées canal `jobs` |
 | `app/Http/Requests/AnalyzeAiRequestDraftRequest.php` | Validation de l'endpoint | `input_message` required string ; `driver_slug` required `exists:driver_profiles,slug` |
@@ -54,7 +54,7 @@ F08 : le client saisit un **message libre** (« Livrer demain à Sara à Al Houd
     'product_amount'      => float|null,
     'amount_to_collect'   => float|null,
     'scheduled_at'        => string|null, // attendu ISO 8601 / Y-m-d H:i
-    'service'             => string,      // rege11 : doit être un service actif du livreur
+    'service'             => string,      // RG11 : doit être un service actif du livreur
 ]
 ```
 
@@ -65,7 +65,7 @@ F08 : le client saisit un **message libre** (« Livrer demain à Sara à Al Houd
 - CA05 : `error_message` = message FR uniquement (jamais le corps brut de l'API) ; corps brut loggé canal `jobs`.
 - Rate limiting : `throttle:10,1` (test : 11e requête → 429).
 - En test, `Http::fake()` simule l'API ; rate limit test avec `Queue::fake()` (job non exécuté).
-- Piège rencontré : `QUEUE_CONNECTION=sync` exécute le job **en ligne** → sans `Queue::fake()`/`Http::fake()`, un vrai appel HTTP partait. Testes corrigés en conséquence.
+- Piège rencontré : `QUEUE_CONNECTION=sync` exécute le job **en ligne** → sans `Queue::fake()`/`Http::fake()`, un vrai appel HTTP partait. Tests corrigés en conséquence.
 - Bascule de fournisseur : passer de xAI à OpenRouter n'a touché **que** la config (`services.openrouter.*`), les messages d'erreur FR et les URLs de fake en test — le payload, le prompt et le contrat 9 clés sont restés identiques (les 2 API sont compatibles OpenAI).
 
 ## 5. Vérifications
@@ -78,4 +78,4 @@ F08 : le client saisit un **message libre** (« Livrer demain à Sara à Al Houd
 
 - Branche : `feature/AI-Laravel` — PR : https://github.com/Rayantoufella/Allo_Delevry/pull/new/feature/AI-Laravel
 - Rapports liés : `rapport_ar30_queues_uploads.md` (infra jobs), `rapport_ar37_recuperation_tracking.md` (brouillons), `rapport_ar41_durcissement_flux.md` (appartenance `ai_request_draft_id` — brouillon étranger rejeté 422)
-- Suite : démo complète bout-en-bout via l'endpoint (draft `done` → création de demande) ; prérègles de validation métier du `generated_data` côté frontend ; les clés xAI/Grok restent utilisables en changeant `config/services.php`
+- Suite : démo complète bout-en-bout via l'endpoint (draft `done` → création de demande) ; pré-règles de validation métier du `generated_data` côté frontend ; les clés xAI/Grok restent utilisables en changeant `config/services.php`
