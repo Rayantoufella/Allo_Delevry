@@ -16,7 +16,7 @@ export const STATUS = {
 
 export const TERMINAL_STATUSES = ['livree', 'refusee', 'echec', 'annulee']
 
-/** Labels français + couleur de badge pour l'UI. */
+/** Labels français + couleur de badge pour l'UI (style prototype). */
 export const STATUS_LABELS = {
   [STATUS.EN_ATTENTE]: { label: 'En attente', color: 'badge-yellow', icon: '⏳' },
   [STATUS.PRIX_PROPOSE]: { label: 'Prix proposé', color: 'badge-blue', icon: '💰' },
@@ -62,7 +62,7 @@ export function formatPrice(value) {
   if (value === null || value === undefined || value === '') return '—'
   const n = Number(value)
   if (Number.isNaN(n)) return value
-  return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} FCFA`
+  return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} DH`
 }
 
 export function formatDateTime(value) {
