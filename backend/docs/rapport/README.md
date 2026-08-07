@@ -16,6 +16,7 @@ Rapport de chaque tâche réalisée sur le projet, pour la révision complète d
 | AR-37 | Récupération, ticket (preuve) et **tracking privé (F11)** | [rapport_ar37_recuperation_tracking.md](rapport_ar37_recuperation_tracking.md) | Terminé |
 | AR-39 | Tableau de bord livreur (indicateurs, CA, missions) | [rapport_ar39_dashboard.md](rapport_ar39_dashboard.md) | Terminé |
 | AR-41 | Durcissement flux de livraison (appartenance `ai_request_draft_id`, test bout-en-bout) | [rapport_ar41_durcissement_flux.md](rapport_ar41_durcissement_flux.md) | Terminé |
+| F08 | Préremplissage IA des demandes (OpenRouter/Nemotron : service, job, endpoint, RG11) | [rapport_f08_prefill_ia.md](rapport_f08_prefill_ia.md) | Terminé* |
 
 ## Guide du code par feature (`docs/guide/`)
 
@@ -32,7 +33,7 @@ Pour comprendre le projet à 100 % : **un fichier par feature**, avec **le rôle
 | [06_dashboard_livreur.md](../guide/06_dashboard_livreur.md) | AR-39 — GET /api/dashboard, indicateurs, missions, CA |
 | [07_securite_permissions.md](../guide/07_securite_permissions.md) | Toutes les Policies, corrections AR-05 (B1-B11), rate limiting |
 | [08_uploads_preuves.md](../guide/08_uploads_preuves.md) | F14 — preuves (photo/ticket/signature), uploads multipart, disk public |
-| [09_bonus_ecarts.md](../guide/09_bonus_ecarts.md) | GPS (bonus), paiements (P2), IA Grok, e-mail différé, écarts |
+| [09_bonus_ecarts.md](../guide/09_bonus_ecarts.md) | GPS (bonus), paiements (P2), IA OpenRouter, e-mail différé, écarts |
 
 ## Tâches déjà présentes sur `main` / branches (couvertes, marquées Terminé dans Jira)
 
@@ -43,5 +44,5 @@ Pour comprendre le projet à 100 % : **un fichier par feature**, avec **le rôle
 ## Suivi du projet
 
 - Conventions d'équipe : `.opencode/team-notes.md`
-- Branches : `feature/Queue-Jobs` (AR-30) → `feature/DashbordDriver` (AR-39) → `feature/PDF` (AR-37, PDF annulé) → **`feature/Reverb` (F12 diffusion temps réel, poussée)** → **`feature/AR41-durcissement` (AR-41)**
-- PR : https://github.com/Rayantoufella/Allo_Delevry/pull/new/feature/Reverb · https://github.com/Rayantoufella/Allo_Delevry/pull/new/feature/PDF · https://github.com/Rayantoufella/Allo_Delevry/pull/new/feature/AR41-durcissement
+- Branches : `feature/Queue-Jobs` (AR-30) → `feature/DashbordDriver` (AR-39) → `feature/PDF` (AR-37, PDF annulé) → **`feature/Reverb` (F12 diffusion temps réel, poussée)** → **`feature/AR41-durcissement` (AR-41, poussée)** → **`feature/AI-Laravel` (F08 préremplissage IA)**
+- PR : https://github.com/Rayantoufella/Allo_Delevry/pull/new/feature/Reverb · https://github.com/Rayantoufella/Allo_Delevry/pull/new/feature/PDF · https://github.com/Rayantoufella/Allo_Delevry/pull/new/feature/AR41-durcissement · https://github.com/Rayantoufella/Allo_Delevry/pull/new/feature/AI-Laravel
