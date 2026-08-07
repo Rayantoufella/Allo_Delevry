@@ -25,14 +25,14 @@ function aiDraftDriver(): User
     return $driver;
 }
 
-function aiDraftGrokResponse(array $data): string
+function aiDraftAiResponse(array $data): string
 {
     return json_encode(['choices' => [['message' => ['content' => json_encode($data)]]]]);
 }
 
 it('analyzes a free text and marks the draft as done with structured data', function () {
     Http::fake([
-        'api.x.ai/*' => Http::response(aiDraftGrokResponse([
+        'openrouter.ai/*' => Http::response(aiDraftAiResponse([
             'recipient_name' => 'Sara',
             'recipient_phone' => '0612345678',
             'pickup_address' => 'Avenue Hassan II',
@@ -74,7 +74,7 @@ it('analyzes a free text and marks the draft as done with structured data', func
 
 it('does not select a service that is not in the driver active catalog (RG11)', function () {
     Http::fake([
-        'api.x.ai/*' => Http::response(aiDraftGrokResponse([
+        'openrouter.ai/*' => Http::response(aiDraftAiResponse([
             'recipient_name' => 'Sara',
             'recipient_phone' => '0612345678',
             'pickup_address' => 'Avenue Hassan II',
@@ -113,7 +113,7 @@ it('does not select a service that is not in the driver active catalog (RG11)', 
 
 it('marks the draft as failed with a controlled message when the AI returns invalid JSON', function () {
     Http::fake([
-        'api.x.ai/*' => Http::response(json_encode([
+        'openrouter.ai/*' => Http::response(json_encode([
             'choices' => [['message' => ['content' => 'pas du json {']]],
         ])),
     ]);
@@ -143,7 +143,7 @@ it('marks the draft as failed with a controlled message when the AI returns inva
 });
 
 it('marks the draft as failed when the API key is missing', function () {
-    config()->set('services.xai.api_key', null);
+    config()->set('services.openrouter.api_key', null);
 
     $client = User::factory()->client()->create();
     $driver = aiDraftDriver();
@@ -166,11 +166,11 @@ it('marks the draft as failed when the API key is missing', function () {
     $draft->refresh();
 
     expect($draft->status)->toBe(AiRequestDraft::STATUS_FAILED);
-    expect($draft->error_message)->toContain('XAI_API_KEY');
+    expect($draft->error_message)->toContain('OPENROUTER_API_KEY');
 });
 
 it('does nothing when the draft is already processed', function () {
-    Http::fake(['api.x.ai/*' => Http::response('{"choices":[]}')]);
+    Http::fake(['openrouter.ai/*' => Http::response('{"choices":[]}')]);
 
     $client = User::factory()->client()->create();
     $driver = aiDraftDriver();

@@ -35,10 +35,10 @@ return [
         ],
     ],
 
-    'xai' => [
-        'base_url' => env('XAI_BASE_URL', 'https://api.x.ai/v1'),
-        'api_key' => env('XAI_API_KEY'),
-        'model' => env('XAI_MODEL', 'grok-4.5'),
+    'openrouter' => [
+        'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+        'api_key' => env('OPENROUTER_API_KEY'),
+        'model' => env('OPENROUTER_MODEL', 'nvidia/nemotron-3-super-120b-a12b:free'),
     ],
 
 ];

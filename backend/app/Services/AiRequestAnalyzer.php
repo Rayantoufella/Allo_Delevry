@@ -19,14 +19,14 @@ class AiRequestAnalyzer
      */
     public function analyze(string $freeText, array $activeServiceNames): array
     {
-        $apiKey = config('services.xai.api_key');
-        $model = config('services.xai.model');
-        $baseUrl = config('services.xai.base_url');
+        $apiKey = config('services.openrouter.api_key');
+        $model = config('services.openrouter.model');
+        $baseUrl = config('services.openrouter.base_url');
 
         if (empty($apiKey)) {
-            Log::channel('jobs')->error('Clé API xAI non configurée (XAI_API_KEY).');
+            Log::channel('jobs')->error('Clé API OpenRouter non configurée (OPENROUTER_API_KEY).');
 
-            throw new AiAnalysisException('Clé API xAI non configurée (XAI_API_KEY).');
+            throw new AiAnalysisException('Clé API OpenRouter non configurée (OPENROUTER_API_KEY).');
         }
 
         $systemPrompt = <<<'PROMPT'
@@ -64,18 +64,22 @@ PROMPT;
         try {
             $response = Http::withToken($apiKey)
                 ->acceptJson()
+                ->withHeaders([
+                    'HTTP-Referer' => config('app.url', 'http://localhost'),
+                    'X-Title' => 'Allo Delivery',
+                ])
                 ->timeout(60)
                 ->post($baseUrl.'/chat/completions', $payload);
         } catch (\Throwable $e) {
-            Log::channel('jobs')->error('Exception lors de l\'appel API xAI : '.$e->getMessage());
+            Log::channel('jobs')->error('Exception lors de l\'appel API OpenRouter : '.$e->getMessage());
 
-            throw new AiAnalysisException('Erreur lors de l\'appel API xAI : '.$e->getMessage(), $e);
+            throw new AiAnalysisException('Erreur lors de l\'appel API OpenRouter : '.$e->getMessage(), $e);
         }
 
         if (! $response->successful()) {
-            Log::channel('jobs')->error('Erreur API xAI HTTP '.$response->status().': '.$response->body());
+            Log::channel('jobs')->error('Erreur API OpenRouter HTTP '.$response->status().': '.$response->body());
 
-            throw new AiAnalysisException('Erreur API xAI (HTTP '.$response->status().').');
+            throw new AiAnalysisException('Erreur API OpenRouter (HTTP '.$response->status().').');
         }
 
         $content = $response->json('choices.0.message.content');
