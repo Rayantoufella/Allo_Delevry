@@ -7,15 +7,18 @@
 
 Le livreur (ou le client participant) dépose une **preuve de livraison** liée à une demande : un fichier image (`storage/app/public/proofs/`) + des métadonnées (type de preuve, nom du destinataire). L'API reçoit un **vrai fichier multipart** (`file`), le valide (image jpg/jpeg/png/webp ≤ 2 Mo), l'écrit sur le disque `public` et stocke le chemin relatif en base. Les fichiers sont servis via le lien symbolique `storage` (`asset('storage/...')`). L'upload est synchrone ; seul le **traitement des notifications** passe par la queue (guide 05). Les corrections AR-05 (B4) ont verrouillé la propriété : `uploaded_by` est posé côté serveur.
 
+**RG06 (récupération) :** depuis `feature/ProofPickup`, la **photo de récupération du colis est obligatoire** avant le passage au statut `colis_recupere` : `DeliveryRequestController::updateStatus()` refuse la transition (422, champ `proof`) si aucune preuve `proof_type = pickup_photo` n'existe pour la demande. Les types acceptés sont désormais verrouillés via `DeliveryProof::TYPES` : `photo`, `signature`, `ticket`, `pickup_photo`, `pickup_id_card` (photo d'identité du livreur, optionnelle).
+
 ## Fichiers et rôles (exhaustif)
 
 | Fichier | Rôle | Points clés |
 |---------|------|-------------|
 | `app/Http/Controllers/Api/DeliveryProofController.php` | CRUD des preuves | `index()` filtre par `delivery_request_id` (en vérifiant l'appartenance via `authorize('view', $deliveryRequest)`) ou par participation ; `store()` : `authorize('create', [DeliveryProof::class, $deliveryRequest])` + `$file->store('proofs', 'public')` + `uploaded_by = user()->id` ; `update()` : **supprime l'ancien fichier** si remplacé (`Storage::disk('public')->delete(...)`) ; `destroy()` : suppression autorisée |
-| `app/Http/Requests/StoreDeliveryProofRequest.php` | Validation de création | `delivery_request_id` (exists), `proof_type` (max:50), **`file` : required, image, mimes:jpg,jpeg,png,webp, max:2048**, `receiver_name` nullable |
+| `app/Http/Requests/StoreDeliveryProofRequest.php` | Validation de création | `delivery_request_id` (exists), `proof_type` (**Rule::in(DeliveryProof::TYPES)** — constante du modèle, plus aucune valeur libre), **`file` : required, image, mimes:jpg,jpeg,png,webp, max:2048**, `receiver_name` nullable |
 | `app/Http/Requests/UpdateDeliveryProofRequest.php` | Validation de mise à jour | Champs `somtims` ; le fichier est remplaçable |
 | `app/Http/Resources/DeliveryProofResource.php` | Formatage de la réponse | `file_url` = `asset('storage/'.$file_path)` — l'URL publique complète ; masque le chemin réel |
-| `app/Models/DeliveryProof.php` | Modèle | `belongsTo(DeliveryRequest)` ; fillable : delivery_request_id, uploaded_by, proof_type, file_path, receiver_name |
+| `app/Http/Controllers/Api/DeliveryRequestController.php` | Garde-fou RG06 récupération | `updateStatus()` : transition vers `colis_recupere` **refusée (422)** si aucune preuve `pickup_photo` sur la demande |
+| `app/Models/DeliveryProof.php` | Modèle | `belongsTo(DeliveryRequest)` ; fillable : delivery_request_id, uploaded_by, proof_type, file_path, receiver_name ; **constantes `TYPE_PHOTO/SIGNATURE/TICKET/PICKUP_PHOTO/PICKUP_ID_CARD` + tableau `TYPES`** |
 | `app/Models/DeliveryRequest.php` | Relation | `hasMany(DeliveryProof::class)` — eager-loaded dans `tracking()` (guide 03) |
 | `app/Policies/DeliveryProofPolicy.php` | Autorisation | create : participants ; + `uploaded_by` forcé (B4) |
 | `config/filesystems.php` | Disques | Disque `public` (root `storage/app/public`) — les fichiers `.gitignore` de la base `public/storage` |

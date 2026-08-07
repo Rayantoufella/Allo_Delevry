@@ -99,7 +99,13 @@ it('runs the full delivery lifecycle end to end from creation by the client', fu
     expect($code)->toBeString()->toHaveLength(6);
     expect(Hash::check($code, $deliveryRequest->refresh()->confirmation_code_hash))->toBeTrue();
 
-    // 5. Driver picks up the parcel.
+    // 5. Driver uploads the pickup photo, then picks up the parcel.
+    $this->postJson('/api/delivery-proofs', [
+        'delivery_request_id' => $requestId,
+        'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
+        'file' => UploadedFile::fake()->image('pickup.jpg'),
+    ])->assertCreated();
+
     $this->patchJson("/api/delivery-requests/{$requestId}/status", [
         'status' => DeliveryRequest::STATUS_COLIS_RECUPERE,
     ])->assertSuccessful();

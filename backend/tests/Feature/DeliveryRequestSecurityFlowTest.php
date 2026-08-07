@@ -31,6 +31,7 @@ function flowDriver(): User
 
 it('performs the full RG06 flow with client-side delivery confirmation', function () {
     Queue::fake();
+    Storage::fake('public');
 
     $client = flowClient();
     $driver = flowDriver();
@@ -59,6 +60,13 @@ it('performs the full RG06 flow with client-side delivery confirmation', functio
     $code = $codeResponse->json('code');
     expect($code)->toBeString()->toHaveLength(6);
 
+    Sanctum::actingAs($driver);
+    $this->postJson('/api/delivery-proofs', [
+        'delivery_request_id' => $deliveryRequest->id,
+        'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
+        'file' => UploadedFile::fake()->image('pickup.jpg'),
+    ])->assertCreated();
+
     $this->patchJson("/api/delivery-requests/{$deliveryRequest->id}/status", [
         'status' => DeliveryRequest::STATUS_COLIS_RECUPERE,
     ])->assertSuccessful();
@@ -69,7 +77,6 @@ it('performs the full RG06 flow with client-side delivery confirmation', functio
         'status' => DeliveryRequest::STATUS_EN_LIVRAISON,
     ])->assertSuccessful();
 
-    Storage::fake('public');
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
         'proof_type' => 'signature',
@@ -291,4 +298,90 @@ it('keeps the status history read-only', function () {
     Sanctum::actingAs(flowClient());
 
     $this->postJson('/api/request-status-histories', [])->assertStatus(405);
+});
+
+it('blocks the transition to colis_recupere without a pickup photo (RG06)', function () {
+    Storage::fake('public');
+
+    $client = flowClient();
+    $driver = flowDriver();
+
+    $deliveryRequest = DeliveryRequest::factory()
+        ->forClient($client)
+        ->forDriver($driver)
+        ->confirmed()->create();
+
+    Sanctum::actingAs($driver);
+    $this->patchJson("/api/delivery-requests/{$deliveryRequest->id}/status", [
+        'status' => DeliveryRequest::STATUS_COLIS_RECUPERE,
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors('proof');
+
+    expect($deliveryRequest->refresh()->status)->toBe(DeliveryRequest::STATUS_CONFIRMEE);
+});
+
+it('allows the transition to colis_recupere with a pickup photo (RG06)', function () {
+    Storage::fake('public');
+
+    $client = flowClient();
+    $driver = flowDriver();
+
+    $deliveryRequest = DeliveryRequest::factory()
+        ->forClient($client)
+        ->forDriver($driver)
+        ->confirmed()->create();
+
+    Sanctum::actingAs($driver);
+    $this->postJson('/api/delivery-proofs', [
+        'delivery_request_id' => $deliveryRequest->id,
+        'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
+        'file' => UploadedFile::fake()->image('pickup.jpg'),
+    ])->assertCreated();
+
+    $this->patchJson("/api/delivery-requests/{$deliveryRequest->id}/status", [
+        'status' => DeliveryRequest::STATUS_COLIS_RECUPERE,
+    ])->assertSuccessful()
+        ->assertJsonPath('data.status', DeliveryRequest::STATUS_COLIS_RECUPERE);
+
+    expect($deliveryRequest->refresh()->picked_up_at)->not->toBeNull();
+});
+
+it('accepts an optional pickup identity card proof (pickup_id_card)', function () {
+    Storage::fake('public');
+
+    $client = flowClient();
+    $driver = flowDriver();
+
+    $deliveryRequest = DeliveryRequest::factory()
+        ->forClient($client)
+        ->forDriver($driver)
+        ->confirmed()->create();
+
+    Sanctum::actingAs($driver);
+    $this->postJson('/api/delivery-proofs', [
+        'delivery_request_id' => $deliveryRequest->id,
+        'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_ID_CARD,
+        'file' => UploadedFile::fake()->image('id-card.jpg'),
+    ])->assertCreated()
+        ->assertJsonPath('proof_type', \App\Models\DeliveryProof::TYPE_PICKUP_ID_CARD);
+});
+
+it('rejects an unknown delivery proof type', function () {
+    Storage::fake('public');
+
+    $client = flowClient();
+    $driver = flowDriver();
+
+    $deliveryRequest = DeliveryRequest::factory()
+        ->forClient($client)
+        ->forDriver($driver)
+        ->confirmed()->create();
+
+    Sanctum::actingAs($driver);
+    $this->postJson('/api/delivery-proofs', [
+        'delivery_request_id' => $deliveryRequest->id,
+        'proof_type' => 'carte_grise',
+        'file' => UploadedFile::fake()->image('proof.jpg'),
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors('proof_type');
 });

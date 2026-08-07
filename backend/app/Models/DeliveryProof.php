@@ -9,6 +9,24 @@ class DeliveryProof extends Model
 {
     use HasFactory;
 
+    public const TYPE_PHOTO = 'photo';
+
+    public const TYPE_SIGNATURE = 'signature';
+
+    public const TYPE_TICKET = 'ticket';
+
+    public const TYPE_PICKUP_PHOTO = 'pickup_photo';
+
+    public const TYPE_PICKUP_ID_CARD = 'pickup_id_card';
+
+    public const TYPES = [
+        self::TYPE_PHOTO,
+        self::TYPE_SIGNATURE,
+        self::TYPE_TICKET,
+        self::TYPE_PICKUP_PHOTO,
+        self::TYPE_PICKUP_ID_CARD,
+    ];
+
     protected $fillable = [
         'delivery_request_id',
         'uploaded_by',
