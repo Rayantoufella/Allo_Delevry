@@ -4,7 +4,7 @@
 **Périmètre :** `D:\AlloDelevry\backend`
 **Référence :** cahier des charges — RG06 (preuve de livraison), prototype UI (écran « Récupération du colis » : photo obligatoire + pièce d'identité optionnelle)
 **Statut :** Terminé
-**Branche :** `feature/ProofPickup` — commit(s) : {hash}
+**Branche :** `feature/ProofPickup` — commit(s) : `42a85ee`
 
 ## Contexte
 
