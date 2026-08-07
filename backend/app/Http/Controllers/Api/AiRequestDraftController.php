@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AnalyzeAiRequestDraftRequest;
 use App\Http\Requests\StoreAiRequestDraftRequest;
 use App\Http\Requests\UpdateAiRequestDraftRequest;
 use App\Http\Resources\AiRequestDraftResource;
+use App\Jobs\AnalyzeAiRequestDraftJob;
 use App\Models\AiRequestDraft;
+use App\Models\DriverProfile;
 use Illuminate\Http\Request;
 
 class AiRequestDraftController extends Controller
@@ -26,6 +29,23 @@ class AiRequestDraftController extends Controller
         $data['user_id'] = $request->user()->id;
 
         return response()->json(new AiRequestDraftResource(AiRequestDraft::create($data)), 201);
+    }
+
+    public function analyze(AnalyzeAiRequestDraftRequest $request)
+    {
+        $this->authorize('create', AiRequestDraft::class);
+
+        $driverProfile = DriverProfile::where('slug', $request->validated()['driver_slug'])->firstOrFail();
+
+        $draft = AiRequestDraft::create([
+            'user_id' => $request->user()->id,
+            'input_message' => $request->validated()['input_message'],
+            'status' => AiRequestDraft::STATUS_PENDING,
+        ]);
+
+        AnalyzeAiRequestDraftJob::dispatch($draft, $driverProfile->user_id)->afterCommit();
+
+        return response()->json(new AiRequestDraftResource($draft), 201);
     }
 
     public function show($id, Request $request)

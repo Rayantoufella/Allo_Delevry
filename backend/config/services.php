@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'xai' => [
+        'base_url' => env('XAI_BASE_URL', 'https://api.x.ai/v1'),
+        'api_key' => env('XAI_API_KEY'),
+        'model' => env('XAI_MODEL', 'grok-4.5'),
+    ],
+
 ];
