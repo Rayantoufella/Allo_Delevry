@@ -1,8 +1,10 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import api from '../api/axios'
 import { useAuthStore } from '../stores/auth'
 import { useThemeStore } from '../stores/theme'
+import { TERMINAL_STATUSES } from '../lib/statuses'
 
 const route = useRoute()
 const router = useRouter()
@@ -12,6 +14,46 @@ const theme = useThemeStore()
 const isHome = computed(() => route.path === '/')
 
 const isActive = (name) => route.name === name
+
+// ---- Livraison en cours (client) : pastille de suivi dans la barre, comme le prototype ----
+const activeRequest = ref(null)
+let activeTimer = null
+
+async function loadActiveRequest() {
+  if (!auth.isClient) {
+    activeRequest.value = null
+    return
+  }
+  try {
+    const { data } = await api.get('/delivery-requests', { params: { page: 1 } })
+    const rows = data.data ?? data ?? []
+    activeRequest.value = rows.find((r) => !TERMINAL_STATUSES.includes(r.status)) || null
+  } catch {
+    // silencieux : la pastille est un raccourci, pas une fonctionnalité critique
+  }
+}
+
+function startActivePolling() {
+  stopActivePolling()
+  if (!auth.isClient) return
+  loadActiveRequest()
+  activeTimer = setInterval(loadActiveRequest, 15000)
+}
+
+function stopActivePolling() {
+  if (activeTimer) clearInterval(activeTimer)
+  activeTimer = null
+}
+
+watch(() => auth.isClient, startActivePolling)
+onMounted(startActivePolling)
+onBeforeUnmount(stopActivePolling)
+
+function openActiveRequest() {
+  if (activeRequest.value) {
+    router.push({ name: 'request-detail', params: { id: activeRequest.value.id } })
+  }
+}
 
 function goHome() {
   if (auth.isDriver) router.push({ name: 'driver-dashboard' })
@@ -53,6 +95,17 @@ async function onLogout() {
 
     <div class="spacer"></div>
 
+    <!-- Pastille livraison en cours (client) -->
+    <button
+      v-if="auth.isClient && activeRequest"
+      class="tracking-chip"
+      title="Voir ma livraison en cours"
+      @click="openActiveRequest"
+    >
+      <span class="dot"></span>
+      {{ activeRequest.tracking_number || `#${activeRequest.id}` }}
+    </button>
+
     <button class="icon-btn" :title="theme.isDark ? 'Mode clair' : 'Mode sombre'" @click="theme.toggle()">
       {{ theme.isDark ? '☀' : '🌙' }}
     </button>
@@ -63,3 +116,36 @@ async function onLogout() {
     </template>
   </header>
 </template>
+
+<style scoped>
+.tracking-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.82rem;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.tracking-chip:hover {
+  border-color: var(--green);
+}
+.tracking-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: chip-pulse 2s infinite;
+}
+@keyframes chip-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 111, 0.55); }
+  70% { box-shadow: 0 0 0 8px rgba(34, 197, 111, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 111, 0); }
+}
+</style>

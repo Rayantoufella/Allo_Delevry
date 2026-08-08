@@ -4,226 +4,277 @@ import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()
 const router = useRouter()
+
+function goClient() {
+  if (auth.isAuthenticated && auth.user?.role === 'client') {
+    router.push({ name: 'my-requests' })
+  } else if (auth.isAuthenticated && auth.user?.role === 'driver') {
+    router.push({ name: 'my-requests' })
+  } else {
+    router.push({ name: 'login' })
+  }
+}
+
+function goDriver() {
+  if (auth.isAuthenticated && auth.user?.role === 'driver') {
+    router.push({ name: 'driver-dashboard' })
+  } else {
+    router.push({ name: 'login-driver' })
+  }
+}
 </script>
 
 <template>
   <div class="landing">
-    <!-- HERO -->
-    <section class="hero">
-      <div class="container hero-inner">
-        <span class="badge badge-green hero-badge">Livraison à la demande</span>
-        <h1 class="hero-title">
-          Chaque livreur, sa marque.<br />
-          <span class="hero-accent">Chaque colis, un suivi.</span>
-        </h1>
-        <p class="hero-sub">
-          Allo Delivery connecte les clients à des livreurs professionnels indépendants.
-          Suivez chaque colis en temps réel, avec chat et preuves de livraison.
-        </p>
-        <div class="hero-cta">
-          <button class="btn btn-primary btn-lg" @click="router.push({ name: auth.isAuthenticated ? 'my-requests' : 'register' })">
-            Créer mon compte client
-          </button>
-          <button class="btn btn-outline btn-lg" @click="router.push({ name: 'register-driver' })">
-            Devenir livreur
-          </button>
-        </div>
-      </div>
-    </section>
+    <!-- Background gradient overlay -->
+    <div class="hero-bg"></div>
 
-    <!-- COMMENT ÇA MARCHE -->
-    <section class="container section">
-      <h2 class="section-title">Comment ça marche</h2>
-      <div class="grid-3 steps">
-        <div class="card step-card">
-          <span class="step-icon">🔍</span>
-          <h3>Choisissez votre livreur</h3>
-          <p class="small muted">
-            Parcourez les profils publics, comparez les services et tarifs de chaque livreur dans votre ville.
-          </p>
-        </div>
-        <div class="card step-card">
-          <span class="step-icon">📝</span>
-          <h3>Envoyez votre demande</h3>
-          <p class="small muted">
-            Remplissez le formulaire ou décrivez votre besoin à l'assistant IA. Le livreur reçoit votre demande instantanément.
-          </p>
-        </div>
-        <div class="card step-card">
-          <span class="step-icon">📡</span>
-          <h3>Suivez en temps réel</h3>
-          <p class="small muted">
-            Suivez l'avancement, échangez par chat, et recevez des preuves photos à chaque étape clé de la livraison.
-          </p>
-        </div>
+    <div class="hero-content">
+      <!-- Badge -->
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Plateforme de livraison entre clients &amp; livreurs-entrepreneurs
       </div>
-    </section>
 
-    <!-- POURQUOI ALLO DELIVERY -->
-    <section class="container section">
-      <h2 class="section-title">Pourquoi Allo Delivery</h2>
-      <div class="grid-3 reasons">
-        <div class="reason-item">
-          <span class="reason-icon">🛡️</span>
-          <h4>Sécurité totale</h4>
-          <p class="small muted">
-            Code de confirmation à 6 chiffres pour valider la remise. Preuves photos obligatoires à chaque étape critique.
-          </p>
-        </div>
-        <div class="reason-item">
-          <span class="reason-icon">💬</span>
-          <h4>Chat intégré</h4>
-          <p class="small muted">
-            Communiquez directement avec votre livreur. Demandez un changement d'adresse ou posez des questions en direct.
-          </p>
-        </div>
-        <div class="reason-item">
-          <span class="reason-icon">🏪</span>
-          <h4>Chaque livreur a sa vitrine</h4>
-          <p class="small muted">
-            Les livreurs ont leur propre page publique avec services, tarifs et zones de livraison. Choisissez en confiance.
-          </p>
-        </div>
-        <div class="reason-item">
-          <span class="reason-icon">🤖</span>
-          <h4>Assistant IA</h4>
-          <p class="small muted">
-            Décrivez votre demande en langage naturel — l'IA pré-remplit le formulaire automatiquement.
-          </p>
-        </div>
-        <div class="reason-item">
-          <span class="reason-icon">💰</span>
-          <h4>Tarifs transparents</h4>
-          <p class="small muted">
-            Chaque service affiche son prix de base. Le livreur peut proposer un prix adapté, que vous acceptez ou refusez.
-          </p>
-        </div>
-        <div class="reason-item">
-          <span class="reason-icon">⚡</span>
-          <h4>Rapidité</h4>
-          <p class="small muted">
-            Création de demande en quelques secondes. Notifications en temps réel pour chaque changement de statut.
-          </p>
-        </div>
-      </div>
-    </section>
+      <!-- H1 -->
+      <h1 class="hero-title">
+        Chaque livreur, sa <span class="hero-accent">marque</span>. Chaque colis, un <span class="hero-accent">suivi</span>.
+      </h1>
 
-    <!-- CTA FINAL -->
-    <section class="cta-section">
-      <div class="container cta-inner">
-        <h2>Prêt à livrer ou à être livré ?</h2>
-        <p class="muted mt-8">
-          Rejoignez Allo Delivery aujourd'hui et profitez d'un service de livraison moderne et fiable.
-        </p>
-        <div class="hero-cta mt-24">
-          <button class="btn btn-primary btn-lg" @click="router.push({ name: auth.isAuthenticated ? 'my-requests' : 'register' })">
-            Commencer maintenant
-          </button>
-          <button class="btn btn-outline btn-lg" @click="router.push({ name: 'register-driver' })">
-            Je suis livreur
-          </button>
+      <!-- Subtitle -->
+      <p class="hero-sub">
+        Demande assistée par IA, acceptation &amp; tarif par le livreur, suivi GPS en direct, chat privé, code de remise sécurisé et preuve de livraison — le workflow complet, sans intermédiaire.
+      </p>
+
+      <!-- DEUX CARTES CTA -->
+      <div class="cta-grid">
+        <!-- Client -->
+        <div class="cta-card" @click="goClient">
+          <div class="cta-icon-wrap cta-icon-green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
+              <path d="M4 21a8 8 0 0 1 16 0"></path>
+            </svg>
+          </div>
+          <div class="cta-title">Je suis client</div>
+          <p class="cta-desc">
+            Ouvre la page d'un livreur, décris ta demande à l'IA ou choisis un service, puis suis ton colis en direct.
+          </p>
+          <div class="cta-link">Demander une livraison →</div>
+        </div>
+
+        <!-- Driver -->
+        <div class="cta-card cta-card-inverted" @click="goDriver">
+          <div class="cta-icon-wrap cta-icon-white">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2 4 14h7l-1 8 9-12h-7z"></path>
+            </svg>
+          </div>
+          <div class="cta-title">Je suis livreur-entrepreneur</div>
+          <p class="cta-desc cta-desc-inverted">
+            Ta marque, ton catalogue, tes zones &amp; tarifs, tes missions et tes revenus dans un tableau de bord.
+          </p>
+          <div class="cta-link">Ouvrir mon espace →</div>
         </div>
       </div>
-    </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .landing {
+  position: relative;
+  flex: 1 1 0%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-/* Hero */
-.hero {
-  padding: 72px 0 64px;
-  text-align: center;
+/* Background radial gradients */
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(900px 500px at 80% -10%, color-mix(in srgb, var(--green) 26%, transparent), transparent 60%),
+    radial-gradient(700px 500px at 5% 110%, color-mix(in srgb, var(--green) 14%, transparent), transparent 55%);
+  pointer-events: none;
 }
-.hero-inner {
+
+.hero-content {
+  position: relative;
+  flex: 1 1 0%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-.hero-badge {
-  font-size: 0.85rem;
-  padding: 6px 16px;
-}
-.hero-title {
-  font-size: 3rem;
-  line-height: 1.08;
-  max-width: 700px;
-}
-.hero-accent {
-  color: var(--brand);
-}
-.hero-sub {
-  max-width: 540px;
-  color: var(--text-dim);
-  font-size: 1.05rem;
-  line-height: 1.6;
-}
-.hero-cta {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
   justify-content: center;
+  padding: 20px 40px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-/* Sections */
-.section {
-  padding: 56px 0 40px;
-}
-.section-title {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-/* Steps */
-.steps .step-card {
-  display: flex;
-  flex-direction: column;
+/* Badge pill */
+.hero-badge {
+  display: inline-flex;
   align-items: center;
-  text-align: center;
-  gap: 10px;
-  padding: 28px 20px;
-}
-.step-icon {
-  font-size: 2.2rem;
-  margin-bottom: 4px;
-}
-
-/* Reasons */
-.reasons {
-  gap: 28px;
-}
-.reason-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 0;
-}
-.reason-icon {
-  font-size: 1.6rem;
+  gap: 9px;
+  align-self: flex-start;
+  padding: 7px 14px;
+  border-radius: 30px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--fg-2);
+  margin-bottom: 22px;
+  animation: fadeUp 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
-/* CTA */
-.cta-section {
-  padding: 64px 0 56px;
-  text-align: center;
-  border-top: 1px solid var(--border);
+.badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s ease infinite;
 }
-.cta-inner {
+
+/* H1 */
+.hero-title {
+  margin: 0;
+  font-size: clamp(40px, 6vw, 74px);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  max-width: 16ch;
+  animation: fadeUp 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-delay: 0.05s;
+}
+
+.hero-accent {
+  color: var(--green);
+}
+
+/* Subtitle */
+.hero-sub {
+  max-width: 60ch;
+  font-size: clamp(16px, 1.6vw, 20px);
+  color: var(--fg-2);
+  line-height: 1.5;
+  margin: 22px 0 42px;
+  font-weight: 500;
+  animation: fadeUp 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-delay: 0.1s;
+}
+
+/* CTA Grid */
+.cta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 22px;
+  max-width: 900px;
+  animation: fadeUp 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-delay: 0.15s;
+}
+
+/* CTA Card base */
+.cta-card {
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  padding: 30px;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: transform 0.25s, border-color 0.25s;
   display: flex;
   flex-direction: column;
+}
+
+.cta-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--green);
+}
+
+/* CTA Card inverted (driver) */
+.cta-card-inverted {
+  background: var(--fg);
+  color: var(--bg);
+  border: 1px solid var(--fg);
+}
+
+.cta-card-inverted:hover {
+  border-color: var(--green);
+}
+
+.cta-desc-inverted {
+  color: var(--bg);
+  opacity: 0.7;
+}
+
+/* Icon wrappers */
+.cta-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.cta-icon-green {
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+}
+
+.cta-icon-white {
+  background: var(--green);
+  color: var(--green-ink);
+}
+
+/* Card text */
+.cta-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.cta-desc {
+  color: var(--fg-2);
+  font-size: 14.5px;
+  margin: 8px 0 20px;
+  line-height: 1.5;
+}
+
+.cta-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+/* Animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 111, 0.55); }
+  70% { box-shadow: 0 0 0 16px rgba(34, 197, 111, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 111, 0); }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .hero { padding: 48px 0 40px; }
-  .hero-title { font-size: 2rem; }
-  .hero-sub { font-size: 0.95rem; }
-  .section { padding: 36px 0 24px; }
+  .hero-content {
+    padding: 20px 20px 40px;
+  }
+  .cta-grid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+  }
 }
 </style>

@@ -50,7 +50,7 @@ function loadMore() {
 
 <template>
   <div class="my-requests">
-    <h2 class="mb-16">Mes demandes de livraison</h2>
+    <h2 style="font-size: 1.75rem; margin-bottom: 20px">Mes demandes</h2>
 
     <!-- Loading -->
     <div v-if="loading" class="flex-col" style="gap: 14px">
@@ -63,20 +63,20 @@ function loadMore() {
     <p v-else-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
 
     <!-- Empty -->
-    <div v-else-if="!requests.length" class="empty-state">
+    <div v-else-if="!requests.length" class="empty-state card">
       <span class="empty-icon">📦</span>
       <h3>Aucune demande pour le moment</h3>
-      <p class="muted small mt-8">
+      <p class="muted small" style="margin-top: 8px">
         Créez votre première demande de livraison pour commencer.
       </p>
-      <router-link class="btn btn-primary mt-16" :to="{ name: 'landing' }">
+      <router-link class="btn btn-primary" style="margin-top: 16px" :to="{ name: 'landing' }">
         Trouver un livreur
       </router-link>
     </div>
 
     <!-- List -->
     <template v-else>
-      <div class="requests-list flex-col">
+      <div class="requests-list">
         <RequestCard
           v-for="req in requests"
           :key="req.id"
@@ -85,7 +85,7 @@ function loadMore() {
       </div>
 
       <!-- Load more -->
-      <div v-if="currentPage < totalPages" class="mt-16" style="text-align: center">
+      <div v-if="currentPage < totalPages" style="text-align: center; margin-top: 16px">
         <button
           class="btn btn-outline"
           :disabled="loadingMore"
@@ -107,6 +107,8 @@ function loadMore() {
 }
 
 .requests-list {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -119,5 +121,19 @@ function loadMore() {
   font-size: 3rem;
   display: block;
   margin-bottom: 12px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

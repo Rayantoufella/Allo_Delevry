@@ -73,29 +73,29 @@ function isCurrent(item) {
   top: 18px;
   bottom: 0;
   width: 2px;
-  background: var(--border-strong);
+  background: var(--border);
 }
 .dot {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 2px solid var(--border-strong);
-  background: var(--card);
+  border: 2px solid var(--border);
+  background: var(--surface);
   flex-shrink: 0;
   margin-top: 2px;
 }
 .dot.done {
-  border-color: var(--brand);
-  background: var(--brand);
+  border-color: var(--green);
+  background: var(--green);
 }
 .dot.live {
-  box-shadow: 0 0 0 4px var(--brand-soft);
+  box-shadow: 0 0 0 4px var(--green-glow);
 }
 .timeline-body {
   flex: 1;
 }
 .timeline-item.current .timeline-body {
-  background: var(--card-soft);
+  background: var(--surface-2);
   border-radius: 10px;
   padding: 10px 14px;
   margin-top: -6px;

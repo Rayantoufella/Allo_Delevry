@@ -1,6 +1,6 @@
 <script setup>
 import StatusBadge from '../StatusBadge.vue'
-import { formatPrice, formatDateTime } from '../../lib/statuses'
+import { formatPrice, formatDateTime, timeAgo } from '../../lib/statuses'
 
 defineProps({
   request: { type: Object, required: true },
@@ -10,41 +10,36 @@ defineProps({
 <template>
   <router-link
     :to="{ name: 'request-detail', params: { id: request.id } }"
-    class="card card-request"
+    class="card-request"
   >
-    <div class="flex-between mb-16">
+    <div class="card-request-header">
       <span class="bold small">#{{ request.tracking_number }}</span>
-      <StatusBadge :status="request.status" />
+      <div class="flex" style="gap: 8px; align-items: center">
+        <StatusBadge :status="request.status" />
+        <span class="arrow-btn">→</span>
+      </div>
     </div>
 
-    <div class="addresses">
-      <div class="addr">
-        <span class="faint small">Ramassage</span>
-        <span class="small">{{ request.pickup_address }}</span>
-      </div>
+    <div class="card-request-addresses">
+      <span class="small card-addr">{{ request.pickup_address }}</span>
       <span class="arrow faint">→</span>
-      <div class="addr">
-        <span class="faint small">Livraison</span>
-        <span class="small">{{ request.delivery_address }}</span>
-      </div>
+      <span class="small card-addr">{{ request.delivery_address }}</span>
     </div>
 
-    <div class="divider"></div>
-
-    <div class="flex-between">
+    <div class="card-request-footer">
       <span v-if="request.recipient_name" class="small muted">
-        Pour : {{ request.recipient_name }}
+        {{ request.recipient_name }}
       </span>
-      <span class="small faint">{{ formatDateTime(request.created_at) }}</span>
+      <span v-if="request.amount_to_collect" class="small bold">
+        {{ formatPrice(request.amount_to_collect) }}
+      </span>
     </div>
 
-    <div v-if="request.proposed_price || request.amount_to_collect" class="flex-between mt-8">
-      <span v-if="request.amount_to_collect" class="small bold">
-        À encaisser : {{ formatPrice(request.amount_to_collect) }}
+    <div class="card-request-meta">
+      <span v-if="request.proposed_price" class="small muted">
+        Prix : {{ formatPrice(request.proposed_price) }}
       </span>
-      <span v-if="request.proposed_price" class="small bold">
-        Prix proposé : {{ formatPrice(request.proposed_price) }}
-      </span>
+      <span class="small faint">{{ timeAgo(request.created_at) }}</span>
     </div>
   </router-link>
 </template>
@@ -54,36 +49,62 @@ defineProps({
   display: block;
   text-decoration: none;
   color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
   transition: border-color 0.2s, transform 0.15s;
 }
+
 .card-request:hover {
-  border-color: var(--brand);
+  border-color: var(--green);
   transform: translateY(-2px);
   text-decoration: none;
 }
 
-.addresses {
+.card-request-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.addr {
+.card-request-addresses {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.addr .small:last-child {
+.card-addr {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .arrow {
-  font-size: 1.1rem;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.card-request-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.card-request-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.arrow-btn {
+  color: var(--fg-3);
+  font-size: 1rem;
   flex-shrink: 0;
 }
 </style>

@@ -5,9 +5,10 @@ import api from '../api/axios'
 import { apiError } from '../api/axios'
 import { usePolling } from '../composables/usePolling'
 import { timeAgo } from '../lib/statuses'
+import DriverSidebar from '../components/driver/DriverSidebar.vue'
 
 /**
- * Notifications livreur — GET /notifications paginé + polling 10 s.
+ * Notifications livreur — GET /notifications paginé ({ data, meta }) + polling 10 s.
  */
 const router = useRouter()
 
@@ -28,6 +29,7 @@ const TYPE_META = {
   delivery_request_created: { icon: '📦', label: 'Nouvelle demande' },
   status_changed: { icon: '🔄', label: 'Statut mis à jour' },
   chat_message: { icon: '💬', label: 'Nouveau message' },
+  review: { icon: '⭐', label: 'Nouvel avis' },
 }
 
 function typeMeta(type) {
@@ -86,66 +88,70 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="page container">
-    <div class="flex-between wrap mb-16">
-      <div>
-        <h1>Notifications</h1>
-        <p class="muted small">
-          {{ unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour' }}.
-        </p>
-      </div>
-      <button class="btn btn-outline" :disabled="markingAll || unreadCount === 0" @click="markAllRead()">
-        {{ markingAll ? '…' : 'Tout marquer comme lu' }}
-      </button>
-    </div>
+  <div class="driver-layout">
+    <DriverSidebar />
 
-    <span v-if="actionError" class="error-msg block mb-16">{{ actionError }}</span>
-
-    <!-- Erreur initiale -->
-    <div v-if="error && !data" class="card">
-      <h3>Impossible de charger les notifications</h3>
-      <p class="muted small mt-8">{{ apiError(error, 'Erreur de chargement.') }}</p>
-      <button class="btn btn-outline mt-16" @click="start()">Réessayer</button>
-    </div>
-
-    <!-- Squelettes -->
-    <div v-else-if="loading && !data" class="flex-col">
-      <div v-for="i in 5" :key="i" class="skeleton skel-notif"></div>
-    </div>
-
-    <!-- Liste -->
-    <div v-else-if="notifications.length" class="flex-col">
-      <button
-        v-for="n in notifications"
-        :key="n.id"
-        class="card notif"
-        :class="{ unread: !n.read_at }"
-        @click="openNotification(n)"
-      >
-        <div class="notif-icon">{{ typeMeta(n.type).icon }}</div>
-        <div class="notif-body">
-          <div class="flex-between wrap">
-            <span class="bold small">{{ n.title || typeMeta(n.type).label }}</span>
-            <span class="faint small">{{ timeAgo(n.created_at) }}</span>
-          </div>
-          <p v-if="n.body" class="small muted mt-8">{{ n.body }}</p>
-          <span class="small faint mt-8 chip-type">{{ typeMeta(n.type).label }}</span>
+    <main class="driver-main">
+      <div class="flex-between wrap mb-16">
+        <div>
+          <h2>Notifications</h2>
+          <p class="muted small">
+            {{ unreadCount > 0 ? `${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Tout est à jour' }}.
+          </p>
         </div>
-        <span v-if="!n.read_at" class="dot"></span>
-      </button>
-
-      <div v-if="meta?.next_page_url" class="mt-16 center">
-        <button class="btn btn-outline" :disabled="loadingMore" @click="loadMore()">
-          {{ loadingMore ? 'Chargement…' : 'Charger plus' }}
+        <button class="btn btn-outline" :disabled="markingAll || unreadCount === 0" @click="markAllRead()">
+          {{ markingAll ? '…' : 'Tout marquer comme lu' }}
         </button>
       </div>
-    </div>
 
-    <!-- État vide -->
-    <div v-else class="card card-soft empty">
-      <p class="muted">Aucune notification.</p>
-      <p class="faint small mt-8">Les nouvelles demandes, changements de statut et messages apparaîtront ici.</p>
-    </div>
+      <span v-if="actionError" class="error-msg block mb-16">{{ actionError }}</span>
+
+      <!-- Erreur initiale -->
+      <div v-if="error && !data" class="card">
+        <h3>Impossible de charger les notifications</h3>
+        <p class="muted small mt-8">{{ apiError(error, 'Erreur de chargement.') }}</p>
+        <button class="btn btn-outline mt-16" @click="start()">Réessayer</button>
+      </div>
+
+      <!-- Squelettes -->
+      <div v-else-if="loading && !data" class="flex-col">
+        <div v-for="i in 5" :key="i" class="skeleton skel-notif"></div>
+      </div>
+
+      <!-- Liste -->
+      <div v-else-if="notifications.length" class="flex-col">
+        <button
+          v-for="n in notifications"
+          :key="n.id"
+          class="card notif"
+          :class="{ unread: !n.read_at }"
+          @click="openNotification(n)"
+        >
+          <div class="notif-icon">{{ typeMeta(n.type).icon }}</div>
+          <div class="notif-body">
+            <div class="flex-between wrap">
+              <span class="bold small">{{ n.title || typeMeta(n.type).label }}</span>
+              <span class="faint small">{{ timeAgo(n.created_at) }}</span>
+            </div>
+            <p v-if="n.body" class="small muted mt-8">{{ n.body }}</p>
+            <span class="small faint mt-8 chip-type">{{ typeMeta(n.type).label }}</span>
+          </div>
+          <span v-if="!n.read_at" class="dot"></span>
+        </button>
+
+        <div v-if="meta?.next_page_url" class="mt-16 center">
+          <button class="btn btn-outline" :disabled="loadingMore" @click="loadMore()">
+            {{ loadingMore ? 'Chargement…' : 'Charger plus' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- État vide -->
+      <div v-else class="card card-soft empty">
+        <p class="muted">Aucune notification.</p>
+        <p class="faint small mt-8">Les nouvelles demandes, changements de statut et messages apparaîtront ici.</p>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -165,15 +171,16 @@ onMounted(() => {
   position: relative;
 }
 .notif:hover {
-  border-color: var(--border-strong);
-  background: var(--card-soft);
+  border-color: var(--border-2);
+  background: var(--surface-2);
 }
 .notif.unread {
   border-color: rgba(34, 197, 111, 0.35);
+  background: var(--surface-2);
 }
 .notif-icon {
   font-size: 1.4rem;
-  background: var(--card-soft);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 10px;
   width: 44px;
@@ -188,7 +195,7 @@ onMounted(() => {
 }
 .chip-type {
   display: inline-block;
-  background: var(--card-soft);
+  background: var(--surface-2);
   border-radius: 999px;
   padding: 2px 10px;
   margin-top: 8px;
@@ -197,7 +204,7 @@ onMounted(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--brand);
+  background: var(--green);
   flex-shrink: 0;
 }
 .empty {

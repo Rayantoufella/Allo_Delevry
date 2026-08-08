@@ -35,15 +35,23 @@ defineProps({
   gap: 4px;
   min-height: 108px;
 }
+.label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  color: var(--fg-2);
+}
 .value {
   font-size: 1.7rem;
   letter-spacing: -0.02em;
   line-height: 1.15;
   overflow-wrap: anywhere;
+  color: var(--fg);
 }
-.accent-yellow .value { color: var(--warning); }
-.accent-green .value { color: var(--brand); }
-.accent-blue .value { color: var(--info); }
-.accent-red .value { color: var(--danger); }
+.accent-yellow .value { color: var(--amber); }
+.accent-green .value { color: var(--green); }
+.accent-blue .value { color: var(--blue); }
+.accent-red .value { color: var(--red); }
 .icon { font-size: 1.2rem; }
 </style>
