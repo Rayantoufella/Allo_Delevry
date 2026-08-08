@@ -10,6 +10,7 @@ use App\Http\Resources\PublicTrackingResource;
 use App\Jobs\CreateDeliveryRequestNotificationJob;
 use App\Jobs\ExpireConfirmationCodeJob;
 use App\Models\AiRequestDraft;
+use App\Models\DeliveryProof;
 use App\Models\DeliveryRequest;
 use App\Models\DeliveryZone;
 use App\Models\DriverProfile;
@@ -129,6 +130,15 @@ class DeliveryRequestController extends Controller
         if ($newStatus === DeliveryRequest::STATUS_PRIX_PROPOSE && empty($validated['proposed_price'])) {
             throw ValidationException::withMessages([
                 'proposed_price' => 'Le prix proposé est requis pour passer au statut "prix_propose".',
+            ]);
+        }
+
+        // RG06 (récupération) : la photo de récupération du colis est obligatoire
+        // avant le passage au statut "colis_recupere".
+        if ($newStatus === DeliveryRequest::STATUS_COLIS_RECUPERE
+            && ! $deliveryRequest->proofs()->where('proof_type', DeliveryProof::TYPE_PICKUP_PHOTO)->exists()) {
+            throw ValidationException::withMessages([
+                'proof' => 'La photo de récupération du colis est requise avant le passage au statut "colis_recupere".',
             ]);
         }
 

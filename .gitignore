@@ -38,3 +38,7 @@ Thumbs.db
 
 # OpenCode
 .opencode/
+.opencode.json
+.claude/
+.claude.md
+

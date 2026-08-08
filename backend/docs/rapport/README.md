@@ -17,6 +17,7 @@ Rapport de chaque tâche réalisée sur le projet, pour la révision complète d
 | AR-39 | Tableau de bord livreur (indicateurs, CA, missions) | [rapport_ar39_dashboard.md](rapport_ar39_dashboard.md) | Terminé |
 | AR-41 | Durcissement flux de livraison (appartenance `ai_request_draft_id`, test bout-en-bout) | [rapport_ar41_durcissement_flux.md](rapport_ar41_durcissement_flux.md) | Terminé |
 | F08 | Préremplissage IA des demandes (OpenRouter/Nemotron : service, job, endpoint, RG11) | [rapport_f08_prefill_ia.md](rapport_f08_prefill_ia.md) | Terminé* |
+| ProofPickup | Photo de récupération obligatoire (RG06 : `pickup_photo` requis avant `colis_recupere`, types verrouillés) | [rapport_photo_recuperation.md](rapport_photo_recuperation.md) | Terminé |
 
 ## Guide du code par feature (`docs/guide/`)
 
@@ -32,7 +33,7 @@ Pour comprendre le projet à 100 % : **un fichier par feature**, avec **le rôle
 | [05_notifications_jobs.md](../guide/05_notifications_jobs.md) | Notifications internes, 5 jobs queue, canal log jobs, worker |
 | [06_dashboard_livreur.md](../guide/06_dashboard_livreur.md) | AR-39 — GET /api/dashboard, indicateurs, missions, CA |
 | [07_securite_permissions.md](../guide/07_securite_permissions.md) | Toutes les Policies, corrections AR-05 (B1-B11), rate limiting |
-| [08_uploads_preuves.md](../guide/08_uploads_preuves.md) | F14 — preuves (photo/ticket/signature), uploads multipart, disk public |
+| [08_uploads_preuves.md](../guide/08_uploads_preuves.md) | F14 — preuves RG06 (livraison + récupération), uploads multipart, types verrouillés |
 | [09_bonus_ecarts.md](../guide/09_bonus_ecarts.md) | GPS (bonus), paiements (P2), IA OpenRouter, e-mail différé, écarts |
 
 ## Tâches déjà présentes sur `main` / branches (couvertes, marquées Terminé dans Jira)
