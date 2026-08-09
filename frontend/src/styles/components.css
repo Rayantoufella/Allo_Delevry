@@ -1,0 +1,254 @@
+/* ---------- Composants ----------
+   Briques réutilisables : boutons, formulaires, cartes, badges.
+   Toute règle servant à plus d'une vue a sa place ici. */
+
+/* ---------- Boutons ----------
+   Trois hauteurs normalisées, jamais de padding vertical improvisé :
+     2.75rem  principal   (.btn)
+     2.25rem  secondaire  (.btn-outline, .btn-danger, .btn-sm)
+     2rem  ghost / tag (.btn-ghost, .btn-tag)
+   La hauteur est portée par `min-height` et non par le padding, pour qu'un
+   bouton reste aligné avec ses voisins quelle que soit la taille de son texte. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0 1.25rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.2;
+  /* Un libellé de bouton ne se coupe jamais et ne passe pas sur deux lignes. */
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s,
+    border-color 0.15s ease, opacity 0.2s;
+}
+
+/* États communs à toutes les variantes. */
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:disabled,
+.btn[aria-busy='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+/* Focus clavier uniquement : visible et détaché du bouton pour rester lisible
+   quelle que soit la couleur de fond. */
+.btn:focus-visible,
+.nav-btn:focus-visible,
+.icon-btn:focus-visible,
+.sidebar-link:focus-visible,
+a:focus-visible {
+  outline: 0.125rem solid var(--green-2);
+  outline-offset: 0.125rem;
+  border-radius: 0.75rem;
+}
+
+.btn-primary {
+  background: var(--green);
+  color: var(--green-ink);
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 0 0 0.25rem var(--green-glow);
+  transform: translateY(-0.0625rem);
+}
+.btn-primary:active:not(:disabled) { background: var(--green-2); }
+
+.btn-outline {
+  background: var(--surface);
+  color: var(--fg);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.6875rem;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+}
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--green);
+  background: var(--surface-2);
+}
+.btn-outline:active:not(:disabled) { background: var(--surface-3); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--fg-2);
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+}
+.btn-ghost:hover:not(:disabled) {
+  color: var(--fg);
+  background: var(--surface-2);
+}
+
+.btn-danger {
+  background: var(--surface-2);
+  color: var(--red);
+  border: 0.0625rem solid var(--border);
+  min-height: 2.25rem;
+}
+.btn-danger:hover:not(:disabled) {
+  border-color: var(--red);
+  background: var(--surface-3);
+}
+
+.btn-lg { min-height: 3rem; padding: 0 1.625rem; font-size: 1rem; }
+
+.btn-sm {
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  font-size: 0.8125rem;
+  border-radius: 0.5625rem;
+}
+
+.btn-tag {
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.7813rem;
+  border-radius: 0.5625rem;
+}
+
+/* Bouton en cours de traitement : le spinner remplace le libellé, la largeur
+   est figée pour que la mise en page ne sursaute pas. */
+.btn[aria-busy='true'] { pointer-events: none; }
+
+/* Un groupe de boutons s'enroule au lieu de déborder sur petit écran. */
+.btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+/* Cible tactile : sous le pointeur fin, tout bouton atteint 2.75rem de haut,
+   y compris les variantes compactes. */
+@media (pointer: coarse) {
+  .btn,
+  .btn-outline,
+  .btn-ghost,
+  .btn-sm,
+  .btn-danger,
+  .btn-tag {
+    min-height: 2.75rem;
+  }
+  .icon-btn {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
+/* ---------- Formulaires ----------
+   Le prototype n'a qu'une forme de champ : une boîte `--surface-2` cernée d'un
+   filet, radius 12. Les champs étaient ici des lignes soulignées — une autre
+   grammaire de formulaire, qui ne cadrait ni avec les écrans d'authentification
+   (déjà en boîtes) ni avec les cartes qui les entourent. */
+.field { display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 1rem; }
+
+/* Libellé en casse normale : les majuscules forcées épaississaient l'écran de
+   formulaire et n'existent nulle part dans le prototype.
+
+   Les vues écrivent `<label class="field"><span>Nom</span><input></label>` :
+   le libellé est un `<span>` nu, pas un `<label>` imbriqué. La règle ne visait
+   que la seconde forme et ne s'appliquait donc à aucun champ. `:not([class])`
+   écarte les `<span>` porteurs de leur propre rôle — l'avatar de « Profil &
+   marque », par exemple, est le premier enfant de son `.field`. */
+.field label,
+.field > span:first-child:not([class]) {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--fg-2);
+}
+
+.input, .input-boxed, textarea, select {
+  width: 100%;
+  background: var(--surface-2);
+  color: var(--fg);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.8125rem 0.9375rem;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  transition: border-color 0.2s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.input::placeholder, .input-boxed::placeholder, textarea::placeholder { color: var(--fg-3); }
+.input:focus, .input-boxed:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--green);
+}
+textarea { resize: vertical; min-height: 4.375rem; line-height: 1.5; }
+/* La flèche native ne se colore pas avec le thème : on la remplace par un
+   chevron dessiné, et on réserve la place à droite pour qu'il ne chevauche
+   jamais la valeur sélectionnée. */
+select {
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 1.0625rem top 55%, right 0.75rem top 55%;
+  background-size: 0.3125rem 0.3125rem, 0.3125rem 0.3125rem;
+  background-repeat: no-repeat;
+}
+
+/* Variante d'emphase : montants et frais, que le prototype pose en 17px/800. */
+.input-boxed {
+  font-size: 1.0625rem;
+  font-weight: 800;
+}
+
+.input-error { border-color: var(--red) !important; }
+.error-msg { color: var(--red); font-size: 0.8rem; margin-top: 0.25rem; }
+
+/* ---------- Cartes (style prototype : surface, radius 16) ---------- */
+.card {
+  background: var(--surface);
+  border: 0.0625rem solid var(--border);
+  border-radius: 1rem;
+  padding: 1.125rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  border-color: var(--border-2);
+}
+.card-soft { background: var(--surface-2); }
+.card + .card { margin-top: 0.875rem; }
+
+/* Pistes en minmax(0, 1fr) : une piste `1fr` ne descend pas sous la largeur
+   intrinsèque de son contenu et déborderait. Les paliers sont dans responsive.css. */
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.875rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.875rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+
+/* ---------- Badges (pilules du prototype : bg 16% + texte couleur) ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  padding: 0.1875rem 0.5625rem;
+  border-radius: 1.25rem;
+  letter-spacing: 0.02em;
+  background: var(--surface-2);
+  color: var(--fg-2);
+  transition: all 0.15s ease;
+}
+.badge-green { background: rgba(34, 197, 111, 0.16); color: var(--green); }
+.badge-yellow { background: rgba(245, 181, 68, 0.16); color: var(--amber); }
+.badge-red { background: rgba(255, 106, 106, 0.16); color: var(--red); }
+.badge-blue { background: rgba(91, 157, 255, 0.16); color: var(--blue); }
+.badge-violet { background: rgba(169, 139, 255, 0.16); color: var(--violet); }
+/* Neutre : une demande annulée n'est pas une erreur (prototype : `var(--fg-3)`). */
+.badge-grey { background: var(--surface-2); color: var(--fg-3); }
+
+[data-theme='light'] .badge-green { background: rgba(10, 168, 91, 0.12); }
+[data-theme='light'] .badge-yellow { background: rgba(201, 138, 18, 0.12); }
+[data-theme='light'] .badge-red { background: rgba(224, 72, 61, 0.12); }
+[data-theme='light'] .badge-blue { background: rgba(47, 111, 224, 0.12); }
+[data-theme='light'] .badge-violet { background: rgba(122, 86, 214, 0.12); }
+

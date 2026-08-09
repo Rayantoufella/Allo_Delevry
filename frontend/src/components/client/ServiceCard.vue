@@ -1,19 +1,22 @@
 <script setup>
+import { computed } from 'vue'
 import { formatPrice } from '../../lib/statuses'
+import { serviceIcon } from '../../lib/serviceIcons'
+import AppIcon from '../AppIcon.vue'
 
-defineProps({
+const props = defineProps({
   service: { type: Object, required: true },
 })
+
+/* Le prototype donne une icône par service ; la carte affichait le même
+   « colis » partout, ce qui rendait le catalogue illisible d'un coup d'œil. */
+const icon = computed(() => serviceIcon(props.service.name))
 </script>
 
 <template>
   <div class="svc-card" :class="{ inactive: !service.is_active }">
     <div class="svc-icon">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3.3 7.5 12 3l8.7 4.5v9L12 21l-8.7-4.5z"></path>
-        <path d="M3.3 7.5 12 12l8.7-4.5"></path>
-        <path d="M12 12v9"></path>
-      </svg>
+      <AppIcon :name="icon" :size="20" />
     </div>
     <div class="svc-info">
       <div class="svc-name">{{ service.name }}</div>
@@ -29,12 +32,12 @@ defineProps({
 <style scoped>
 .svc-card {
   display: flex;
-  gap: 14px;
+  gap: 0.875rem;
   align-items: center;
-  padding: 16px;
-  border-radius: 16px;
+  padding: 1rem;
+  border-radius: 1rem;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   transition: border-color 0.2s, transform 0.2s;
   cursor: pointer;
   position: relative;
@@ -42,7 +45,7 @@ defineProps({
 
 .svc-card:hover {
   border-color: var(--green);
-  transform: translateY(-1px);
+  transform: translateY(-0.1875rem);
 }
 
 .svc-card.inactive {
@@ -51,9 +54,9 @@ defineProps({
 }
 
 .svc-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
   background: var(--surface-2);
   color: var(--green);
   display: flex;
@@ -69,20 +72,20 @@ defineProps({
 
 .svc-name {
   font-weight: 800;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .svc-desc {
   color: var(--fg-2);
-  font-size: 12.5px;
+  font-size: 0.7813rem;
   line-height: 1.35;
-  margin-top: 2px;
+  margin-top: 0.125rem;
 }
 
 .svc-price {
   font-weight: 800;
   color: var(--green);
-  font-size: 13px;
+  font-size: 0.8125rem;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -93,8 +96,8 @@ defineProps({
 
 .svc-unavail {
   position: absolute;
-  bottom: 4px;
-  left: 16px;
+  bottom: 0.25rem;
+  left: 1rem;
   font-size: 0.72rem;
 }
 </style>

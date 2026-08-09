@@ -1,0 +1,293 @@
+/* ---------- Écrans d'authentification ----------
+   Mise en page commune aux deux écrans (connexion et inscription), client
+   comme livreur. Ces deux vues partageaient 229 lignes identiques : les
+   éditer séparément garantissait de les voir diverger.
+
+   Les sélecteurs génériques (.form-*) sont préfixés par `.login-split`, qui
+   n'existe que sur ces écrans : d'autres vues utilisent les mêmes noms de
+   classe avec leur propre style scopé, ce préfixe les met hors d'atteinte. */
+
+.login-split {
+  flex: 1 1 0%;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  min-height: 0;
+}
+
+/* ===== LEFT PANEL ===== */
+.login-left {
+  position: relative;
+  overflow: hidden;
+  padding: 3.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.login-left--client {
+  background: var(--green);
+  color: var(--green-ink);
+}
+
+.login-left--driver {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.left-label {
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
+.left-label--driver {
+  color: var(--green);
+}
+
+.left-heading {
+  font-size: clamp(1.875rem, 3.4vw, 2.875rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.left-desc {
+  max-width: 38ch;
+  font-size: 1rem;
+  opacity: 0.82;
+  line-height: 1.5;
+  margin-top: 1.125rem;
+  font-weight: 600;
+}
+
+.left-desc--driver {
+  max-width: 40ch;
+  opacity: 0.6;
+}
+
+.left-features {
+  display: flex;
+  gap: 1.625rem;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  opacity: 0.9;
+}
+
+.left-stats {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.left-stat {
+  flex: 1 1 0%;
+  padding: 1rem;
+  border-radius: 0.875rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 0.0625rem solid rgba(255, 255, 255, 0.1);
+}
+
+.left-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--green);
+}
+
+.left-stat-label {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  font-weight: 600;
+}
+
+/* Decorative circle (client only) */
+.left-circle {
+  position: absolute;
+  right: -3.75rem;
+  bottom: -2.5rem;
+  width: 17.5rem;
+  height: 17.5rem;
+  border: 2.5rem solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ===== RIGHT PANEL (Form) ===== */
+.login-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+  background: var(--bg);
+}
+
+.login-form-wrap {
+  width: 100%;
+  max-width: 23.75rem;
+}
+
+.login-split .form-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.login-split .form-subtitle {
+  color: var(--fg-2);
+  margin: 0.375rem 0 1.625rem;
+  font-weight: 500;
+}
+
+/* Le verrouillage coiffe le formulaire : c'est le seul écran où la marque
+   dispose d'une vraie place, le bandeau n'y montrant que le monogramme. */
+.login-split .auth-lockup {
+  margin: 0 0 1.5rem -0.5rem;
+}
+
+.login-split .form-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 1.25rem;
+  background: var(--surface-2);
+  border: 0.0625rem solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--fg-2);
+  margin-bottom: 1.25rem;
+}
+
+/* Form fields */
+.login-split .form-fields {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-split .form-field {
+  margin-bottom: 0;
+}
+
+.login-split .form-field label {
+  display: block;
+  font-size: 0.7813rem;
+  font-weight: 700;
+  color: var(--fg-2);
+  margin-bottom: 0.375rem;
+}
+
+.login-split .form-field input {
+  width: 100%;
+  padding: 0.8125rem 0.9375rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 0.9375rem;
+  margin-bottom: 1rem;
+  font-family: inherit;
+}
+
+.login-split .form-field input::placeholder {
+  color: var(--fg-3);
+}
+
+.login-split .form-field input:focus {
+  outline: none;
+  border-color: var(--green) !important;
+}
+
+/* Last input margin */
+.login-split .form-field:nth-last-child(1) input {
+  margin-bottom: 1.375rem;
+}
+
+/* Error */
+.login-split .form-error {
+  color: var(--red);
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Submit button */
+.login-split .form-submit {
+  width: 100%;
+  padding: 0.9375rem;
+  border-radius: 0.8125rem;
+  border: none;
+  font-weight: 800;
+  font-size: 0.9688rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+}
+
+.login-split .form-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.login-split .form-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.login-split .form-submit--green {
+  background: var(--green);
+  color: var(--green-ink);
+}
+
+.login-split .form-submit--fg {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+/* Footer link */
+.login-split .form-footer {
+  text-align: center;
+  color: var(--fg-2);
+  font-size: 0.875rem;
+  margin-top: 1.25rem;
+}
+
+.login-split .form-footer a {
+  color: var(--green);
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+/* Responsive: stack vertically on mobile */
+@media (max-width: 900px) {
+  .login-split {
+    grid-template-columns: 1fr;
+  }
+  .login-left {
+    padding: 2.25rem 1.75rem;
+    min-height: auto;
+  }
+  .login-right {
+    padding: 2rem 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-left { padding: 1.625rem 1.25rem; gap: 1rem; }
+  .login-right { padding: 1.5rem 1.25rem; }
+  .left-heading { font-size: 1.625rem; }
+  /* Trois colonnes fixes coupaient chaque bénéfice sur deux lignes. */
+  .left-features { flex-wrap: wrap; gap: 0.625rem 1.125rem; }
+}
+
+/* Champs en erreur — utilisés par l'écran d'inscription. */
+.login-split .form-field input {
+  transition: border-color 0.2s;
+}
+.login-split .form-field input.input-error {
+  border-color: var(--red) !important;
+}
+.login-split .field-error {
+  color: var(--red);
+  font-size: 0.78rem;
+  margin-top: -0.75rem;
+  margin-bottom: 0.75rem;
+}
+.login-split .faint-label {
+  color: var(--fg-3);
+  font-weight: 500;
+}

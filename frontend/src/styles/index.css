@@ -1,0 +1,38 @@
+/* ============================================================
+   Allo Delivery — Design system
+   Reproduit fidèlement le prototype UI (frontend/design-ref/).
+   Aucune valeur ne doit diverger de `design-ref/README.md`, qui fait foi.
+
+   Point d'entrée unique : seul ce fichier est importé par main.js.
+   L'ORDRE DES IMPORTS EST SIGNIFIANT — c'est celui de la cascade CSS.
+   Les modules vont du plus général au plus spécifique ; en déplacer un
+   change la priorité des règles.
+   ============================================================ */
+
+/* Variables de thème (dark par défaut / light) — aucune règle, que des tokens. */
+@import './tokens.css';
+
+/* Reset, typographie de base, éléments HTML nus. */
+@import './base.css';
+
+/* Ossature de page : .container, .page. */
+@import './layout.css';
+
+/* Barre de navigation supérieure. */
+@import './header.css';
+
+/* Briques réutilisables : boutons, formulaires, cartes, badges. */
+@import './components.css';
+
+/* Utilitaires, animations et indicateurs d'état (spinner, squelettes, toast). */
+@import './utilities.css';
+
+/* Coquille de l'espace livreur : sidebar et zone principale. */
+@import './driver-shell.css';
+
+/* Écrans d'authentification, partagés par la connexion et l'inscription. */
+@import './auth-split.css';
+
+/* Points de rupture. Chargés après les modules pour pouvoir les surcharger. */
+@import './responsive.css';
+

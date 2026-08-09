@@ -16,17 +16,46 @@ export const STATUS = {
 
 export const TERMINAL_STATUSES = ['livree', 'refusee', 'echec', 'annulee']
 
-/** Labels français + couleur de badge pour l'UI (style prototype). */
+/** Labels français + couleur de badge pour l'UI (style prototype).
+ *
+ * Les couleurs suivent la table `STATUS` du prototype et se lisent comme une
+ * progression : ambre tant que rien n'est engagé, bleu une fois le prix posé
+ * et la demande confirmée, violet pendant la détention du colis, vert dès que
+ * la course roule et jusqu'à la livraison. Rouge pour les échecs, gris pour une
+ * annulation — qui n'est pas une erreur et ne doit pas alarmer comme telle.
+ *
+ * `icon` est un nom d'`AppIcon`, plus un emoji : les emojis se rendaient avec
+ * la police du système, à une taille et une couleur que le thème ne contrôlait
+ * pas, au milieu d'une UI entièrement en icônes ligne.
+ */
 export const STATUS_LABELS = {
-  [STATUS.EN_ATTENTE]: { label: 'En attente', color: 'badge-yellow', icon: '⏳' },
-  [STATUS.PRIX_PROPOSE]: { label: 'Prix proposé', color: 'badge-blue', icon: '💰' },
-  [STATUS.CONFIRMEE]: { label: 'Confirmée', color: 'badge-green', icon: '✅' },
-  [STATUS.COLIS_RECUPERE]: { label: 'Colis récupéré', color: 'badge-green', icon: '📦' },
-  [STATUS.EN_LIVRAISON]: { label: 'En livraison', color: 'badge-blue', icon: '🛵' },
-  [STATUS.LIVREE]: { label: 'Livrée', color: 'badge-green', icon: '🏁' },
-  [STATUS.REFUSEE]: { label: 'Refusée', color: 'badge-red', icon: '🚫' },
-  [STATUS.ECHEC]: { label: 'Échec', color: 'badge-red', icon: '⚠️' },
-  [STATUS.ANNULEE]: { label: 'Annulée', color: 'badge-red', icon: '❌' },
+  [STATUS.EN_ATTENTE]: { label: 'En attente', color: 'badge-yellow', icon: 'clock' },
+  [STATUS.PRIX_PROPOSE]: { label: 'Prix proposé', color: 'badge-blue', icon: 'cash' },
+  [STATUS.CONFIRMEE]: { label: 'Confirmée', color: 'badge-blue', icon: 'check' },
+  [STATUS.COLIS_RECUPERE]: { label: 'Colis récupéré', color: 'badge-violet', icon: 'box' },
+  [STATUS.EN_LIVRAISON]: { label: 'En livraison', color: 'badge-green', icon: 'truck' },
+  [STATUS.LIVREE]: { label: 'Livrée', color: 'badge-green', icon: 'flag' },
+  [STATUS.REFUSEE]: { label: 'Refusée', color: 'badge-red', icon: 'ban' },
+  [STATUS.ECHEC]: { label: 'Échec', color: 'badge-red', icon: 'warning' },
+  [STATUS.ANNULEE]: { label: 'Annulée', color: 'badge-grey', icon: 'close' },
+}
+
+/**
+ * Rang d'un statut dans la progression d'une livraison — table `STATUS.step`
+ * du prototype. Sert à savoir quelles étapes du suivi sont franchies.
+ * Les issues négatives (refus, incident, annulation) sortent de la progression
+ * et valent -1 : aucune étape n'est cochée derrière elles.
+ */
+export const STATUS_STEP = {
+  [STATUS.EN_ATTENTE]: 0,
+  [STATUS.PRIX_PROPOSE]: 1,
+  [STATUS.CONFIRMEE]: 2,
+  [STATUS.COLIS_RECUPERE]: 3,
+  [STATUS.EN_LIVRAISON]: 4,
+  [STATUS.LIVREE]: 5,
+  [STATUS.REFUSEE]: -1,
+  [STATUS.ECHEC]: -1,
+  [STATUS.ANNULEE]: -1,
 }
 
 /** Ordre d'affichage dans la timeline de suivi. */

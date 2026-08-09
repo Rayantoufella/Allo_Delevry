@@ -1,8 +1,10 @@
 ﻿<script setup>
+import AppIcon from "../components/AppIcon.vue"
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api, { apiError } from '../api/axios'
 import { formatPrice } from '../lib/statuses'
+import { serviceIcon } from '../lib/serviceIcons'
 
 const route = useRoute()
 const router = useRouter()
@@ -105,30 +107,30 @@ function fieldError(field) {
   <div class="form-page">
     <!-- Sticky segmented tabs -->
     <div class="form-tabs">
-      <span class="form-tab form-tab--active">✍️ Remplissage manuel</span>
+      <span class="form-tab form-tab--active"><AppIcon name="pen" :size="16" /> Remplissage manuel</span>
       <router-link
         :to="{ name: 'ai-assistant', params: { slug } }"
         class="form-tab"
       >
-        ✦ Assistant IA
+        <AppIcon name="sparkle" :size="16" /> Assistant IA
       </router-link>
     </div>
 
-    <h2 style="font-size: 1.75rem; margin-top: 8px">Vérifier la demande</h2>
+    <h2 style="font-size: 1.75rem; margin-top: 0.5rem">Vérifier la demande</h2>
     <p class="form-subtitle">
       Corrige si besoin, puis choisis la zone. Le tarif est calculé automatiquement.
     </p>
 
     <!-- Loading driver info -->
-    <div v-if="loadingDriver" class="flex-col" style="gap: 12px; margin-top: 24px">
-      <div class="skeleton" style="height: 36px"></div>
-      <div class="skeleton" style="height: 120px"></div>
+    <div v-if="loadingDriver" class="flex-col" style="gap: 0.75rem; margin-top: 1.5rem">
+      <div class="skeleton" style="height: 2.25rem"></div>
+      <div class="skeleton" style="height: 7.5rem"></div>
     </div>
 
     <template v-else>
       <!-- Warning indispo -->
       <div v-if="driver && !driver.is_available" class="unavailable-banner">
-        <span>⚠️</span>
+        <AppIcon name="warning" :size="18" />
         <span>Ce livreur est indisponible. Votre demande sera traitée dès qu'il sera de retour.</span>
       </div>
 
@@ -153,7 +155,8 @@ function fieldError(field) {
               :class="{ active: form.service_id === s.id }"
               @click="form.service_id = s.id"
             >
-              {{ s.name }} — {{ formatPrice(s.base_price) }}
+              <AppIcon :name="serviceIcon(s.name)" :size="16" />
+              <span>{{ s.name }} — {{ formatPrice(s.base_price) }}</span>
             </button>
           </div>
           <p v-if="fieldError('service_id')" class="field-error">{{ fieldError('service_id') }}</p>
@@ -265,7 +268,7 @@ function fieldError(field) {
               :class="{ active: paymentMethod === 'cash' }"
               @click="paymentMethod = 'cash'"
             >
-              <span class="payment-icon">💵</span>
+              <span class="payment-icon"><AppIcon name="cash" :size="20" /></span>
               <div>
                 <div class="payment-title">Espèces à la livraison</div>
                 <div class="payment-sub">Paiement cash au livreur</div>
@@ -276,7 +279,7 @@ function fieldError(field) {
               :class="{ active: paymentMethod === 'rib' }"
               @click="paymentMethod = 'rib'"
             >
-              <span class="payment-icon">🏦</span>
+              <span class="payment-icon"><AppIcon name="bank" :size="20" /></span>
               <div>
                 <div class="payment-title">Virement bancaire par RIB</div>
                 <div class="payment-sub">Paiement par virement</div>
@@ -296,7 +299,7 @@ function fieldError(field) {
               :class="{ active: form.delivery_zone_id === zone.id }"
               @click="form.delivery_zone_id = zone.id"
             >
-              <div class="zone-name">{{ zone.origin_zone }} → {{ zone.destination_zone }}</div>
+              <div class="zone-name">{{ zone.destination_zone || zone.origin_zone }}</div>
               <div v-if="zone.fixed_price" class="zone-price">{{ formatPrice(zone.fixed_price) }}</div>
             </div>
           </div>
@@ -320,14 +323,14 @@ function fieldError(field) {
           </div>
         </div>
 
-        <p v-if="errorMsg" class="error-msg" style="margin-top: 12px">{{ errorMsg }}</p>
+        <p v-if="errorMsg" class="error-msg" style="margin-top: 0.75rem">{{ errorMsg }}</p>
 
         <button
           type="submit"
           class="form-submit"
           :disabled="submitting || !form.recipient_name || !form.recipient_phone || !form.pickup_address || !form.delivery_address"
         >
-          <span v-if="submitting" class="spinner"></span>
+          <span v-if="submitting" class="spinner spinner-ink"></span>
           <span v-else>Envoyer la demande →</span>
         </button>
       </form>
@@ -336,32 +339,35 @@ function fieldError(field) {
 </template>
 
 <style scoped>
+/* 840px : largeur de l'écran « Vérifier la demande » dans le prototype. Le
+   formulaire y tient sur deux colonnes ; à 680px les paires de champs se
+   serraient au point de repasser sur une seule. */
 .form-page {
-  max-width: 680px;
+  max-width: 52.5rem;
   margin: 0 auto;
-  padding-bottom: 48px;
+  padding-bottom: 3rem;
 }
 
 /* Sticky segmented tabs */
 .form-tabs {
   display: flex;
-  gap: 4px;
-  padding: 4px;
+  gap: 0.25rem;
+  padding: 0.25rem;
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
   position: sticky;
-  top: 64px;
+  top: 4rem;
   z-index: 30;
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
 }
 
 .form-tab {
-  padding: 7px 14px;
-  border-radius: 9px;
+  padding: 0.4375rem 0.875rem;
+  border-radius: 0.5625rem;
   border: none;
   font-weight: 800;
-  font-size: 13px;
+  font-size: 0.8125rem;
   cursor: pointer;
   font-family: inherit;
   text-decoration: none;
@@ -381,9 +387,9 @@ function fieldError(field) {
 
 .form-subtitle {
   color: var(--fg-2);
-  font-size: 14.5px;
-  margin-top: 8px;
-  max-width: 600px;
+  font-size: 0.9063rem;
+  margin-top: 0.5rem;
+  max-width: 37.5rem;
   line-height: 1.55;
 }
 
@@ -391,12 +397,12 @@ function fieldError(field) {
 .unavailable-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
+  gap: 0.625rem;
+  padding: 0.75rem 1.125rem;
   background: rgba(248, 113, 113, 0.1);
-  border: 1px solid rgba(248, 113, 113, 0.3);
-  border-radius: 10px;
-  margin-bottom: 20px;
+  border: 0.0625rem solid rgba(248, 113, 113, 0.3);
+  border-radius: 0.625rem;
+  margin-bottom: 1.25rem;
   font-weight: 700;
   color: var(--red);
   font-size: 0.9rem;
@@ -405,35 +411,35 @@ function fieldError(field) {
 /* Form card */
 .form-card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 24px;
-  margin-top: 16px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-top: 1rem;
 }
 
 /* Fields */
 .form-field {
   display: flex;
   flex-direction: column;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .form-field label {
   display: block;
-  font-size: 12.5px;
+  font-size: 0.7813rem;
   font-weight: 700;
   color: var(--fg-2);
-  margin-bottom: 6px;
+  margin-bottom: 0.375rem;
 }
 
 .form-input {
   width: 100%;
-  padding: 13px 15px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+  padding: 0.8125rem 0.9375rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--border);
   background: var(--surface);
   color: var(--fg);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-family: inherit;
   transition: border-color 0.2s;
 }
@@ -453,15 +459,15 @@ function fieldError(field) {
 
 .form-textarea {
   width: 100%;
-  padding: 13px 15px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+  padding: 0.8125rem 0.9375rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--border);
   background: var(--surface);
   color: var(--fg);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-family: inherit;
   resize: vertical;
-  min-height: 70px;
+  min-height: 4.375rem;
   line-height: 1.5;
   transition: border-color 0.2s;
 }
@@ -478,42 +484,47 @@ function fieldError(field) {
 .field-error {
   color: var(--red);
   font-size: 0.78rem;
-  margin-top: 4px;
+  margin-top: 0.25rem;
 }
 
 .form-divider {
-  height: 1px;
+  height: 0.0625rem;
   background: var(--border);
-  margin: 4px 0 16px;
+  margin: 0.25rem 0 1rem;
 }
 
 /* Chips */
 .chips-wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
+/* Pilule de service du prototype : un rectangle arrondi à 11px cerné d'un
+   filet de 1.5px, pas une gélule. Le libellé est en `--fg` tant que rien n'est
+   choisi — en gris, la liste des services se lisait comme désactivée. */
 .chip {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  color: var(--fg-2);
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  background: var(--surface);
+  border: 0.0938rem solid var(--border);
+  border-radius: 0.6875rem;
+  color: var(--fg);
+  font-size: 0.8125rem;
   font-weight: 700;
-  padding: 7px 16px;
+  padding: 0.5625rem 0.8125rem;
   cursor: pointer;
   font-family: inherit;
-  transition: all 0.15s;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
 .chip:hover {
   border-color: var(--green);
-  color: var(--fg);
 }
 
 .chip.active {
-  background: rgba(34, 197, 111, 0.16);
+  background: color-mix(in srgb, var(--green) 14%, transparent);
   border-color: var(--green);
   color: var(--green);
 }
@@ -522,17 +533,17 @@ function fieldError(field) {
 .payment-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .payment-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 14px;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.875rem;
   background: var(--surface-2);
-  border: 1.5px solid var(--border);
+  border: 0.0938rem solid var(--border);
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
 }
@@ -552,28 +563,28 @@ function fieldError(field) {
 }
 
 .payment-title {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
 }
 
 .payment-sub {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--fg-2);
-  margin-top: 2px;
+  margin-top: 0.125rem;
 }
 
 /* Zone cards */
 .zones-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .zone-card {
-  padding: 14px 16px;
-  border-radius: 14px;
+  padding: 0.875rem 1rem;
+  border-radius: 0.875rem;
   background: var(--surface-2);
-  border: 1.5px solid var(--border);
+  border: 0.0938rem solid var(--border);
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
 }
@@ -588,24 +599,24 @@ function fieldError(field) {
 }
 
 .zone-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
 .zone-price {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
   color: var(--green);
-  margin-top: 4px;
+  margin-top: 0.25rem;
 }
 
 /* Recap strip */
 .recap-strip {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px 18px;
-  margin-top: 8px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.875rem;
+  padding: 1rem 1.125rem;
+  margin-top: 0.5rem;
 }
 
 .recap-row {
@@ -626,24 +637,24 @@ function fieldError(field) {
 }
 
 .recap-divider {
-  height: 1px;
+  height: 0.0625rem;
   background: var(--border);
-  margin: 10px 0;
+  margin: 0.625rem 0;
 }
 
 /* Submit */
 .form-submit {
   width: 100%;
-  padding: 15px;
-  border-radius: 13px;
+  padding: 0.9375rem;
+  border-radius: 0.8125rem;
   border: none;
   background: var(--green);
   color: var(--green-ink);
   font-weight: 800;
-  font-size: 15.5px;
+  font-size: 0.9688rem;
   cursor: pointer;
   font-family: inherit;
-  margin-top: 16px;
+  margin-top: 1rem;
   transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
 }
 
@@ -654,20 +665,6 @@ function fieldError(field) {
 
 .form-submit:active:not(:disabled) {
   transform: scale(0.98);
-}
-
-.spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 2.5px solid rgba(4, 20, 11, 0.3);
-  border-top-color: var(--green-ink);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 /* Responsive */

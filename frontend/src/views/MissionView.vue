@@ -5,6 +5,7 @@ import api from '../api/axios'
 import { apiError } from '../api/axios'
 import { usePolling } from '../composables/usePolling'
 import { STATUS, TERMINAL_STATUSES, PROOF_LABELS, formatPrice, formatDateTime } from '../lib/statuses'
+import AppIcon from '../components/AppIcon.vue'
 import DriverSidebar from '../components/driver/DriverSidebar.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import StatusTimeline from '../components/StatusTimeline.vue'
@@ -96,29 +97,12 @@ async function changeStatus(status, extra = {}) {
   }
 }
 
-// ---- Proposer un prix / refuser ----
-const showPriceForm = ref(true)
-const price = ref('')
-const priceError = ref('')
-const priceComment = ref('')
+// ---- Accepter / refuser ----
+// Tarifs de livraison fixes par zone (non négociables) : le driver n'a plus de
+// prix à proposer. « Accepter la demande » passe directement en "confirmee"
+// (PATCH /delivery-requests/{id}/status { status: "confirmee" }).
 const showRefuseForm = ref(false)
 const refuseComment = ref('')
-
-async function proposePrice() {
-  priceError.value = ''
-  const value = String(price.value || '').trim()
-  if (!value || Number.isNaN(Number(value)) || Number(value) < 0) {
-    priceError.value = 'Saisissez un montant valide en DH.'
-    return
-  }
-  await changeStatus(STATUS.PRIX_PROPOSE, {
-    proposed_price: Number(value),
-    comment: priceComment.value.trim() || undefined,
-  })
-  if (!actionError.value) {
-    showPriceForm.value = false
-  }
-}
 
 async function refuseMission() {
   const comment = refuseComment.value.trim()
@@ -127,6 +111,21 @@ async function refuseMission() {
     showRefuseForm.value = false
   }
 }
+
+// ---- Total à encaisser ----
+// Le montant est optionnel côté client : s'il est absent on l'indique plutôt
+// que d'afficher un prix nul. Bonus : part du livreur par zone, affichée quand
+// l'API fournit delivery_zone.fixed_price (réservé à la ressource pour l'instant).
+const collectAmount = computed(() =>
+  request.value.amount_to_collect ?? request.value.proposed_price ?? null,
+)
+const zonePrice = computed(() => request.value.delivery_zone?.fixed_price ?? null)
+const zoneName = computed(() =>
+  request.value.delivery_zone?.name
+    || request.value.delivery_zone?.origin_zone
+    || request.value.delivery_zone?.origin
+    || 'zone',
+)
 
 // ---- Upload photo de récupération ----
 const pickupFile = ref(null)
@@ -348,7 +347,6 @@ function setupForRequest() {
   proofsLoading.value = true
   code.value = ''
   codeExpiresAt.value = null
-  showPriceForm.value = true
   showRefuseForm.value = false
   showFailForm.value = false
   showIncidentForm.value = false
@@ -428,7 +426,7 @@ onBeforeUnmount(() => {
               <b class="small">Action impossible</b>
               <p class="small mt-8">{{ actionError }}</p>
               <p v-if="request.status === STATUS.CONFIRMEE && !hasPickupPhoto" class="small faint mt-8">
-                💡 La photo de récupération est obligatoire pour valider la récupération du colis. Déposez-la dans la carte ci-dessous.
+                La photo de récupération est obligatoire pour valider la récupération du colis. Déposez-la dans la carte ci-dessous.
               </p>
             </div>
             <button class="btn btn-ghost" @click="actionError = ''">Fermer</button>
@@ -441,8 +439,13 @@ onBeforeUnmount(() => {
             <!-- Total à encaisser -->
             <section class="total">
               <span class="total-label">Total à encaisser</span>
-              <div class="amount">{{ formatPrice(request.amount_to_collect ?? request.proposed_price) }}</div>
-              <span class="total-sub">💵 Espèces à la livraison</span>
+              <div class="amount">
+                {{ collectAmount != null ? formatPrice(collectAmount) : 'À définir à la remise' }}
+              </div>
+              <span v-if="zonePrice != null" class="total-sub flex">
+                <AppIcon name="map" :size="16" /> Ta part ({{ zoneName }}) : {{ formatPrice(zonePrice) }}
+              </span>
+              <span v-else class="total-sub flex"><AppIcon name="cash" :size="16" /> Espèces à la livraison</span>
             </section>
 
             <!-- Détails de la demande -->
@@ -460,38 +463,21 @@ onBeforeUnmount(() => {
 
             <!-- Carte action selon la machine à états -->
             <section class="card">
-              <!-- en_attente : accepter & proposer un prix -->
+              <!-- en_attente : accepter (tarif fixe par zone) ou refuser -->
               <div v-if="request.status === STATUS.EN_ATTENTE">
-                <h3 class="mb-8">Accepter & proposer un prix</h3>
-                <p class="small muted mb-16">Vérifie la demande puis propose tes frais de livraison.</p>
+                <h3 class="mb-8">Accepter la demande</h3>
+                <p class="small muted mb-16">
+                  Les frais de livraison sont fixés par zone — ils ne sont pas négociables.
+                  En acceptant, la demande passe directement en « Confirmée ».
+                </p>
 
-                <div v-if="showPriceForm">
-                  <label class="field">
-                    <span>Frais de livraison proposés (DH)</span>
-                    <input
-                      v-model="price"
-                      class="input-boxed"
-                      :class="{ 'input-error': priceError }"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="Ex : 40"
-                      @keyup.enter="proposePrice()"
-                    />
-                    <span v-if="priceError" class="error-msg">{{ priceError }}</span>
-                  </label>
-                  <label class="field">
-                    <span>Remarque au client (optionnel)</span>
-                    <textarea v-model="priceComment" class="input" placeholder="Ex : livraison avant 18h"></textarea>
-                  </label>
-                  <div class="flex wrap">
-                    <button class="btn btn-primary" :disabled="actionLoading" @click="proposePrice()">
-                      {{ actionLoading ? '…' : 'Accepter & proposer le prix' }}
-                    </button>
-                    <button class="btn btn-danger" :disabled="actionLoading" @click="showRefuseForm = !showRefuseForm">
-                      Refuser
-                    </button>
-                  </div>
+                <div v-if="!showRefuseForm" class="flex wrap">
+                  <button class="btn btn-primary" :disabled="actionLoading" @click="changeStatus(STATUS.CONFIRMEE)">
+                    {{ actionLoading ? '…' : 'Accepter la demande' }}
+                  </button>
+                  <button class="btn btn-danger" :disabled="actionLoading" @click="showRefuseForm = !showRefuseForm">
+                    Refuser
+                  </button>
                 </div>
 
                 <div v-if="showRefuseForm" class="mt-16 refuse-box">
@@ -508,7 +494,8 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <!-- prix_propose : attente de la décision du client -->
+              <!-- prix_propose (demande antérieure — compat legacy : le client peut
+                   encore confirmer de son côté) : attente de la décision du client -->
               <div v-else-if="request.status === STATUS.PRIX_PROPOSE">
                 <h3 class="mb-8">Prix proposé</h3>
                 <div class="wait-box">
@@ -536,7 +523,7 @@ onBeforeUnmount(() => {
 
               <!-- confirmee : photo de récupération obligatoire -->
               <div v-else-if="request.status === STATUS.CONFIRMEE">
-                <h3 class="mb-8">📦 Photo de récupération (obligatoire)</h3>
+                <h3 class="mb-8 flex"><AppIcon name="camera" :size="18" /> Photo de récupération (obligatoire)</h3>
                 <div class="pickup-box" :class="{ ok: hasPickupPhoto }">
                   <div class="flex-between wrap">
                     <p class="small muted">
@@ -544,7 +531,7 @@ onBeforeUnmount(() => {
                         ? 'Photo enregistrée — vous pouvez récupérer le colis.'
                         : 'Prenez une photo du colis avant de le récupérer. Sans photo, la transition est bloquée.' }}
                     </p>
-                    <span v-if="hasPickupPhoto" class="badge badge-green">✓ Photo OK</span>
+                    <span v-if="hasPickupPhoto" class="badge badge-green"><AppIcon name="check" :size="13" /> Photo OK</span>
                     <span v-else class="badge badge-red">Manquante</span>
                   </div>
 
@@ -568,23 +555,23 @@ onBeforeUnmount(() => {
                   :disabled="actionLoading || !hasPickupPhoto"
                   @click="changeStatus(STATUS.COLIS_RECUPERE)"
                 >
-                  {{ actionLoading ? '…' : '📦 Colis récupéré' }}
+                  {{ actionLoading ? '…' : 'Colis récupéré' }}
                 </button>
                 <p v-if="!hasPickupPhoto" class="faint small mt-8">Le bouton s'active dès que la photo de récupération est enregistrée.</p>
               </div>
 
               <!-- colis_recupere : départ en livraison -->
               <div v-else-if="request.status === STATUS.COLIS_RECUPERE">
-                <h3 class="mb-8">Colis récupéré ✓</h3>
+                <h3 class="mb-8">Colis récupéré</h3>
                 <p class="small muted">Confirmez votre départ pour lancer la livraison et pouvoir générer le code de confirmation.</p>
                 <button class="btn btn-primary mt-16" :disabled="actionLoading" @click="changeStatus(STATUS.EN_LIVRAISON)">
-                  {{ actionLoading ? '…' : '🛵 Départ en livraison' }}
+                  {{ actionLoading ? '…' : 'Départ en livraison' }}
                 </button>
               </div>
 
               <!-- en_livraison : code de confirmation + échec -->
               <div v-else-if="request.status === STATUS.EN_LIVRAISON">
-                <h3 class="mb-8">🔐 Code de confirmation</h3>
+                <h3 class="mb-8 flex"><AppIcon name="lock" :size="18" /> Code de confirmation</h3>
                 <p class="small muted">Générez un code à 6 chiffres à communiquer au client : il le saisira pour confirmer la réception du colis.</p>
 
                 <button
@@ -600,7 +587,7 @@ onBeforeUnmount(() => {
                 <div v-else class="code-box mt-16">
                   <p class="small muted">Code de confirmation — à communiquer au client :</p>
                   <div class="code">{{ code }}</div>
-                  <p class="small amber">⏱ Valide 30 minutes — communiquez ce code au client pour la remise.</p>
+                  <p class="small amber"><AppIcon name="clock" :size="18" /> Valide 30 minutes — communiquez ce code au client pour la remise.</p>
                   <p class="faint small mt-8">Le client saisira ce code pour confirmer la livraison. Ne le partagez qu'avec lui.</p>
                   <button class="btn btn-ghost mt-8" :disabled="codeLoading" @click="generateCode()">Régénérer un code</button>
                 </div>
@@ -608,7 +595,7 @@ onBeforeUnmount(() => {
                 <div class="divider"></div>
 
                 <div v-if="!showFailForm">
-                  <button class="btn btn-danger" @click="showFailForm = true">⚠️ Signaler un échec</button>
+                  <button class="btn btn-danger" @click="showFailForm = true"><AppIcon name="warning" :size="16" /> Signaler un échec</button>
                   <p class="faint small mt-8">L'échec met fin à la mission (une preuve reste facultative).</p>
                 </div>
                 <div v-else class="refuse-box">
@@ -633,10 +620,10 @@ onBeforeUnmount(() => {
               <div v-else-if="isTerminal">
                 <div class="wait-box">
                   <p class="bold">
-                    {{ request.status === STATUS.LIVREE ? '🏁 Mission livrée avec succès' : '' }}
-                    {{ request.status === STATUS.REFUSEE ? '🚫 Vous avez refusé cette demande' : '' }}
-                    {{ request.status === STATUS.ECHEC ? '⚠️ Mission en échec' : '' }}
-                    {{ request.status === STATUS.ANNULEE ? '❌ Demande annulée par le client' : '' }}
+                    {{ request.status === STATUS.LIVREE ? 'Mission livrée avec succès' : '' }}
+                    {{ request.status === STATUS.REFUSEE ? 'Vous avez refusé cette demande' : '' }}
+                    {{ request.status === STATUS.ECHEC ? 'Mission en échec' : '' }}
+                    {{ request.status === STATUS.ANNULEE ? 'Demande annulée par le client' : '' }}
                   </p>
                   <p v-if="request.status === STATUS.LIVREE && request.delivered_at" class="small muted mt-8">
                     Livrée le {{ formatDateTime(request.delivered_at) }}.
@@ -668,7 +655,7 @@ onBeforeUnmount(() => {
                     <span class="badge" :class="p.proof_type === 'pickup_photo' ? 'badge-green' : 'badge-blue'">
                       {{ PROOF_LABELS[p.proof_type] || p.proof_type }}
                     </span>
-                    <button class="btn btn-ghost del" title="Supprimer la preuve" @click="deleteProof(p)">✕</button>
+                    <button class="btn btn-ghost del" title="Supprimer la preuve" @click="deleteProof(p)" aria-label="Supprimer la preuve"><AppIcon name="close" :size="16" /></button>
                   </div>
                   <p v-if="p.receiver_name" class="faint small">Reçu par : {{ p.receiver_name }}</p>
                   <p class="faint small">{{ formatDateTime(p.created_at) }}</p>
@@ -712,7 +699,7 @@ onBeforeUnmount(() => {
                 <h3>Incident</h3>
                 <button v-if="!showIncidentForm" class="btn btn-outline" @click="showIncidentForm = true">Signaler un incident</button>
               </div>
-              <p v-if="incidentSent" class="small badge badge-yellow mt-8">✓ Incident signalé — l'équipe a été notifiée.</p>
+              <p v-if="incidentSent" class="small badge badge-yellow mt-8"><AppIcon name="check" :size="13" /> Incident signalé — l'équipe a été notifiée.</p>
 
               <div v-if="showIncidentForm" class="mt-16">
                 <label class="field">
@@ -741,7 +728,7 @@ onBeforeUnmount(() => {
             <!-- Historique des statuts -->
             <section class="card">
               <h3 class="mb-16">Historique des statuts</h3>
-              <StatusTimeline :history="history" :current="request.status" />
+              <StatusTimeline variant="history" :history="history" :current="request.status" />
             </section>
 
             <!-- Chat client -->
@@ -761,23 +748,23 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .back {
-  margin: -6px 0 6px -8px;
+  margin: -0.375rem 0 0.375rem -0.5rem;
   color: var(--fg-2);
 }
 .tracking {
   font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
   font-size: 1.45rem;
 }
-.gap-10 { gap: 10px; }
+.gap-10 { gap: 0.625rem; }
 .route {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 .route-dot {
-  width: 8px;
-  height: 8px;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: 50%;
   background: var(--green);
   flex-shrink: 0;
@@ -787,29 +774,32 @@ onBeforeUnmount(() => {
   font-weight: 800;
 }
 
+/* 1.3fr / 1fr et gouttière de 18px : proportions de l'écran « mission » du
+   prototype. `minmax(0, …)` empêche une longue adresse d'imposer sa largeur
+   intrinsèque à une piste et de faire défiler la page. */
 .grid-mission {
   display: grid;
-  grid-template-columns: 1.25fr 1fr;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 1.125rem;
   align-items: start;
 }
-.col { gap: 14px; }
+.col { gap: 1rem; min-width: 0; }
 
-.skel-hdr { height: 90px; }
-.skel-card { height: 260px; }
+.skel-hdr { height: 5.625rem; }
+.skel-card { height: 16.25rem; }
 
 /* Total à encaisser : bannière verte (prototype) */
 .total {
   background: var(--green);
-  border-radius: 16px;
-  padding: 18px 20px;
+  border-radius: 1rem;
+  padding: 1.125rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.125rem;
   color: var(--green-ink);
 }
 .total-label {
-  font-size: 12.5px;
+  font-size: 0.7813rem;
   font-weight: 700;
   color: var(--green-ink);
   opacity: 0.75;
@@ -821,42 +811,42 @@ onBeforeUnmount(() => {
   letter-spacing: -0.02em;
 }
 .total-sub {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--green-ink);
   opacity: 0.85;
 }
 
 .action-error {
-  border: 1px solid rgba(255, 106, 106, 0.35);
+  border: 0.0625rem solid rgba(255, 106, 106, 0.35);
   background: rgba(255, 106, 106, 0.08);
 }
 
 .wait-box {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
 }
 .price-big {
   font-size: 1.6rem;
   font-weight: 800;
   color: var(--green);
-  margin: 4px 0;
+  margin: 0.25rem 0;
 }
 
 .refuse-box {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
 }
 
 .pickup-box {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
 }
 .pickup-box.ok {
   border-color: rgba(34, 197, 111, 0.4);
@@ -864,17 +854,17 @@ onBeforeUnmount(() => {
 
 .preview img {
   max-width: 100%;
-  max-height: 220px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  margin-top: 6px;
+  max-height: 13.75rem;
+  border-radius: 0.625rem;
+  border: 0.0625rem solid var(--border);
+  margin-top: 0.375rem;
 }
 
 .code-box {
   background: var(--surface-2);
-  border: 1px dashed var(--border-2);
-  border-radius: 12px;
-  padding: 16px;
+  border: 0.0625rem dashed var(--border-2);
+  border-radius: 0.75rem;
+  padding: 1rem;
   text-align: center;
 }
 .code {
@@ -883,7 +873,7 @@ onBeforeUnmount(() => {
   font-weight: 800;
   letter-spacing: 0.14em;
   color: var(--green);
-  margin: 8px 0;
+  margin: 0.5rem 0;
 }
 .amber { color: var(--amber); }
 .block { display: block; }
@@ -891,15 +881,15 @@ onBeforeUnmount(() => {
 .info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
 }
 .info .row {
   display: grid;
-  grid-template-columns: 130px 1fr;
-  gap: 12px;
+  grid-template-columns: 8.125rem 1fr;
+  gap: 0.75rem;
   font-size: 0.85rem;
-  padding: 5px 0;
-  border-bottom: 1px dashed var(--border);
+  padding: 0.3125rem 0;
+  border-bottom: 0.0625rem dashed var(--border);
 }
 .info .row:last-child { border-bottom: none; }
 .info dt {
@@ -910,30 +900,41 @@ onBeforeUnmount(() => {
 
 .proof-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr));
+  gap: 0.75rem;
 }
 .proof {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 8px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.625rem;
+  padding: 0.5rem;
   background: var(--surface-2);
 }
 .proof img {
   width: 100%;
-  height: 110px;
+  height: 6.875rem;
   object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  border: 0.0625rem solid var(--border);
 }
 .zoomable { cursor: zoom-in; }
-.proof-meta { margin: 8px 0 4px; }
+.proof-meta { margin: 0.5rem 0 0.25rem; }
 .del {
-  padding: 2px 8px;
+  padding: 0.125rem 0.5rem;
   color: var(--red);
 }
 
 @media (max-width: 1000px) {
-  .grid-mission { grid-template-columns: 1fr; }
+  /* minmax(0, …) sinon la piste ne descend pas sous la largeur intrinsèque
+     de son contenu et fait défiler la page horizontalement. */
+  .grid-mission { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 420px) {
+  /* Une colonne d'étiquettes de 8.125rem ne laisse plus assez de place à la
+     valeur : on les empile. */
+  .info .row {
+    grid-template-columns: 1fr;
+    gap: 0.125rem;
+  }
 }
 </style>

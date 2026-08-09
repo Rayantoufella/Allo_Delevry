@@ -14,7 +14,7 @@ defineProps({
   >
     <div class="card-request-header">
       <span class="bold small">#{{ request.tracking_number }}</span>
-      <div class="flex" style="gap: 8px; align-items: center">
+      <div class="flex" style="gap: 0.5rem; align-items: center">
         <StatusBadge :status="request.status" />
         <span class="arrow-btn">→</span>
       </div>
@@ -50,15 +50,15 @@ defineProps({
   text-decoration: none;
   color: inherit;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 18px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 1rem;
+  padding: 1.125rem;
   transition: border-color 0.2s, transform 0.15s;
 }
 
 .card-request:hover {
   border-color: var(--green);
-  transform: translateY(-2px);
+  transform: translateY(-0.125rem);
   text-decoration: none;
 }
 
@@ -66,13 +66,13 @@ defineProps({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 
 .card-request-addresses {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -92,14 +92,14 @@ defineProps({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 8px;
+  margin-top: 0.5rem;
 }
 
 .card-request-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 8px;
+  margin-top: 0.5rem;
 }
 
 .arrow-btn {

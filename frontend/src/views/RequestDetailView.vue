@@ -1,4 +1,5 @@
 ﻿<script setup>
+import AppIcon from "../components/AppIcon.vue"
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
@@ -175,16 +176,16 @@ async function submitReview() {
 
 <template>
   <!-- LOADING -->
-  <div v-if="loading" class="flex-col" style="gap: 16px; padding-top: 32px; align-items: center">
-    <div class="skeleton" style="width: 200px; height: 28px"></div>
-    <div class="skeleton" style="width: 120px; height: 24px"></div>
-    <div class="skeleton" style="width: 100%; max-width: 740px; height: 300px; margin-top: 16px"></div>
+  <div v-if="loading" class="flex-col" style="gap: 1rem; padding-top: 2rem; align-items: center">
+    <div class="skeleton" style="width: 12.5rem; height: 1.75rem"></div>
+    <div class="skeleton" style="width: 7.5rem; height: 1.5rem"></div>
+    <div class="skeleton" style="width: 100%; max-width: 46.25rem; height: 18.75rem; margin-top: 1rem"></div>
   </div>
 
   <!-- ERROR -->
-  <div v-else-if="errorMsg" class="card" style="text-align: center; padding: 32px; max-width: 500px; margin: 48px auto">
+  <div v-else-if="errorMsg" class="card" style="text-align: center; padding: 2rem; max-width: 31.25rem; margin: 3rem auto">
     <p class="error-msg">{{ errorMsg }}</p>
-    <router-link class="btn btn-outline" style="margin-top: 16px" :to="{ name: 'my-requests' }">
+    <router-link class="btn btn-outline" style="margin-top: 1rem" :to="{ name: 'my-requests' }">
       ← Retour à mes demandes
     </router-link>
   </div>
@@ -198,14 +199,14 @@ async function submitReview() {
           <h2 style="font-size: 1.75rem">#{{ request.tracking_number }}</h2>
           <StatusBadge :status="request.status" />
         </div>
-        <span class="small faint" style="display: block; margin-top: 8px">
+        <span class="small faint" style="display: block; margin-top: 0.5rem">
           Créée le {{ formatDateTime(request.created_at) }}
         </span>
       </div>
     </div>
 
     <!-- Action error -->
-    <p v-if="actionError" class="error-msg" style="margin-top: 12px">{{ actionError }}</p>
+    <p v-if="actionError" class="error-msg" style="margin-top: 0.75rem">{{ actionError }}</p>
 
     <!-- ===== ACTIONS selon statut ===== -->
 
@@ -217,12 +218,15 @@ async function submitReview() {
         :disabled="cancelling"
         @click="cancelRequest"
       >
-        <span v-if="cancelling" class="spinner"></span>
+        <span v-if="cancelling" class="spinner spinner-sm"></span>
         <span v-else>Annuler la demande</span>
       </button>
     </div>
 
-    <!-- PRIX PROPOSÉ : Accepter / Refuser -->
+    <!-- PRIX PROPOSÉ (demande antérieure — compat legacy) : Accepter / Refuser.
+         Seule cette carte est concernée : pour une demande normale le statut
+         passe directement en_attente → confirmee quand le livreur accepte,
+         le client n'a rien à confirmer. -->
     <div v-if="request.status === STATUS.PRIX_PROPOSE" class="action-card">
       <div class="price-proposal">
         <span class="price-label">Prix proposé</span>
@@ -234,15 +238,15 @@ async function submitReview() {
           :disabled="confirming"
           @click="confirmPrice"
         >
-          <span v-if="confirming" class="spinner"></span>
-          <span v-else>✅ Accepter</span>
+          <span v-if="confirming" class="spinner spinner-sm"></span>
+          <span v-else><AppIcon name="check" :size="18" /> Accepter</span>
         </button>
         <button
           class="action-btn action-btn--danger"
           :disabled="cancelling"
           @click="cancelRequest"
         >
-          <span v-if="cancelling" class="spinner"></span>
+          <span v-if="cancelling" class="spinner spinner-sm"></span>
           <span v-else>Annuler</span>
         </button>
       </div>
@@ -250,8 +254,8 @@ async function submitReview() {
 
     <!-- EN LIVRAISON : Code de confirmation -->
     <div v-if="request.status === STATUS.EN_LIVRAISON" class="action-card">
-      <h4 style="margin-bottom: 16px">🔐 Code de confirmation</h4>
-      <p class="small muted" style="margin-bottom: 16px">
+      <h4 style="margin-bottom: 1rem"><AppIcon name="lock" :size="18" /> Code de confirmation</h4>
+      <p class="small muted" style="margin-bottom: 1rem">
         Demandez le code de 6 chiffres à votre livreur et saisissez-le ci-dessous pour confirmer la réception.
       </p>
       <div class="form-field">
@@ -262,37 +266,37 @@ async function submitReview() {
           class="form-input"
           maxlength="6"
           placeholder="000000"
-          style="max-width: 200px; letter-spacing: 0.3em; text-align: center; font-size: 1.3rem"
+          style="max-width: 12.5rem; letter-spacing: 0.3em; text-align: center; font-size: 1.3rem"
         />
       </div>
       <button
         class="action-btn action-btn--green"
-        style="margin-top: 8px"
+        style="margin-top: 0.5rem"
         :disabled="confirmingDelivery || deliveryCode.length !== 6"
         @click="confirmDelivery"
       >
-        <span v-if="confirmingDelivery" class="spinner"></span>
-        <span v-else>📦 Confirmer la livraison</span>
+        <span v-if="confirmingDelivery" class="spinner spinner-sm"></span>
+        <span v-else><AppIcon name="package" :size="18" /> Confirmer la livraison</span>
       </button>
     </div>
 
     <!-- LIVRÉE : Avis -->
     <div v-if="request.status === STATUS.LIVREE" class="action-card">
-      <h4 style="margin-bottom: 16px">🎉 Demande livrée !</h4>
+      <h4 style="margin-bottom: 1rem">Demande livrée !</h4>
       <p class="small muted">Votre colis a bien été livré le {{ formatDateTime(request.delivered_at) }}.</p>
 
-      <div v-if="hasReview" style="margin-top: 8px">
-        <p class="small" style="color: var(--green)">✅ Vous avez déjà laissé un avis pour cette demande.</p>
+      <div v-if="hasReview" style="margin-top: 0.5rem">
+        <p class="small" style="color: var(--green)"><AppIcon name="check" :size="14" /> Vous avez déjà laissé un avis pour cette demande.</p>
       </div>
 
-      <div v-else-if="!showReview" style="margin-top: 16px">
+      <div v-else-if="!showReview" style="margin-top: 1rem">
         <button class="action-btn action-btn--green" @click="showReview = true">
-          ⭐ Donner mon avis
+          <AppIcon name="star" :size="18" /> Donner mon avis
         </button>
       </div>
 
       <div v-else class="review-form">
-        <h4 style="margin-bottom: 8px">Votre avis</h4>
+        <h4 style="margin-bottom: 0.5rem">Votre avis</h4>
         <div class="rating-select">
           <button
             v-for="n in 5"
@@ -304,7 +308,7 @@ async function submitReview() {
             ★
           </button>
         </div>
-        <div class="form-field" style="margin-top: 8px">
+        <div class="form-field" style="margin-top: 0.5rem">
           <label>Commentaire <span class="faint-label">(optionnel)</span></label>
           <textarea
             v-model="reviewComment"
@@ -316,11 +320,11 @@ async function submitReview() {
         <p v-if="reviewError" class="error-msg">{{ reviewError }}</p>
         <button
           class="action-btn action-btn--green"
-          style="margin-top: 8px"
+          style="margin-top: 0.5rem"
           :disabled="reviewSubmitting"
           @click="submitReview"
         >
-          <span v-if="reviewSubmitting" class="spinner"></span>
+          <span v-if="reviewSubmitting" class="spinner spinner-sm"></span>
           <span v-else>Envoyer l'avis</span>
         </button>
       </div>
@@ -335,63 +339,32 @@ async function submitReview() {
         Cette demande est
         <span class="bold">{{ request.status === STATUS.REFUSEE ? 'refusée' : request.status === STATUS.ECHEC ? 'en échec' : 'annulée' }}</span>.
       </p>
-      <router-link class="btn btn-outline" style="margin-top: 16px" :to="{ name: 'my-requests' }">
+      <router-link class="btn btn-outline" style="margin-top: 1rem" :to="{ name: 'my-requests' }">
         ← Retour à mes demandes
       </router-link>
     </div>
 
-    <!-- ===== TICKET DE LIVRAISON ===== -->
-    <div class="ticket-card">
-      <h4 style="margin-bottom: 16px">Ticket de livraison</h4>
-      <div class="ticket-rows">
-        <div class="ticket-row">
-          <span class="ticket-label">Suivi</span>
-          <span class="ticket-value">#{{ request.tracking_number }}</span>
-        </div>
-        <div class="ticket-row">
-          <span class="ticket-label">Service</span>
-          <span class="ticket-value">{{ request.service?.name || '—' }}</span>
-        </div>
-        <div class="ticket-row">
-          <span class="ticket-label">Destinataire</span>
-          <span class="ticket-value">{{ request.recipient_name }}</span>
-        </div>
-        <div class="ticket-row">
-          <span class="ticket-label">Livraison</span>
-          <span class="ticket-value">{{ request.delivery_address }}</span>
-        </div>
-        <div class="ticket-divider"></div>
-        <div class="ticket-row">
-          <span class="ticket-label" style="font-weight: 800; color: var(--fg)">Total à encaisser</span>
-          <span class="ticket-value" style="color: var(--green)">
-            {{ request.amount_to_collect ? formatPrice(request.amount_to_collect) : '—' }}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== Code de remise ===== -->
-    <div v-if="request.status === STATUS.LIVREE || request.confirmation_code" class="code-card">
-      <div class="code-label">Code de remise</div>
-      <div class="code-big">{{ request.confirmation_code || '—' }}</div>
-    </div>
-
-    <!-- ===== DÉTAILS ===== -->
+    <!-- ===== DÉTAILS =====
+         Deux colonnes : le détail de la course à gauche, ses pièces à droite.
+         Les cartes d'action restent au-dessus, pleine largeur : c'est la seule
+         décision demandée au client, elle ne se range pas dans une colonne. -->
+    <div class="detail-grid">
+      <div class="detail-col">
 
     <!-- Destinataire & adresses -->
     <div class="card">
-      <h4 style="margin-bottom: 16px">📍 Détails de la livraison</h4>
+      <h4 style="margin-bottom: 1rem"><AppIcon name="pin" :size="18" /> Détails de la livraison</h4>
       <div class="ticket-rows">
         <div>
           <span class="faint small">Destinataire</span>
           <p class="small bold">{{ request.recipient_name }} — {{ request.recipient_phone }}</p>
         </div>
-        <div class="ticket-divider" style="margin: 4px 0"></div>
+        <div class="ticket-divider" style="margin: 0.25rem 0"></div>
         <div>
           <span class="faint small">Retrait</span>
           <p class="small bold">{{ request.pickup_address }}</p>
         </div>
-        <div class="ticket-divider" style="margin: 4px 0"></div>
+        <div class="ticket-divider" style="margin: 0.25rem 0"></div>
         <div>
           <span class="faint small">Livraison</span>
           <p class="small bold">{{ request.delivery_address }}</p>
@@ -401,8 +374,8 @@ async function submitReview() {
 
     <!-- Dates -->
     <div class="card">
-      <h4 style="margin-bottom: 16px">📅 Dates</h4>
-      <div class="grid-3" style="gap: 16px">
+      <h4 style="margin-bottom: 1rem"><AppIcon name="calendar" :size="18" /> Dates</h4>
+      <div class="grid-3" style="gap: 1rem">
         <div v-if="request.scheduled_at">
           <span class="faint small">Créneau</span>
           <p class="small">{{ formatDateTime(request.scheduled_at) }}</p>
@@ -418,18 +391,9 @@ async function submitReview() {
       </div>
     </div>
 
-    <!-- Timeline -->
-    <div class="card">
-      <h4 style="margin-bottom: 16px">📊 Étapes de la livraison</h4>
-      <StatusTimeline
-        :history="request.timeline || []"
-        :current="request.status"
-      />
-    </div>
-
     <!-- Preuves -->
     <div v-if="proofs.length" class="card">
-      <h4 style="margin-bottom: 16px">📸 Preuves</h4>
+      <h4 style="margin-bottom: 1rem"><AppIcon name="camera" :size="18" /> Preuves</h4>
       <div class="proofs-grid">
         <div v-for="(proof, i) in proofs" :key="i" class="proof-item">
           <img
@@ -449,8 +413,55 @@ async function submitReview() {
 
     <!-- Chat -->
     <div class="card">
-      <h4 style="margin-bottom: 16px">💬 Chat</h4>
+      <h4 style="margin-bottom: 1rem"><AppIcon name="chat" :size="18" /> Chat</h4>
       <ChatPanel :delivery-request-id="request.id" />
+    </div>
+      </div>
+
+      <!-- Colonne des pièces : étapes, ticket, code de remise -->
+      <div class="detail-col">
+        <div class="card">
+          <h4 style="margin-bottom: 1rem"><AppIcon name="chart" :size="18" /> Étapes de la livraison</h4>
+          <StatusTimeline
+            :history="request.timeline || []"
+            :current="request.status"
+          />
+        </div>
+
+        <div class="ticket-card">
+          <h4 style="margin-bottom: 1rem">Ticket de livraison</h4>
+          <div class="ticket-rows">
+            <div class="ticket-row">
+              <span class="ticket-label">Suivi</span>
+              <span class="ticket-value">#{{ request.tracking_number }}</span>
+            </div>
+            <div class="ticket-row">
+              <span class="ticket-label">Service</span>
+              <span class="ticket-value">{{ request.service?.name || '—' }}</span>
+            </div>
+            <div class="ticket-row">
+              <span class="ticket-label">Destinataire</span>
+              <span class="ticket-value">{{ request.recipient_name }}</span>
+            </div>
+            <div class="ticket-row">
+              <span class="ticket-label">Livraison</span>
+              <span class="ticket-value">{{ request.delivery_address }}</span>
+            </div>
+            <div class="ticket-divider"></div>
+            <div class="ticket-row">
+              <span class="ticket-label" style="font-weight: 800; color: var(--fg)">Total à encaisser</span>
+              <span class="ticket-value" style="color: var(--green)">
+                {{ request.amount_to_collect ? formatPrice(request.amount_to_collect) : '—' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="request.status === STATUS.LIVREE || request.confirmation_code" class="code-card">
+          <div class="code-label">Code de remise</div>
+          <div class="code-big">{{ request.confirmation_code || '—' }}</div>
+        </div>
+      </div>
     </div>
 
     <ImageLightbox v-if="lightbox" :src="lightbox" alt="Preuve" @close="lightbox = ''" />
@@ -458,13 +469,42 @@ async function submitReview() {
 </template>
 
 <style scoped>
+/* Le détail occupe toute la colonne de l'espace client : le prototype compose
+   l'écran en deux colonnes, pas en un ruban de cartes empilées. */
 .detail-page {
-  max-width: 740px;
-  margin: 0 auto;
-  padding-bottom: 48px;
+  padding-bottom: 3rem;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1.125rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1.5fr minmax(0, 1fr);
+  gap: 1.125rem;
+  align-items: start;
+}
+
+/* `min-width: 0` sur les colonnes : sans lui, une longue adresse dans le ticket
+   impose sa largeur intrinsèque à la piste et déforme toute la grille. */
+.detail-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-col > .card,
+.detail-col > .ticket-card,
+.detail-col > .code-card {
+  margin-top: 0;
+}
+
+/* Une colonne dès que la grille n'a plus la place de tenir ses deux pistes. */
+@media (max-width: 900px) {
+  .detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .detail-page > * {
@@ -475,37 +515,40 @@ async function submitReview() {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 1rem;
 }
 
 .detail-title-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 /* Action cards */
 .action-card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px 24px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
 }
 
 /* Price proposal */
 .price-proposal {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0.25rem;
 }
 
+/* Surtitre vert du bloc « prix proposé » : c'est la seule décision que le
+   client ait à prendre sur cet écran, le prototype la signale par la couleur
+   d'accent et non par un gris de libellé secondaire. */
 .price-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--fg-2);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--green);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
 .price-value {
@@ -516,8 +559,8 @@ async function submitReview() {
 
 .action-btns {
   display: flex;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 0.625rem;
+  margin-top: 0.875rem;
 }
 
 /* Action buttons */
@@ -525,12 +568,12 @@ async function submitReview() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 0.5rem;
   border: none;
-  border-radius: 13px;
-  padding: 13px 20px;
+  border-radius: 0.8125rem;
+  padding: 0.8125rem 1.25rem;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.15s, opacity 0.2s;
@@ -553,7 +596,7 @@ async function submitReview() {
 .action-btn--danger {
   background: var(--surface-2);
   color: var(--red);
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
 }
 
 .action-btn--danger:hover:not(:disabled) {
@@ -563,7 +606,7 @@ async function submitReview() {
 /* Rating */
 .rating-select {
   display: flex;
-  gap: 4px;
+  gap: 0.25rem;
 }
 
 .star-btn {
@@ -573,7 +616,7 @@ async function submitReview() {
   cursor: pointer;
   color: var(--fg-3);
   transition: color 0.15s;
-  padding: 2px;
+  padding: 0.125rem;
 }
 
 .star-btn.active {
@@ -586,9 +629,9 @@ async function submitReview() {
 
 /* Review form */
 .review-form {
-  border-top: 1px solid var(--border);
-  padding-top: 16px;
-  margin-top: 12px;
+  border-top: 0.0625rem solid var(--border);
+  padding-top: 1rem;
+  margin-top: 0.75rem;
 }
 
 /* Form elements */
@@ -599,10 +642,10 @@ async function submitReview() {
 
 .form-field label {
   display: block;
-  font-size: 12.5px;
+  font-size: 0.7813rem;
   font-weight: 700;
   color: var(--fg-2);
-  margin-bottom: 6px;
+  margin-bottom: 0.375rem;
 }
 
 .faint-label {
@@ -612,12 +655,12 @@ async function submitReview() {
 
 .form-input {
   width: 100%;
-  padding: 13px 15px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+  padding: 0.8125rem 0.9375rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--border);
   background: var(--surface);
   color: var(--fg);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-family: inherit;
   transition: border-color 0.2s;
 }
@@ -629,15 +672,15 @@ async function submitReview() {
 
 .form-textarea {
   width: 100%;
-  padding: 13px 15px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+  padding: 0.8125rem 0.9375rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--border);
   background: var(--surface);
   color: var(--fg);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-family: inherit;
   resize: vertical;
-  min-height: 70px;
+  min-height: 4.375rem;
   line-height: 1.5;
   transition: border-color 0.2s;
 }
@@ -650,15 +693,15 @@ async function submitReview() {
 /* Ticket card */
 .ticket-card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 18px 22px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 1rem;
+  padding: 1.125rem 1.375rem;
 }
 
 .ticket-rows {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .ticket-row {
@@ -679,24 +722,24 @@ async function submitReview() {
 }
 
 .ticket-divider {
-  height: 1px;
+  height: 0.0625rem;
   background: var(--border);
 }
 
 /* Code de remise */
 .code-card {
   background: color-mix(in srgb, var(--green) 10%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--green) 20%, var(--border));
-  border-radius: 16px;
-  padding: 22px;
+  border: 0.0625rem solid color-mix(in srgb, var(--green) 20%, var(--border));
+  border-radius: 1rem;
+  padding: 1.375rem;
   text-align: center;
 }
 
 .code-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--fg-2);
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
 }
 
 .code-big {
@@ -710,41 +753,25 @@ async function submitReview() {
 /* Preuves */
 .proofs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr));
+  gap: 0.875rem;
 }
 
 .proof-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .proof-img {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  border: 0.0625rem solid var(--border);
   background: var(--surface-2);
 }
 .zoomable { cursor: zoom-in; }
-
-/* Spinner */
-.spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 2.5px solid var(--border);
-  border-top-color: var(--green);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 .grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

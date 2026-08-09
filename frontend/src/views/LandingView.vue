@@ -1,18 +1,23 @@
 ﻿<script setup>
 import { useAuthStore } from '../stores/auth'
 import { useRouter } from 'vue-router'
+import AppIcon from '../components/AppIcon.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
 
+/**
+ * Un compte client est rattaché à un livreur : la carte « Je suis client »
+ * mène donc à la page publique d'un livreur. On ouvre celui mémorisé
+ * (`driverSlug`), sinon le livreur démo — la page est ainsi toujours
+ * accessible depuis l'accueil.
+ */
 function goClient() {
-  if (auth.isAuthenticated && auth.user?.role === 'client') {
+  if (auth.isAuthenticated && auth.isClient) {
     router.push({ name: 'my-requests' })
-  } else if (auth.isAuthenticated && auth.user?.role === 'driver') {
-    router.push({ name: 'my-requests' })
-  } else {
-    router.push({ name: 'login' })
+    return
   }
+  router.push({ name: 'driver-public', params: { slug: auth.driverSlug || 'rayan-express' } })
 }
 
 function goDriver() {
@@ -51,10 +56,7 @@ function goDriver() {
         <!-- Client -->
         <div class="cta-card" @click="goClient">
           <div class="cta-icon-wrap cta-icon-green">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
-              <path d="M4 21a8 8 0 0 1 16 0"></path>
-            </svg>
+            <AppIcon name="user" :size="24" />
           </div>
           <div class="cta-title">Je suis client</div>
           <p class="cta-desc">
@@ -66,9 +68,7 @@ function goDriver() {
         <!-- Driver -->
         <div class="cta-card cta-card-inverted" @click="goDriver">
           <div class="cta-icon-wrap cta-icon-white">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M13 2 4 14h7l-1 8 9-12h-7z"></path>
-            </svg>
+            <AppIcon name="bolt" :size="24" />
           </div>
           <div class="cta-title">Je suis livreur-entrepreneur</div>
           <p class="cta-desc cta-desc-inverted">
@@ -95,19 +95,22 @@ function goDriver() {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(900px 500px at 80% -10%, color-mix(in srgb, var(--green) 26%, transparent), transparent 60%),
-    radial-gradient(700px 500px at 5% 110%, color-mix(in srgb, var(--green) 14%, transparent), transparent 55%);
+    radial-gradient(56.25rem 31.25rem at 80% -10%, color-mix(in srgb, var(--green) 26%, transparent), transparent 60%),
+    radial-gradient(43.75rem 31.25rem at 5% 110%, color-mix(in srgb, var(--green) 14%, transparent), transparent 55%);
   pointer-events: none;
 }
 
+/* Colonne centrée à 1200px, comme le prototype : sans ce cap, le titre et le
+   sous-titre s'étalent d'un bord à l'autre sur un écran large et la page perd
+   la mesure de lecture qui tient le bloc ensemble. */
 .hero-content {
   position: relative;
   flex: 1 1 0%;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 20px 40px 60px;
-  max-width: 1200px;
+  padding: 1.25rem 2.5rem 3.75rem;
+  max-width: 75rem;
   margin: 0 auto;
   width: 100%;
 }
@@ -116,22 +119,22 @@ function goDriver() {
 .hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 0.5625rem;
   align-self: flex-start;
-  padding: 7px 14px;
-  border-radius: 30px;
+  padding: 0.4375rem 0.875rem;
+  border-radius: 1.875rem;
   background: var(--surface);
-  border: 1px solid var(--border);
-  font-size: 12.5px;
+  border: 0.0625rem solid var(--border);
+  font-size: 0.7813rem;
   font-weight: 700;
   color: var(--fg-2);
-  margin-bottom: 22px;
+  margin-bottom: 1.375rem;
   animation: fadeUp 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
 .badge-dot {
-  width: 7px;
-  height: 7px;
+  width: 0.4375rem;
+  height: 0.4375rem;
   border-radius: 50%;
   background: var(--green);
   animation: pulse 2s ease infinite;
@@ -140,7 +143,7 @@ function goDriver() {
 /* H1 */
 .hero-title {
   margin: 0;
-  font-size: clamp(40px, 6vw, 74px);
+  font-size: clamp(2.5rem, 6vw, 4.625rem);
   font-weight: 800;
   line-height: 0.98;
   letter-spacing: -0.035em;
@@ -156,10 +159,10 @@ function goDriver() {
 /* Subtitle */
 .hero-sub {
   max-width: 60ch;
-  font-size: clamp(16px, 1.6vw, 20px);
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
   color: var(--fg-2);
   line-height: 1.5;
-  margin: 22px 0 42px;
+  margin: 1.375rem 0 2.625rem;
   font-weight: 500;
   animation: fadeUp 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
   animation-delay: 0.1s;
@@ -168,9 +171,9 @@ function goDriver() {
 /* CTA Grid */
 .cta-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 22px;
-  max-width: 900px;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1.375rem;
+  max-width: 56.25rem;
   animation: fadeUp 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
   animation-delay: 0.15s;
 }
@@ -180,10 +183,10 @@ function goDriver() {
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  padding: 30px;
-  border-radius: 22px;
+  padding: 1.875rem;
+  border-radius: 1.375rem;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   box-shadow: var(--shadow);
   transition: transform 0.25s, border-color 0.25s;
   display: flex;
@@ -191,7 +194,7 @@ function goDriver() {
 }
 
 .cta-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-0.1875rem);
   border-color: var(--green);
 }
 
@@ -199,7 +202,7 @@ function goDriver() {
 .cta-card-inverted {
   background: var(--fg);
   color: var(--bg);
-  border: 1px solid var(--fg);
+  border: 0.0625rem solid var(--fg);
 }
 
 .cta-card-inverted:hover {
@@ -213,13 +216,13 @@ function goDriver() {
 
 /* Icon wrappers */
 .cta-icon-wrap {
-  width: 52px;
-  height: 52px;
-  border-radius: 15px;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.9375rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 18px;
+  margin-bottom: 1.125rem;
 }
 
 .cta-icon-green {
@@ -234,47 +237,47 @@ function goDriver() {
 
 /* Card text */
 .cta-title {
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 .cta-desc {
   color: var(--fg-2);
-  font-size: 14.5px;
-  margin: 8px 0 20px;
+  font-size: 0.9063rem;
+  margin: 0.5rem 0 1.25rem;
   line-height: 1.5;
 }
 
 .cta-link {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   color: var(--green);
   font-weight: 800;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 /* Animation */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(0.875rem); }
   to { opacity: 1; transform: none; }
 }
 
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 rgba(34, 197, 111, 0.55); }
-  70% { box-shadow: 0 0 0 16px rgba(34, 197, 111, 0); }
+  70% { box-shadow: 0 0 0 1rem rgba(34, 197, 111, 0); }
   100% { box-shadow: 0 0 0 0 rgba(34, 197, 111, 0); }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .hero-content {
-    padding: 20px 20px 40px;
+    padding: 1.25rem 1.25rem 2.5rem;
   }
   .cta-grid {
     grid-template-columns: 1fr;
-    max-width: 400px;
+    max-width: 25rem;
   }
 }
 </style>

@@ -1,0 +1,133 @@
+/* ---------- Utilitaires et états ----------
+   Classes d'appoint (espacement, alignement), animations, et indicateurs
+   d'état partagés : squelettes, spinner, toast. */
+
+/* ---------- Divers ---------- */
+.muted { color: var(--fg-2); }
+.faint { color: var(--fg-3); }
+.small { font-size: 0.82rem; }
+.bold { font-weight: 700; }
+.mt-8 { margin-top: 0.5rem; }
+.mt-16 { margin-top: 1rem; }
+.mt-24 { margin-top: 1.5rem; }
+.mb-16 { margin-bottom: 1rem; }
+.flex { display: flex; align-items: center; gap: 0.625rem; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; gap: 0.625rem; }
+.flex-col { display: flex; flex-direction: column; gap: 0.625rem; }
+.wrap { flex-wrap: wrap; }
+
+.divider {
+  height: 0.0625rem;
+  background: linear-gradient(90deg, transparent, var(--border) 20%, var(--border) 80%, transparent);
+  margin: 1rem 0;
+}
+
+/* Avatar (logo marque / initiale) */
+.avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  background: var(--green);
+  color: var(--green-ink);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+.avatar:hover { transform: scale(1.05); }
+.avatar-sm { width: 2rem; height: 2rem; border-radius: 0.625rem; font-size: 0.95rem; }
+
+/* Compteur vert (type "1" du sidebar) */
+.counter {
+  background: var(--green);
+  color: var(--green-ink);
+  border-radius: 1.25rem;
+  padding: 0 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  line-height: 1.6;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* Point "en ligne" */
+.dot-online {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--green);
+  display: inline-block;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+  0% { box-shadow: var(--green-glow) 0 0 0 0; }
+  70% { box-shadow: var(--green-glow) 0 0 0 0.5rem; }
+  100% { box-shadow: transparent 0 0 0 0.5rem; }
+}
+
+/* Point « en pause » : même gabarit, sans halo — rien ne se passe, la pastille
+   ne doit pas attirer l'œil comme le fait celle en ligne. */
+.dot-paused {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--amber);
+  display: inline-block;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(0.875rem); }
+  to { opacity: 1; transform: none; }
+}
+
+.au { animation: fadeUp 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+  border-radius: 0.625rem;
+}
+@keyframes shimmer { 0%, 100% { background-position: 200% 0; } 50% { background-position: -200% 0; } }
+
+.spinner {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 0.1563rem solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+/* Variante compacte, pour les boutons secondaires et les listes. */
+.spinner-sm { width: 1.125rem; height: 1.125rem; }
+/* Variante sur fond vert : les couleurs par défaut y seraient invisibles. */
+.spinner-ink {
+  border-color: rgba(4, 20, 11, 0.3);
+  border-top-color: var(--green-ink);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast {
+  position: fixed;
+  bottom: 1.375rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 0.0625rem solid var(--border);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 0.75rem 1.375rem;
+  border-radius: 62.4375rem;
+  box-shadow: var(--shadow);
+  z-index: 100;
+  animation: toast-in 0.3s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 0.875rem); } to { opacity: 1; transform: translate(-50%, 0); } }
+

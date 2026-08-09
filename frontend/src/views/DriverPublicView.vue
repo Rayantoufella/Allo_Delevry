@@ -1,9 +1,9 @@
 ﻿<script setup>
+import AppIcon from "../components/AppIcon.vue"
 import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import api, { apiError } from '../api/axios'
-import { formatPrice } from '../lib/statuses'
 import ServiceCard from '../components/client/ServiceCard.vue'
 
 const route = useRoute()
@@ -27,6 +27,13 @@ async function loadDriver() {
   try {
     const { data } = await api.get(`/drivers/${slug.value}`)
     driver.value = data
+    // C'est ici que le client « entre » chez un livreur (lien ou QR code) :
+    // on mémorise le contexte auquel son compte sera rattaché.
+    auth.setDriverContext({
+      slug: slug.value,
+      brand_name: data?.brand_name,
+      logo_path: data?.logo_path,
+    })
   } catch (err) {
     if (err.response?.status === 404) {
       notFound.value = true
@@ -40,7 +47,11 @@ async function loadDriver() {
 
 function openAi() {
   if (!auth.isAuthenticated) {
-    router.push({ name: 'login', query: { redirect: `/drivers/${slug.value}/ai` } })
+    router.push({
+      name: 'login',
+      params: { slug: slug.value },
+      query: { redirect: `/drivers/${slug.value}/ai` },
+    })
   } else {
     router.push({ name: 'ai-assistant', params: { slug: slug.value } })
   }
@@ -48,7 +59,11 @@ function openAi() {
 
 function openRequestForm() {
   if (!auth.isAuthenticated) {
-    router.push({ name: 'login', query: { redirect: `/drivers/${slug.value}/request` } })
+    router.push({
+      name: 'login',
+      params: { slug: slug.value },
+      query: { redirect: `/drivers/${slug.value}/request` },
+    })
   } else {
     router.push({ name: 'request-form', params: { slug: slug.value } })
   }
@@ -67,11 +82,11 @@ const initials = computed(() => {
 
 <template>
   <!-- LOADING -->
-  <div v-if="loading" class="flex-col" style="gap: 16px; padding-top: 48px; align-items: center">
-    <div class="skeleton" style="width: 80px; height: 80px; border-radius: 12px"></div>
-    <div class="skeleton" style="width: 240px; height: 28px"></div>
-    <div class="skeleton" style="width: 160px; height: 18px"></div>
-    <div class="skeleton" style="width: 100%; max-width: 700px; height: 120px; margin-top: 24px"></div>
+  <div v-if="loading" class="flex-col" style="gap: 1rem; padding-top: 3rem; align-items: center">
+    <div class="skeleton" style="width: 5rem; height: 5rem; border-radius: 0.75rem"></div>
+    <div class="skeleton" style="width: 15rem; height: 1.75rem"></div>
+    <div class="skeleton" style="width: 10rem; height: 1.125rem"></div>
+    <div class="skeleton" style="width: 100%; max-width: 43.75rem; height: 7.5rem; margin-top: 1.5rem"></div>
   </div>
 
   <!-- 404 -->
@@ -84,7 +99,7 @@ const initials = computed(() => {
   </div>
 
   <!-- ERROR -->
-  <div v-else-if="errorMsg" class="card" style="text-align: center; padding: 32px; max-width: 500px; margin: 48px auto">
+  <div v-else-if="errorMsg" class="card" style="text-align: center; padding: 2rem; max-width: 31.25rem; margin: 3rem auto">
     <p class="error-msg">{{ errorMsg }}</p>
   </div>
 
@@ -92,7 +107,7 @@ const initials = computed(() => {
   <div v-else-if="driver" class="driver-page">
     <!-- Bandeau indisponible -->
     <div v-if="!driver.is_available" class="unavailable-banner">
-      <span>⚠️</span>
+      <AppIcon name="warning" />
       <span>Indisponible actuellement</span>
     </div>
 
@@ -113,7 +128,7 @@ const initials = computed(() => {
           <div class="profile-info">
             <div class="profile-name-row">
               <span class="profile-name">{{ driver.brand_name }}</span>
-              <span class="profile-badge">✓ Vérifié</span>
+              <span class="profile-badge"><AppIcon name="check" :size="14" /> Vérifié</span>
             </div>
             <div v-if="driver.description || driver.city" class="profile-desc">
               <template v-if="driver.description">{{ driver.description }}</template>
@@ -147,12 +162,10 @@ const initials = computed(() => {
       <!-- IA Card -->
       <div class="cta-action-card" :class="{ disabled: !driver.is_available }">
         <div class="cta-action-top">
-          <div class="cta-action-badge">✦ IA</div>
+          <div class="cta-action-badge"><AppIcon name="sparkle" :size="14" /> IA</div>
         </div>
-        <div class="cta-action-icon cta-action-icon--violet">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 5h16v11H9l-4 4v-4H4z"></path>
-          </svg>
+        <div class="cta-action-icon cta-action-icon--accent">
+          <AppIcon name="chat" :size="22" />
         </div>
         <div class="cta-action-title">Décrire ma demande</div>
         <p class="cta-action-desc">
@@ -164,16 +177,14 @@ const initials = computed(() => {
           :disabled="!driver.is_available"
           @click="openAi"
         >
-          ✦ Demander via l'IA
+          <AppIcon name="sparkle" :size="18" /> Demander via l’IA
         </button>
       </div>
 
       <!-- Service Card -->
       <div class="cta-action-card" :class="{ disabled: !driver.is_available }">
         <div class="cta-action-icon cta-action-icon--surface">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"></path>
-          </svg>
+          <AppIcon name="grid" :size="22" />
         </div>
         <div class="cta-action-title">Choisir un service</div>
         <p class="cta-action-desc">
@@ -201,58 +212,33 @@ const initials = computed(() => {
         />
       </div>
     </section>
-
-    <!-- ZONES DE LIVRAISON -->
-    <section v-if="driver.delivery_zones && driver.delivery_zones.length" class="mt-32">
-      <div class="section-label">Zones de livraison</div>
-      <div class="flex-col mt-14" style="gap: 10px">
-        <div
-          v-for="zone in driver.delivery_zones"
-          :key="zone.id"
-          class="card zone-row"
-        >
-          <div class="flex-between">
-            <span class="bold small">
-              {{ zone.origin_zone }} <span class="faint">→</span> {{ zone.destination_zone }}
-            </span>
-            <span class="badge badge-green" v-if="zone.fixed_price">{{ formatPrice(zone.fixed_price) }}</span>
-          </div>
-        </div>
-      </div>
-    </section>
   </div>
 </template>
 
 <style scoped>
 .not-found {
   text-align: center;
-  padding: 64px 0;
+  padding: 4rem 0;
 }
 
+/* La colonne centrée et sa marge latérale sont celles de `.container`, qui est
+   désormais la coquille de l'espace client. Les redéclarer ici doublait la
+   marge horizontale et rétrécissait la page d'autant. */
 .driver-page {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 0 20px;
-}
-
-.driver-page > * {
-  width: 100%;
-  max-width: 1080px;
-  padding-left: 0;
-  padding-right: 0;
 }
 
 /* Bandeau indispo */
 .unavailable-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
+  gap: 0.625rem;
+  padding: 0.75rem 1.125rem;
   background: rgba(248, 113, 113, 0.1);
-  border: 1px solid rgba(248, 113, 113, 0.3);
-  border-radius: 10px;
-  margin-bottom: 24px;
+  border: 0.0625rem solid rgba(248, 113, 113, 0.3);
+  border-radius: 0.625rem;
+  margin-bottom: 1.5rem;
   font-weight: 700;
   color: var(--red);
   font-size: 0.9rem;
@@ -263,40 +249,40 @@ const initials = computed(() => {
   width: 100%;
   position: relative;
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 1.5rem;
   background: linear-gradient(120deg, var(--fg), color-mix(in srgb, var(--fg) 70%, var(--green)));
   color: var(--bg);
 }
 
 .profile-hero-inner {
-  padding: 34px 34px 30px;
+  padding: 2.125rem 2.125rem 1.875rem;
 }
 
 .profile-hero-top {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 1.125rem;
   flex-wrap: wrap;
 }
 
 .profile-avatar {
-  width: 74px;
-  height: 74px;
-  border-radius: 20px;
+  width: 4.625rem;
+  height: 4.625rem;
+  border-radius: 1.25rem;
   background: var(--green);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 34px;
+  font-size: 2.125rem;
   font-weight: 800;
   color: var(--green-ink);
   flex-shrink: 0;
 }
 
 .logo-img-wrap {
-  width: 74px;
-  height: 74px;
-  border-radius: 20px;
+  width: 4.625rem;
+  height: 4.625rem;
+  border-radius: 1.25rem;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -309,42 +295,42 @@ const initials = computed(() => {
 
 .profile-info {
   flex: 1 1 0%;
-  min-width: 200px;
+  min-width: 12.5rem;
 }
 
 .profile-name-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
   flex-wrap: wrap;
 }
 
 .profile-name {
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 .profile-badge {
-  padding: 3px 9px;
-  border-radius: 20px;
+  padding: 0.1875rem 0.5625rem;
+  border-radius: 1.25rem;
   background: var(--green);
   color: var(--green-ink);
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 800;
 }
 
 .profile-desc {
   opacity: 0.7;
   font-weight: 600;
-  margin-top: 3px;
+  margin-top: 0.1875rem;
 }
 
 .profile-stats {
   display: flex;
-  gap: 16px;
-  margin-top: 10px;
-  font-size: 13px;
+  gap: 1rem;
+  margin-top: 0.625rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   opacity: 0.85;
 }
@@ -356,11 +342,11 @@ const initials = computed(() => {
 }
 
 .qr-box {
-  width: 88px;
-  height: 88px;
-  border-radius: 16px;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 1rem;
   background: #fff;
-  padding: 8px;
+  padding: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -369,29 +355,29 @@ const initials = computed(() => {
 .qr-img {
   width: 100%;
   height: 100%;
-  border-radius: 4px;
+  border-radius: 0.25rem;
 }
 
 .qr-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   opacity: 0.7;
-  margin-top: 6px;
+  margin-top: 0.375rem;
   font-weight: 700;
 }
 
 /* CTA action cards */
 .cta-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.125rem;
 }
 
 .cta-action-card {
   cursor: pointer;
-  padding: 26px;
-  border-radius: 20px;
+  padding: 1.625rem;
+  border-radius: 1.25rem;
   background: var(--surface);
-  border: 1.5px solid var(--border);
+  border: 0.0938rem solid var(--border);
   transition: transform 0.2s, border-color 0.2s;
   position: relative;
   overflow: hidden;
@@ -402,7 +388,7 @@ const initials = computed(() => {
 }
 
 .cta-action-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-0.125rem);
 }
 
 .cta-action-card.disabled {
@@ -412,32 +398,35 @@ const initials = computed(() => {
 
 .cta-action-top {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 1rem;
+  right: 1rem;
 }
 
+/* L'assistant IA est en vert, pas en violet : dans le prototype, le violet ne
+   sert qu'au statut « colis récupéré ». Le lui emprunter ici créait une
+   troisième couleur d'accent sur un écran qui n'en a qu'une. */
 .cta-action-badge {
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--violet) 16%, transparent);
-  color: var(--violet);
-  font-size: 11px;
+  padding: 0.25rem 0.625rem;
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+  font-size: 0.6875rem;
   font-weight: 800;
 }
 
 .cta-action-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 13px;
+  width: 2.875rem;
+  height: 2.875rem;
+  border-radius: 0.8125rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
-.cta-action-icon--violet {
-  background: color-mix(in srgb, var(--violet) 16%, transparent);
-  color: var(--violet);
+.cta-action-icon--accent {
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
 }
 
 .cta-action-icon--surface {
@@ -446,22 +435,22 @@ const initials = computed(() => {
 }
 
 .cta-action-title {
-  font-size: 19px;
+  font-size: 1.1875rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 .cta-action-desc {
   color: var(--fg-2);
-  font-size: 14px;
-  margin-top: 6px;
-  margin-bottom: 20px;
+  font-size: 0.875rem;
+  margin-top: 0.375rem;
+  margin-bottom: 1.25rem;
   line-height: 1.45;
 }
 
 /* Section labels */
 .section-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
   color: var(--fg-2);
   letter-spacing: 0.06em;
@@ -469,15 +458,13 @@ const initials = computed(() => {
 }
 
 /* Services list */
+/* Grille, pas liste : le prototype range le catalogue en `auto-fill` à partir
+   de 240px par carte. Empilées sur une seule colonne, cinq services occupaient
+   tout l'écran alors qu'ils tiennent sur deux ou trois rangs. */
 .services-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Zones */
-.zone-row {
-  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.875rem;
 }
 
 /* Responsive */

@@ -1,0 +1,140 @@
+/* ---------- Header ----------
+   Barre supérieure collante : logo, navigation, actions. */
+
+/* ---------- Header (comme le prototype) ---------- */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 1.125rem;
+  padding: 0 1.375rem;
+  height: 4rem;
+  border-bottom: 0.0625rem solid var(--border);
+  background: var(--header-bg);
+  backdrop-filter: blur(1.125rem);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.banner .logo {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--fg);
+  /* C'est un <button> pour être cliquable au clavier, mais il ne doit porter
+     aucun habillage de bouton : le prototype n'affiche là qu'un logo. Sans ce
+     retrait, la bordure par défaut du navigateur dessinait un cadre autour. */
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Monogramme de la marque, dans la case de 32px du prototype.
+   La pastille verte du prototype devient blanche : elle enfermerait sinon un
+   « A » déjà vert dans un cadre vert. Ce fond clair n'est pas décoratif — le
+   contre-poinçon du « A » est ouvert vers le bas, donc le blanc qui porte
+   l'illustration a disparu au détourage ; sans tuile, le scooter (encre
+   foncée) se retrouve sur le fond sombre de la page et le logo tourne à la
+   tache verte à cette taille. */
+.banner .logo .mark {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  object-fit: contain;
+  padding: 0.125rem;
+  border-radius: 0.5625rem;
+  background: #fff;
+}
+
+/* « Allo » en couleur de texte, « Delivery » en vert : le mot-marque du
+   prototype est d'un seul tenant, sans espace. */
+.banner .logo .logo-text {
+  font-weight: 800;
+  font-size: 1.0625rem;
+  letter-spacing: -0.02em;
+}
+.banner .logo .logo-text .accent { color: var(--green); }
+
+.banner nav {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  align-items: center;
+}
+
+/* Segmented control : les onglets vivent dans un rail `--surface-2`, ce n'est
+   pas une simple rangée de boutons. Sans le rail, l'onglet actif (fond
+   `--surface`) flottait sans repère sur le fond de la barre.
+   Le rail n'est posé que quand la barre porte des onglets : chez le livreur
+   elle ne sert qu'à replier les actions sur mobile. */
+.banner .nav--rail {
+  padding: 0.25rem;
+  background: var(--surface-2);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.banner .spacer { flex: 1; }
+
+/* Boutons de navigation du header (pilules) */
+.nav-btn {
+  background: transparent;
+  border: none;
+  border-radius: 0.5625rem;
+  color: var(--fg-2);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  padding: 0.4375rem 0.875rem;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s cubic-bezier(0.2, 0.7, 0.3, 1), color 0.15s ease;
+}
+.nav-btn:hover { color: var(--fg); }
+.nav-btn.active {
+  background: var(--surface);
+  color: var(--fg);
+}
+
+/* Bouton icône carré 40×40, radius 11px (prototype). Il était à 34px : les
+   icônes y paraissaient serrées et la barre perdait son rythme vertical. */
+.icon-btn {
+  background: var(--surface);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.6875rem;
+  color: var(--fg);
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 1.0625rem;
+  flex: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.icon-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--green);
+}
+
+/* Pilule de tracking dans le header */
+.tracking-pill {
+  background: var(--surface);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.6875rem;
+  color: var(--fg);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 0.5625rem 0.875rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: inherit;
+}
+.tracking-pill:hover { border-color: var(--green); }
+

@@ -1,0 +1,92 @@
+/* ---------- Coquille de l'espace livreur ----------
+   Grille sidebar + contenu, propre aux écrans du livreur. */
+
+/* ---------- Sidebar espace livreur ---------- */
+.driver-layout {
+  display: grid;
+  grid-template-columns: 15rem 1fr;
+  gap: 0;
+  min-height: calc(100vh - 4rem);
+}
+/* La colonne s'étire sur toute la hauteur de la grille (comportement par défaut,
+   sans `align-self`). Son fond et son filet de droite descendent donc jusqu'au
+   bas de la page, quelle que soit la longueur du contenu — un `align-self: start`
+   couplé à `min-height: 100vh` les arrêtait en cours de page sur les écrans longs
+   comme « Profil & marque ». */
+.driver-sidebar {
+  background: var(--bg-2);
+  border-right: 0.0625rem solid var(--border);
+  padding: 1.25rem 0.875rem;
+}
+
+/* La navigation, elle, reste visible au défilement. C'est ce bloc intérieur qui
+   est collant, pas la colonne : le sticky doit porter sur le contenu pour que la
+   colonne garde sa pleine hauteur. */
+.sidebar-sticky {
+  position: sticky;
+  top: 5.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  /* Hauteur d'un écran, moins le header et les marges : le bloc « Revenus du
+     jour », poussé par `margin-top: auto`, se cale ainsi en bas de la zone
+     visible plutôt qu'au bas d'une page de plusieurs écrans. */
+  min-height: calc(100vh - 4rem - 2.5rem);
+}
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.25rem 0.625rem 1rem;
+  border-bottom: 0.0625rem solid var(--border);
+  margin-bottom: 0.75rem;
+}
+.sidebar-brand .name { font-weight: 800; font-size: 0.98rem; line-height: 1.2; }
+.sidebar-brand .sub { color: var(--fg-2); font-size: 0.6875rem; font-weight: 600; }
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6875rem;
+  padding: 0.6875rem 0.75rem;
+  border-radius: 0.6875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fg-2);
+  cursor: pointer;
+  border: 0.0625rem solid transparent;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.sidebar-link:hover {
+  color: var(--fg);
+  background: var(--surface);
+  border-color: var(--border);
+}
+/* L'entrée active se détache par sa surface et sa graisse, pas par une bordure
+   verte : dans le prototype le vert est réservé aux actions et aux montants,
+   une sidebar qui en cerne une entrée sur cinq déséquilibre la colonne. */
+.sidebar-link.active {
+  background: var(--surface);
+  color: var(--fg);
+  font-weight: 800;
+  border: 0.0625rem solid var(--border);
+}
+.sidebar-footer {
+  margin-top: auto;
+  background: var(--surface);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.875rem;
+  padding: 0.875rem;
+}
+.sidebar-footer .amount { color: var(--green); font-size: 1.5rem; font-weight: 800; }
+/* `min-width: 0` est indispensable sur la colonne souple : sans lui, un enfant
+   large (tableau, galerie, longue adresse) impose sa largeur intrinsèque à la
+   piste `1fr` et déforme toute la grille. Paddings repris du prototype. */
+.driver-main {
+  min-width: 0;
+  padding: 1.75rem 2rem 3.75rem;
+}
+

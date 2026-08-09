@@ -19,9 +19,44 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Interceptor : déconnexion automatique si le token expire (401).
+/**
+ * Le backend renvoie quatre formes de réponse selon l'endpoint :
+ *   1. trait ApiResponse      -> { success, message, data: <charge> }
+ *   2. `return new XxxResource` -> { data: <charge> }   (wrapping Laravel par défaut)
+ *   3. `response()->json(new XxxResource)` -> <charge>  (à plat, pas de wrapping)
+ *   4. `XxxResource::collection(...->paginate())` -> { data: [...], links, meta }
+ *
+ * On normalise ici pour que chaque appelant reçoive directement la charge utile,
+ * sans avoir à deviner la forme. Seule la pagination (cas 4) garde son enveloppe,
+ * puisque `meta` et `links` font partie de l'information utile.
+ */
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function unwrapEnvelope(response) {
+  const body = response.data
+  if (!isPlainObject(body)) return response
+
+  // Cas 1 : enveloppe explicite du trait ApiResponse.
+  if (typeof body.success === 'boolean' && 'data' in body) {
+    response.data = body.data
+    return response
+  }
+
+  // Cas 2 : wrapping Laravel d'une Resource unique. On le distingue de la
+  // pagination par l'absence de `meta`/`links`, qui accompagnent toujours
+  // une collection paginée.
+  if ('data' in body && !('meta' in body) && !('links' in body)) {
+    response.data = body.data
+  }
+
+  return response
+}
+
+// Interceptor : déballage de l'enveloppe + déconnexion automatique si le token expire (401).
 api.interceptors.response.use(
-  (response) => response,
+  (response) => unwrapEnvelope(response),
   (error) => {
     if (error.response?.status === 401) {
       const isAuthRoute = ['/login', '/register'].some((r) =>

@@ -1,0 +1,60 @@
+/* ---------- Ossature de page ----------
+   Conteneur centré et rythme vertical. */
+
+/* ---------- Layout ----------
+   Trois coquilles, une par archétype de page. C'est `App.vue` qui choisit,
+   d'après `route.meta.layout`.
+
+   1. `.container`   — colonne centrée : les écrans de l'espace client
+   2. `.shell-full`  — pleine page   : accueil et écrans d'authentification
+   3. `.shell-flush` — pleine largeur : espace livreur (sidebar + contenu)
+*/
+
+/* L'espace client du prototype est une colonne centrée :
+     <div style="…align-items:center;padding:0 20px">
+       <div style="width:100%;max-width:1080px;padding:28px 0 60px">
+   Sans ce cap, formulaires et grilles s'étirent d'un bord à l'autre sur un
+   grand écran et la page perd toute mesure. */
+.container {
+  width: 100%;
+  max-width: 67.5rem;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+.page {
+  flex: 1;
+  padding: 1.75rem 0 3.75rem;
+}
+
+/* Coquille pleine largeur de l'espace livreur : aucune marge extérieure, la
+   sidebar touche le bord de la fenêtre et se cale sous le header. Le rythme
+   vertical est porté par `.driver-main`, pas par la page. */
+.page--flush {
+  padding: 0;
+}
+
+.shell-flush {
+  width: 100%;
+}
+
+/* Pages qui composent elles-mêmes leur pleine page : l'accueil (dont les
+   dégradés doivent filer jusqu'aux bords) et le panneau scindé des écrans
+   d'authentification (dont les deux moitiés vont d'un bord à l'autre et
+   remplissent la hauteur). Les enfermer dans `.container` leur ajoutait des
+   marges latérales et une bande vide en haut et en bas.
+   `display: flex` est indispensable ici : c'est lui qui permet au `flex: 1`
+   de ces vues d'occuper la hauteur restante sous le bandeau. */
+.page--full {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell-full {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
