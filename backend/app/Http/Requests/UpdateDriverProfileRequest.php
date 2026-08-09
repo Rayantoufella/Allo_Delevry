@@ -24,10 +24,13 @@ class UpdateDriverProfileRequest extends FormRequest
     {
         return [
             'brand_name' => ['sometimes', 'string', 'max:255'],
-            'slug' => ['sometimes', 'string', 'max:255', 'unique:driver_profiles,slug,'.$this->route('driver_profile')],
+            // Unicité résolue au contrôleur (auto-suffixe), voir StoreDriverProfileRequest.
+            'slug' => ['sometimes', 'string', 'max:255'],
             'logo_path' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
             'rib' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'phone' => ['nullable', 'string', 'max:30'],
             'is_available' => ['boolean'],
         ];
     }

@@ -14,7 +14,10 @@ class DeliveryZoneController extends Controller
     public function index(Request $request)
     {
         return DeliveryZoneResource::collection(
-            DeliveryZone::where('user_id', $request->user()->id)->latest()->get()
+            DeliveryZone::where('user_id', $request->user()->id)
+                ->withCount('deliveryRequests')
+                ->latest()
+                ->get()
         );
     }
 

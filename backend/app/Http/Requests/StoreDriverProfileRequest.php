@@ -24,10 +24,15 @@ class StoreDriverProfileRequest extends FormRequest
     {
         return [
             'brand_name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:driver_profiles,slug'],
+            // Pas de règle unique ici : l'unicité du slug est résolue côté
+            // contrôleur (auto-suffixe -2, -3…) pour que la création ne soit
+            // jamais bloquée par un identifiant déjà pris.
+            'slug' => ['required', 'string', 'max:255'],
             'logo_path' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
             'rib' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'phone' => ['nullable', 'string', 'max:30'],
             'is_available' => ['boolean'],
         ];
     }

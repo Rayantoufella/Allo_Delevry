@@ -117,27 +117,27 @@ start()
 .chat {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
 }
 .chat-list {
-  max-height: 340px;
+  max-height: 21.25rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 4px;
+  gap: 0.625rem;
+  padding: 0.25rem;
 }
-.chat.compact .chat-list { max-height: 220px; }
-.chat-empty { text-align: center; padding: 18px 0; }
+.chat.compact .chat-list { max-height: 13.75rem; }
+.chat-empty { text-align: center; padding: 1.125rem 0; }
 .chat-msg { display: flex; }
 .chat-msg.mine { justify-content: flex-end; }
 .chat-msg.theirs { justify-content: flex-start; }
 .chat-bubble {
   max-width: 78%;
   background: var(--card-soft);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 8px 12px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
 }
 .chat-msg.mine .chat-bubble {
   background: var(--brand-soft);
@@ -145,13 +145,13 @@ start()
 }
 .chat-meta {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   align-items: baseline;
-  margin-bottom: 2px;
+  margin-bottom: 0.125rem;
 }
 .chat-input {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   align-items: flex-end;
 }
 .chat-input textarea { flex: 1; }

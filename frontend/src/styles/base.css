@@ -1,0 +1,64 @@
+/* ---------- Base ----------
+   Reset, typographie et éléments HTML nus. Ne cible que des sélecteurs
+   d'élément — pas de classe. */
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+
+  /* Racine fixe à 16px : le design system est exprimé en `rem` calculés sur
+     cette base, donc le rendu est identique au pixel près à celui du prototype
+     `Allo Delivery.html`, qui n'applique lui non plus aucune mise à l'échelle. */
+  font-size: 16px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  min-height: 100vh;
+  transition: background 0.25s ease, color 0.25s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+
+/* Titres fluides : la taille suit la largeur du viewport entre deux bornes,
+   ce qui évite les paliers brutaux et les titres qui débordent sur mobile.
+   Les bornes hautes reprennent les valeurs du prototype. */
+h1 { font-size: clamp(1.75rem, 1.15rem + 2.6vw, 2.6rem); line-height: 1.08; }
+h2 { font-size: clamp(1.35rem, 1.1rem + 1.1vw, 1.75rem); }
+h3 { font-size: clamp(1.05rem, 0.98rem + 0.3vw, 1.15rem); }
+h4 { font-size: 0.95rem; }
+
+a {
+  color: var(--green);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+a:hover {
+  color: var(--green-2);
+  text-decoration: underline;
+}
+
+input, textarea, select, button { font-family: inherit; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--green) !important; }
+

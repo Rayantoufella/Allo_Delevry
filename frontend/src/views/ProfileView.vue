@@ -1,20 +1,31 @@
 ﻿<script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../api/axios'
 import { apiError } from '../api/axios'
+import { useAuthStore } from '../stores/auth'
 import { formatPrice } from '../lib/statuses'
+import {
+  copyPublicLink,
+  prettyLink as prettyDriverLink,
+  publicUrl,
+  qrUrl,
+} from '../lib/driverLink'
+import AppIcon from '../components/AppIcon.vue'
 import DriverSidebar from '../components/driver/DriverSidebar.vue'
 import ToastMessage from '../components/driver/ToastMessage.vue'
 
 /**
- * Profil & marque livreur — profil public (CRUD driver-profiles),
- * catalogue des services, page publique (lien + QR) et zones & tarifs.
- * Chaque sous-formulaire gère ses erreurs 422 champ par champ.
+ * Profil & marque livreur — conforme screen10-profile-driver.html.
+ * Trois blocs : profil public, catalogue services, page publique.
+ * La section zones & tarifs a été extraite dans ZonesTarifsView.vue.
  */
 const router = useRouter()
-const route = useRoute()
+const auth = useAuthStore()
 
+// ============================================================
+// Toast
+// ============================================================
 const toast = ref('')
 let toastTimer = null
 
@@ -48,10 +59,25 @@ const profileForm = ref({
   slug: '',
   logo_path: '',
   city: '',
+  phone: '',
+  description: '',
   is_available: true,
 })
 
 const currentProfile = computed(() => profiles.value[0] || null)
+
+/** Note moyenne depuis le dashboard (fire-and-forget). */
+const averageRating = ref(null)
+
+async function loadRating() {
+  try {
+    const res = await api.get('/dashboard')
+    const body = res.data
+    averageRating.value = body?.data?.average_rating ?? null
+  } catch {
+    averageRating.value = null
+  }
+}
 
 async function loadProfiles() {
   profileLoading.value = true
@@ -65,8 +91,12 @@ async function loadProfiles() {
         slug: p.slug || '',
         logo_path: p.logo_path || '',
         city: p.city || '',
+        phone: p.phone ?? auth.user?.phone ?? '',
+        description: p.description || '',
         is_available: p.is_available !== false,
       }
+    } else {
+      profileForm.value.phone = auth.user?.phone ?? ''
     }
   } catch {
     profiles.value = []
@@ -76,7 +106,6 @@ async function loadProfiles() {
 }
 
 function onBrandName() {
-  // Pré-remplissage du slug uniquement lors de la création.
   if (!currentProfile.value && !profileForm.value.slug.trim()) {
     profileForm.value.slug = slugify(profileForm.value.brand_name)
   }
@@ -86,19 +115,10 @@ const profileInitial = computed(() =>
   (profileForm.value.brand_name || 'M').trim().charAt(0).toUpperCase(),
 )
 
-const prettyLink = computed(() =>
-  currentProfile.value ? `allo.delivery/r/${currentProfile.value.slug}` : '',
-)
-
-const localPublicUrl = computed(() => {
-  if (!currentProfile.value) return ''
-  const base = window.location.origin
-  return `${base}/drivers/${currentProfile.value.slug}`
-})
-
-const qrSrc = computed(() =>
-  currentProfile.value ? `/api/drivers/${currentProfile.value.slug}/qr` : '',
-)
+const slug = computed(() => currentProfile.value?.slug || '')
+const prettyLink = computed(() => prettyDriverLink(slug.value))
+const localPublicUrl = computed(() => publicUrl(slug.value))
+const qrSrc = computed(() => qrUrl(slug.value))
 
 async function saveProfile() {
   profileErrors.value = {}
@@ -109,6 +129,8 @@ async function saveProfile() {
       slug: profileForm.value.slug.trim().toLowerCase(),
       logo_path: profileForm.value.logo_path.trim() || null,
       city: profileForm.value.city.trim(),
+      description: profileForm.value.description.trim() || null,
+      phone: profileForm.value.phone.trim() || null,
       is_available: !!profileForm.value.is_available,
     }
     if (currentProfile.value) {
@@ -130,13 +152,8 @@ async function saveProfile() {
 }
 
 async function copyLink() {
-  if (!localPublicUrl.value) return
-  try {
-    await navigator.clipboard.writeText(localPublicUrl.value)
-    showToast('Lien copié dans le presse-papiers')
-  } catch {
-    showToast(localPublicUrl.value)
-  }
+  const message = await copyPublicLink(slug.value)
+  if (message) showToast(message)
 }
 
 function goPublicPage() {
@@ -240,144 +257,12 @@ async function deleteService(s) {
 }
 
 // ============================================================
-// Zones & tarifs (section #zones, accessible via sidebar)
+// Init
 // ============================================================
-const zones = ref([])
-const zonesLoading = ref(true)
-const zoneErrors = ref({})
-const zoneSaving = ref(false)
-const editingZone = ref(null)
-const zonePrices = ref({})
-
-const zoneForm = ref({
-  origin_zone: '',
-  destination_zone: '',
-  fixed_price: '',
-  is_active: true,
-})
-
-async function loadZones() {
-  zonesLoading.value = true
-  try {
-    const res = await api.get('/delivery-zones')
-    zones.value = res.data.data ?? res.data ?? []
-    const prices = {}
-    for (const z of zones.value) {
-      prices[z.id] = z.fixed_price ?? ''
-    }
-    zonePrices.value = prices
-  } catch {
-    zones.value = []
-  } finally {
-    zonesLoading.value = false
-  }
-}
-
-function startEditZone(z) {
-  editingZone.value = z
-  zoneForm.value = {
-    origin_zone: z.origin_zone || '',
-    destination_zone: z.destination_zone || '',
-    fixed_price: z.fixed_price ?? '',
-    is_active: z.is_active !== false,
-  }
-  zoneErrors.value = {}
-}
-
-function cancelEditZone() {
-  editingZone.value = null
-  zoneForm.value = { origin_zone: '', destination_zone: '', fixed_price: '', is_active: true }
-  zoneErrors.value = {}
-}
-
-async function saveZone() {
-  zoneErrors.value = {}
-  zoneSaving.value = true
-  try {
-    const payload = {
-      origin_zone: zoneForm.value.origin_zone.trim(),
-      destination_zone: zoneForm.value.destination_zone.trim(),
-      fixed_price: zoneForm.value.fixed_price === '' ? null : Number(zoneForm.value.fixed_price),
-      is_active: !!zoneForm.value.is_active,
-    }
-    if (editingZone.value) {
-      await api.put(`/delivery-zones/${editingZone.value.id}`, payload)
-      showToast('Zone mise à jour')
-    } else {
-      await api.post('/delivery-zones', payload)
-      showToast('Zone ajoutée')
-    }
-    cancelEditZone()
-    await loadZones()
-  } catch (err) {
-    zoneErrors.value = err?.response?.data?.errors || {}
-    if (!Object.keys(zoneErrors.value).length) {
-      showToast(apiError(err))
-    }
-  } finally {
-    zoneSaving.value = false
-  }
-}
-
-async function updateZonePrice(z) {
-  const value = zonePrices.value[z.id]
-  const num = value === '' || value === null ? null : Number(value)
-  if (num === Number(z.fixed_price ?? null) && num !== null) return
-  try {
-    await api.put(`/delivery-zones/${z.id}`, { fixed_price: num })
-    await loadZones()
-    showToast('Tarif de la zone mis à jour')
-  } catch (err) {
-    zonePrices.value[z.id] = z.fixed_price ?? ''
-    showToast(apiError(err))
-  }
-}
-
-async function toggleZone(z) {
-  try {
-    await api.patch(`/delivery-zones/${z.id}/toggle-active`)
-    await loadZones()
-  } catch (err) {
-    showToast(apiError(err))
-  }
-}
-
-async function deleteZone(z) {
-  if (!window.confirm(`Supprimer la zone « ${z.origin_zone} → ${z.destination_zone} » ?`)) return
-  try {
-    await api.delete(`/delivery-zones/${z.id}`)
-    showToast('Zone supprimée')
-    await loadZones()
-  } catch (err) {
-    showToast(apiError(err))
-  }
-}
-
-// Scroll vers la section #zones demandée par la sidebar
-async function scrollToZones() {
-  await nextTick()
-  const el = document.getElementById('zones')
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-}
-
-watch(
-  () => route.query.section,
-  async (section) => {
-    if (section === 'zones') {
-      await scrollToZones()
-    }
-  },
-)
-
 onMounted(() => {
   loadProfiles()
   loadServices()
-  loadZones()
-  if (route.query.section === 'zones') {
-    scrollToZones()
-  }
+  loadRating()
 })
 </script>
 
@@ -391,225 +276,185 @@ onMounted(() => {
         <p class="muted small">Ton identité publique, ton lien unique et ton catalogue.</p>
       </div>
 
-      <!-- ===================== Profil public ===================== -->
-      <section class="card mb-16">
-        <div class="flex-between wrap mb-16">
-          <h3>Mon profil public</h3>
-          <span v-if="profileLoading" class="spinner"></span>
-        </div>
+      <!-- Deux colonnes : identité + catalogue à gauche, page publique à droite -->
+      <div class="profile-grid">
+        <div class="profile-col">
 
-        <div v-if="currentProfile" class="flex-between wrap mb-16 profile-ok">
-          <div class="flex wrap">
-            <span class="badge badge-green">Profil en ligne</span>
-            <span v-if="currentProfile.is_available" class="badge badge-green">Disponible</span>
-            <span v-else class="badge badge-yellow">Indisponible</span>
-            <span class="badge">{{ currentProfile.slug }}</span>
-          </div>
-          <div class="flex wrap">
-            <button class="btn btn-outline" @click="goPublicPage()">Voir ma page publique ↗</button>
-          </div>
-        </div>
-
-        <form v-if="!profileLoading" class="form-grid" @submit.prevent="saveProfile()">
-          <label class="field avatar-field">
-            <span class="avatar-lg">{{ profileInitial }}</span>
-          </label>
-          <div class="avatar-actions">
-            <span class="small faint">Logo (URL)</span>
-            <input v-model="profileForm.logo_path" class="input" :class="{ 'input-error': profileErrors.logo_path }" placeholder="https://…/logo.png" />
-            <span v-if="profileErrors.logo_path" class="error-msg">{{ profileErrors.logo_path[0] }}</span>
-          </div>
-
-          <label class="field">
-            <span>Nom de la marque *</span>
-            <input v-model="profileForm.brand_name" class="input" :class="{ 'input-error': profileErrors.brand_name }" placeholder="Ex : Rayan Express" @input="onBrandName" />
-            <span v-if="profileErrors.brand_name" class="error-msg">{{ profileErrors.brand_name[0] }}</span>
-          </label>
-
-          <label class="field">
-            <span>Identifiant public (slug) *</span>
-            <input v-model="profileForm.slug" class="input" :class="{ 'input-error': profileErrors.slug }" placeholder="ex: rayan-express" />
-            <span v-if="profileErrors.slug" class="error-msg">{{ profileErrors.slug[0] }}</span>
-            <span class="faint small">Unique — utilisé dans votre page publique : /drivers/votre-marque</span>
-          </label>
-
-          <label class="field">
-            <span>Ville</span>
-            <input v-model="profileForm.city" class="input" :class="{ 'input-error': profileErrors.city }" placeholder="Ex : Agadir" />
-            <span v-if="profileErrors.city" class="error-msg">{{ profileErrors.city[0] }}</span>
-          </label>
-
-          <label class="field check">
-            <input v-model="profileForm.is_available" type="checkbox" />
-            <span>Disponible pour accepter de nouvelles missions</span>
-          </label>
-
-          <div class="field span-2">
-            <button class="btn btn-primary" :disabled="profileSaving" type="submit">
-              {{ profileSaving ? '…' : currentProfile ? 'Enregistrer les modifications' : 'Créer mon profil public' }}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <!-- ===================== Ta page publique ===================== -->
-      <section v-if="currentProfile" class="card mb-16">
-        <h3 class="mb-16">Ta page publique</h3>
-        <div class="public-row">
-          <div class="public-info">
-            <span class="small faint">Lien unique</span>
-            <div class="link-line">
-              <b>{{ prettyLink }}</b>
+          <!-- ===================== Profil public ===================== -->
+          <section class="card mb-16">
+            <div class="flex-between wrap mb-16">
+              <h3>Mon profil public</h3>
+              <span v-if="profileLoading" class="spinner"></span>
             </div>
-            <p class="faint small mt-8">
-              Lien local actif : <code>{{ localPublicUrl }}</code>
-            </p>
-            <div class="flex wrap mt-16">
-              <button class="btn btn-primary" @click="copyLink()">📋 Copier le lien</button>
-              <button class="btn btn-outline" @click="goPublicPage()">👁 Aperçu client</button>
-            </div>
-          </div>
-          <div class="qr-img">
-            <img v-if="qrSrc" :src="qrSrc" alt="QR code de la page publique" />
-          </div>
-        </div>
-      </section>
 
-      <!-- ===================== Catalogue des services ===================== -->
-      <section class="card mb-16">
-        <div class="flex-between wrap mb-16">
-          <h3>Catalogue des services</h3>
-          <button v-if="!editingService" class="btn btn-outline" @click="startEditService({})">+ Ajouter</button>
-        </div>
-
-        <div v-if="servicesLoading" class="skeleton skel-row"></div>
-
-        <div v-else-if="services.length" class="flex-col">
-          <div v-for="s in services" :key="s.id" class="row-item">
-            <div class="row-main">
+            <div v-if="currentProfile" class="flex-between wrap mb-16 profile-ok">
               <div class="flex wrap">
-                <b>{{ s.name }}</b>
-                <span class="badge" :class="s.is_active ? 'badge-green' : 'badge-red'">
-                  {{ s.is_active ? 'Actif' : 'Inactif' }}
-                </span>
+                <span class="badge badge-green">Profil en ligne</span>
+                <span v-if="currentProfile.is_available" class="badge badge-green">Disponible</span>
+                <span v-else class="badge badge-yellow">Indisponible</span>
+                <span class="badge">{{ currentProfile.slug }}</span>
               </div>
-              <p v-if="s.description" class="muted small mt-8">{{ s.description }}</p>
-              <p v-if="s.base_price" class="small mt-8">💰 Dès {{ formatPrice(s.base_price) }}</p>
-            </div>
-            <div class="row-actions">
-              <button class="btn btn-ghost" @click="toggleService(s)">{{ s.is_active ? 'Désactiver' : 'Activer' }}</button>
-              <button class="btn btn-ghost" @click="startEditService(s)">Éditer</button>
-              <button class="btn btn-ghost danger" @click="deleteService(s)">Supprimer</button>
-            </div>
-          </div>
-        </div>
-        <p v-else class="muted small">Aucun service. Ajoutez vos services (ex : envoi express, livraison de repas…).</p>
-
-        <form v-if="editingService" class="form-grid mt-16 sub-form" @submit.prevent="saveService()">
-          <label class="field">
-            <span>Nom du service *</span>
-            <input v-model="serviceForm.name" class="input" :class="{ 'input-error': serviceErrors.name }" placeholder="Ex : Envoi express" />
-            <span v-if="serviceErrors.name" class="error-msg">{{ serviceErrors.name[0] }}</span>
-          </label>
-          <label class="field">
-            <span>Prix de base (DH)</span>
-            <input v-model="serviceForm.base_price" class="input" :class="{ 'input-error': serviceErrors.base_price }" type="number" min="0" placeholder="Ex : 40" />
-            <span v-if="serviceErrors.base_price" class="error-msg">{{ serviceErrors.base_price[0] }}</span>
-          </label>
-          <label class="field span-2">
-            <span>Description</span>
-            <textarea v-model="serviceForm.description" class="input" :class="{ 'input-error': serviceErrors.description }" placeholder="Décrivez ce service…"></textarea>
-            <span v-if="serviceErrors.description" class="error-msg">{{ serviceErrors.description[0] }}</span>
-          </label>
-          <label class="field check">
-            <input v-model="serviceForm.is_active" type="checkbox" />
-            <span>Service actif</span>
-          </label>
-          <div class="field span-2 flex">
-            <button class="btn btn-primary" :disabled="serviceSaving" type="submit">
-              {{ serviceSaving ? '…' : editingService.id ? 'Enregistrer' : 'Ajouter le service' }}
-            </button>
-            <button type="button" class="btn btn-ghost" :disabled="serviceSaving" @click="cancelEditService()">Annuler</button>
-          </div>
-        </form>
-      </section>
-
-      <!-- ===================== Zones & tarifs ===================== -->
-      <section id="zones" class="card">
-        <div class="mb-16">
-          <h2 class="zones-title">Zones &amp; tarifs</h2>
-          <p class="muted small mt-8">
-            Un prix fixe par zone. Le tarif enregistré dans une mission ne change pas si tu modifies la zone plus tard (RG07).
-          </p>
-        </div>
-
-        <div class="flex-between wrap mb-16">
-          <span v-if="zonesLoading" class="spinner"></span>
-          <button v-if="!editingZone" class="btn btn-outline" @click="startEditZone({})">+ Ajouter une zone</button>
-        </div>
-
-        <div v-if="zonesLoading" class="skeleton skel-row"></div>
-
-        <div v-else-if="zones.length" class="flex-col">
-          <div v-for="z in zones" :key="z.id" class="zone-row">
-            <div class="zone-main">
               <div class="flex wrap">
-                <b>{{ z.origin_zone }} → {{ z.destination_zone }}</b>
-                <span class="badge" :class="z.is_active ? 'badge-green' : 'badge-red'">
-                  {{ z.is_active ? 'Active' : 'Inactive' }}
-                </span>
+                <button class="btn btn-outline" @click="goPublicPage()">Voir ma page publique ↗</button>
               </div>
-              <label class="price-field">
-                <span class="small faint">Tarif fixe (DH)</span>
-                <input
-                  v-model="zonePrices[z.id]"
-                  class="input-boxed price-input"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="—"
-                  @blur="updateZonePrice(z)"
-                  @keyup.enter="$event.target.blur()"
-                />
+            </div>
+
+            <form v-if="!profileLoading" class="form-grid" @submit.prevent="saveProfile()">
+              <!-- Avatar + Changer le logo -->
+              <label class="field avatar-field">
+                <span class="avatar-lg">{{ profileInitial }}</span>
               </label>
-            </div>
-            <div class="zone-actions">
-              <button class="btn btn-ghost" @click="toggleZone(z)">{{ z.is_active ? 'Désactiver' : 'Activer' }}</button>
-              <button class="btn btn-ghost" @click="startEditZone(z)">Éditer</button>
-              <button class="btn btn-danger del-btn" title="Supprimer la zone" @click="deleteZone(z)">✕</button>
-            </div>
-          </div>
-        </div>
-        <p v-else class="muted small">Aucune zone. Ajoutez vos trajets (ex : Agadir Centre → Tikiouine).</p>
+              <div class="avatar-actions">
+                <span class="small faint">Changer le logo</span>
+                <input v-model="profileForm.logo_path" class="input" :class="{ 'input-error': profileErrors.logo_path }" placeholder="https://…/logo.png" />
+                <span v-if="profileErrors.logo_path" class="error-msg">{{ profileErrors.logo_path[0] }}</span>
+              </div>
 
-        <form v-if="editingZone" class="form-grid mt-16 sub-form" @submit.prevent="saveZone()">
-          <label class="field">
-            <span>Zone de départ *</span>
-            <input v-model="zoneForm.origin_zone" class="input" :class="{ 'input-error': zoneErrors.origin_zone }" placeholder="Ex : Agadir Centre" />
-            <span v-if="zoneErrors.origin_zone" class="error-msg">{{ zoneErrors.origin_zone[0] }}</span>
-          </label>
-          <label class="field">
-            <span>Zone de destination *</span>
-            <input v-model="zoneForm.destination_zone" class="input" :class="{ 'input-error': zoneErrors.destination_zone }" placeholder="Ex : Tikiouine" />
-            <span v-if="zoneErrors.destination_zone" class="error-msg">{{ zoneErrors.destination_zone[0] }}</span>
-          </label>
-          <label class="field">
-            <span>Tarif fixe (DH)</span>
-            <input v-model="zoneForm.fixed_price" class="input" :class="{ 'input-error': zoneErrors.fixed_price }" type="number" min="0" placeholder="Ex : 35" />
-            <span v-if="zoneErrors.fixed_price" class="error-msg">{{ zoneErrors.fixed_price[0] }}</span>
-          </label>
-          <label class="field check">
-            <input v-model="zoneForm.is_active" type="checkbox" />
-            <span>Zone active</span>
-          </label>
-          <div class="field span-2 flex">
-            <button class="btn btn-primary" :disabled="zoneSaving" type="submit">
-              {{ zoneSaving ? '…' : editingZone.id ? 'Enregistrer' : 'Ajouter la zone' }}
-            </button>
-            <button type="button" class="btn btn-ghost" :disabled="zoneSaving" @click="cancelEditZone()">Annuler</button>
-          </div>
-        </form>
-      </section>
+              <!-- Nom de la marque -->
+              <label class="field">
+                <span>Nom de la marque *</span>
+                <input v-model="profileForm.brand_name" class="input" :class="{ 'input-error': profileErrors.brand_name }" placeholder="Ex : Rayan Express" @input="onBrandName" />
+                <span v-if="profileErrors.brand_name" class="error-msg">{{ profileErrors.brand_name[0] }}</span>
+              </label>
+
+              <!-- Ville -->
+              <label class="field">
+                <span>Ville</span>
+                <input v-model="profileForm.city" class="input" :class="{ 'input-error': profileErrors.city }" placeholder="Ex : Agadir" />
+                <span v-if="profileErrors.city" class="error-msg">{{ profileErrors.city[0] }}</span>
+              </label>
+
+              <!-- Téléphone -->
+              <label class="field">
+                <span>Téléphone</span>
+                <input v-model="profileForm.phone" class="input" :class="{ 'input-error': profileErrors.phone }" placeholder="Ex : 06 12 34 56 78" />
+                <span v-if="profileErrors.phone" class="error-msg">{{ profileErrors.phone[0] }}</span>
+              </label>
+
+              <!-- Note affichée (lecture seule) -->
+              <label class="field">
+                <span>Note affichée</span>
+                <input class="input input-readonly" :value="averageRating != null ? `${averageRating} ★` : '— ★'" disabled />
+              </label>
+
+              <!-- Description -->
+              <label class="field span-2">
+                <span>Description</span>
+                <textarea v-model="profileForm.description" class="input" :class="{ 'input-error': profileErrors.description }" placeholder="Décrivez votre activité…" rows="3"></textarea>
+                <span v-if="profileErrors.description" class="error-msg">{{ profileErrors.description[0] }}</span>
+              </label>
+
+              <!-- Slug (discret) -->
+              <label class="field span-2 slug-field">
+                <input v-model="profileForm.slug" class="input slug-input" :class="{ 'input-error': profileErrors.slug }" placeholder="rayan-express" />
+                <span class="faint small">Identifiant public — utilisé dans votre page : /drivers/{{ profileForm.slug || '…' }}</span>
+                <span v-if="profileErrors.slug" class="error-msg">{{ profileErrors.slug[0] }}</span>
+              </label>
+
+              <!-- Disponibilité -->
+              <label class="field check">
+                <input v-model="profileForm.is_available" type="checkbox" />
+                <span>Disponible pour accepter de nouvelles missions</span>
+              </label>
+
+              <div class="field span-2">
+                <button class="btn btn-primary" :disabled="profileSaving" type="submit">
+                  {{ profileSaving ? '…' : currentProfile ? 'Enregistrer les modifications' : 'Créer mon profil public' }}
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <!-- ===================== Catalogue des services ===================== -->
+          <section class="card mb-16">
+            <div class="flex-between wrap mb-16">
+              <h3>Catalogue des services</h3>
+              <button v-if="!editingService" class="btn btn-outline" @click="startEditService({})">+ Ajouter</button>
+            </div>
+
+            <div v-if="servicesLoading" class="skeleton skel-row"></div>
+
+            <div v-else-if="services.length" class="flex-col">
+              <div v-for="s in services" :key="s.id" class="svc-row">
+                <div class="svc-main">
+                  <div class="svc-header">
+                    <b>{{ s.name }}</b>
+                    <span v-if="s.base_price" class="badge badge-green">dès {{ formatPrice(s.base_price) }}</span>
+                  </div>
+                  <p v-if="s.description" class="muted small mt-8">{{ s.description }}</p>
+                  <div class="svc-meta">
+                    <span class="badge" :class="s.is_active ? 'badge-green' : 'badge-red'">
+                      {{ s.is_active ? 'Actif' : 'Inactif' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="svc-actions">
+                  <button class="btn btn-ghost" @click="toggleService(s)">{{ s.is_active ? 'Désactiver' : 'Activer' }}</button>
+                  <button class="btn btn-ghost" @click="startEditService(s)">Éditer</button>
+                  <button class="btn btn-ghost danger" @click="deleteService(s)">Supprimer</button>
+                </div>
+              </div>
+            </div>
+            <p v-else class="muted small">Aucun service. Ajoutez vos services (ex : envoi express, livraison de repas…).</p>
+
+            <form v-if="editingService" class="form-grid mt-16 sub-form" @submit.prevent="saveService()">
+              <label class="field">
+                <span>Nom du service *</span>
+                <input v-model="serviceForm.name" class="input" :class="{ 'input-error': serviceErrors.name }" placeholder="Ex : Envoi express" />
+                <span v-if="serviceErrors.name" class="error-msg">{{ serviceErrors.name[0] }}</span>
+              </label>
+              <label class="field">
+                <span>Prix de base (DH)</span>
+                <input v-model="serviceForm.base_price" class="input" :class="{ 'input-error': serviceErrors.base_price }" type="number" min="0" placeholder="Ex : 40" />
+                <span v-if="serviceErrors.base_price" class="error-msg">{{ serviceErrors.base_price[0] }}</span>
+              </label>
+              <label class="field span-2">
+                <span>Description</span>
+                <textarea v-model="serviceForm.description" class="input" :class="{ 'input-error': serviceErrors.description }" placeholder="Décrivez ce service…"></textarea>
+                <span v-if="serviceErrors.description" class="error-msg">{{ serviceErrors.description[0] }}</span>
+              </label>
+              <label class="field check">
+                <input v-model="serviceForm.is_active" type="checkbox" />
+                <span>Service actif</span>
+              </label>
+              <div class="field span-2 flex">
+                <button class="btn btn-primary" :disabled="serviceSaving" type="submit">
+                  {{ serviceSaving ? '…' : editingService.id ? 'Enregistrer' : 'Ajouter le service' }}
+                </button>
+                <button type="button" class="btn btn-ghost" :disabled="serviceSaving" @click="cancelEditService()">Annuler</button>
+              </div>
+            </form>
+          </section>
+
+        </div>
+
+        <!-- ===================== Ta page publique ===================== -->
+        <aside class="profile-col">
+          <section v-if="currentProfile" class="card">
+            <h3 class="mb-16">Ta page publique</h3>
+            <div class="public-row">
+              <div class="qr-img">
+                <img v-if="qrSrc" :src="qrSrc" alt="QR code de la page publique" />
+              </div>
+              <div class="public-info">
+                <span class="small faint">Lien unique</span>
+                <div class="link-line">
+                  <b>{{ prettyLink }}</b>
+                </div>
+                <p class="faint small mt-8">
+                  Lien local actif : <code>{{ localPublicUrl }}</code>
+                </p>
+                <div class="flex wrap mt-16">
+                  <button class="btn btn-primary" @click="copyLink()"><AppIcon name="clipboard" /> Copier le lien</button>
+                  <button class="btn btn-outline" @click="goPublicPage()">
+                    <AppIcon name="eye" :size="18" /> Aperçu client
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
 
       <ToastMessage :message="toast" @close="toast = ''" />
     </main>
@@ -617,35 +462,36 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* ---------- Profil public ---------- */
 .profile-ok {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.875rem;
 }
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 16px;
+  gap: 0 1rem;
 }
 .span-2 { grid-column: span 2; }
 .field.check {
   flex-direction: row;
   align-items: center;
-  gap: 10px;
-  padding-top: 26px;
+  gap: 0.625rem;
+  padding-top: 1.625rem;
 }
 .field.check input {
-  width: 18px;
-  height: 18px;
+  width: 1.125rem;
+  height: 1.125rem;
   accent-color: var(--green);
 }
 
 .avatar-field { justify-content: center; }
 .avatar-lg {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1rem;
   background: var(--green);
   color: var(--green-ink);
   display: grid;
@@ -657,94 +503,109 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: 0.25rem;
 }
 
-/* Page publique */
-.public-row {
+/* Note affichée — input désactivé */
+.input-readonly {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* Slug — champ discret sous le formulaire */
+.slug-field {
+  margin-top: 0.25rem;
+}
+.slug-input {
+  font-size: 0.875rem;
+  color: var(--fg-2);
+}
+
+/* ---------- Services ---------- */
+.svc-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 0;
+  border-bottom: 0.0625rem solid var(--border);
+}
+.svc-row:last-child { border-bottom: none; }
+.svc-main { min-width: 0; flex: 1; }
+.svc-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
-.public-info { flex: 1; min-width: 240px; }
+.svc-meta { margin-top: 0.375rem; }
+.svc-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+.btn-ghost.danger { color: var(--red); }
+
+.sub-form {
+  background: var(--surface-2);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+/* ---------- Page publique ---------- */
+.public-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.125rem;
+}
+.public-info { min-width: 0; }
 .link-line {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-top: 6px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  margin-top: 0.375rem;
   font-size: 1.05rem;
   color: var(--fg);
 }
 .link-line b { color: var(--green); }
 .public-info code {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 2px 6px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.375rem;
   font-size: 0.78rem;
   overflow-wrap: anywhere;
 }
 .qr-img {
   background: #fff;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+  padding: 0.625rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--border);
+  align-self: center;
 }
 .qr-img img {
-  width: 140px;
-  height: 140px;
+  width: 8.75rem;
+  height: 8.75rem;
   display: block;
 }
 
-/* Zones */
-.zones-title { font-size: 1.5rem; }
-.zone-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
+/* ---------- Layout colonnes ---------- */
+.profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 1.125rem;
+  align-items: start;
 }
-.zone-row:last-child { border-bottom: none; }
-.zone-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.price-field { display: flex; flex-direction: column; gap: 4px; max-width: 220px; }
-.price-input { padding: 8px 12px; font-size: 1rem; }
-.zone-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.del-btn { padding: 8px 12px; }
+.profile-col { min-width: 0; }
 
-.skel-row { height: 64px; }
-.row-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-}
-.row-item:last-child { border-bottom: none; }
-.row-main { min-width: 0; }
-.row-actions {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-.btn-ghost.danger { color: var(--red); }
-.sub-form {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
+.skel-row { height: 4rem; }
+
+@media (max-width: 1100px) {
+  .profile-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 640px) {

@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateDriverProfileRequest;
 use App\Http\Resources\DriverProfileResource;
 use App\Models\DriverProfile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class DriverProfileController extends Controller
@@ -44,8 +45,13 @@ class DriverProfileController extends Controller
 
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
+        $data['slug'] = $this->resolveUniqueSlug($data['slug']);
 
-        return response()->json(new DriverProfileResource(DriverProfile::create($data)), 201);
+        if ($request->filled('phone')) {
+            $request->user()->update(['phone' => $request->input('phone')]);
+        }
+
+        return response()->json(new DriverProfileResource(DriverProfile::create(Arr::except($data, ['phone']))), 201);
     }
 
     public function show($id, Request $request)
@@ -63,7 +69,17 @@ class DriverProfileController extends Controller
 
         $this->authorize('update', $profile);
 
-        $profile->update($request->validated());
+        $validated = $request->validated();
+
+        if (isset($validated['slug'])) {
+            $validated['slug'] = $this->resolveUniqueSlug($validated['slug'], ignoreId: $profile->id);
+        }
+
+        if ($request->filled('phone')) {
+            $request->user()->update(['phone' => $request->input('phone')]);
+        }
+
+        $profile->update(Arr::except($validated, ['phone']));
 
         return new DriverProfileResource($profile->refresh());
     }
@@ -97,5 +113,25 @@ class DriverProfileController extends Controller
         $profile->delete();
 
         return response()->json(['message' => 'Profil supprimé avec succès']);
+    }
+
+    /**
+     * Garantit un slug libre : si celui demandé est pris, on ajoute un
+     * suffixe numérique (-2, -3…) jusqu'à trouver une place. La création de
+     * profil ne peut donc plus échouer sur un identifiant déjà utilisé.
+     */
+    private function resolveUniqueSlug(string $slug, ?int $ignoreId = null): string
+    {
+        $base = $slug === '' ? 'profil' : $slug;
+        $candidate = $base;
+        $i = 1;
+
+        while (DriverProfile::where('slug', $candidate)
+            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->exists()) {
+            $candidate = $base.'-'.(++$i);
+        }
+
+        return $candidate;
     }
 }

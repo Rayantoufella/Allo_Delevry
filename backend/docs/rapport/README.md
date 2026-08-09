@@ -18,6 +18,10 @@ Rapport de chaque tâche réalisée sur le projet, pour la révision complète d
 | AR-41 | Durcissement flux de livraison (appartenance `ai_request_draft_id`, test bout-en-bout) | [rapport_ar41_durcissement_flux.md](rapport_ar41_durcissement_flux.md) | Terminé |
 | F08 | Préremplissage IA des demandes (OpenRouter/Nemotron : service, job, endpoint, RG11) | [rapport_f08_prefill_ia.md](rapport_f08_prefill_ia.md) | Terminé* |
 | ProofPickup | Photo de récupération obligatoire (RG06 : `pickup_photo` requis avant `colis_recupere`, types verrouillés) | [rapport_photo_recuperation.md](rapport_photo_recuperation.md) | Terminé |
+| ClientScope | Compte client rattaché à un livreur précis (inscription/connexion scopées, `driver_key`, isolation des ressources dérivées) — tests, seeders | [rapport_client_scope_driver.md](rapport_client_scope_driver.md) | Terminé (tests/docs) |
+| AgentIA | Agent IA restructuré (`app/Services/AiRequestAnalyzer` + job light) + worker queue opérationnel sur le stack Sail (`backend/compose.yaml`) | [rapport_agent_ia_structure.md](rapport_agent_ia_structure.md) | Terminé |
+| UI-01 | Conformité de l'UI au prototype (jeu d'icônes, bandeau, navigation livreur, champs, couleurs de statut, suivi) — *frontend* | [rapport_ui_conformite_prototype.md](rapport_ui_conformite_prototype.md) | Terminé (rendu visuel non vérifié) |
+| UI-02 | Logo de la marque (détourage, monogramme, verrouillage clair/sombre, favicons, `npm run logo`) — *frontend* | [rapport_ui_logo_marque.md](rapport_ui_logo_marque.md) | Terminé (rendu visuel non vérifié) |
 
 ## Guide du code par feature (`docs/guide/`)
 

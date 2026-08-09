@@ -19,7 +19,8 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
-            'role' => fake()->randomElement([User::ROLE_CLIENT, User::ROLE_DRIVER]),
+            'role' => User::ROLE_DRIVER,
+            'driver_id' => null,
             'phone' => fake()->optional()->phoneNumber(),
         ];
     }
@@ -31,10 +32,28 @@ class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * Client rattaché à un livreur parent créé automatiquement, pour que les
+     * tests existants appelant ->client() continuent de fonctionner sans
+     * modification.
+     */
     public function client(): static
     {
         return $this->state(fn (array $attributes) => [
             'role' => User::ROLE_CLIENT,
+            'driver_id' => fn () => User::factory()->driver()->create()->id,
+        ]);
+    }
+
+    /**
+     * Client rattaché à un livreur précis, utilisé par les tests
+     * d'isolation entre livreurs.
+     */
+    public function clientOf(User $driver): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => User::ROLE_CLIENT,
+            'driver_id' => $driver->id,
         ]);
     }
 
@@ -42,6 +61,7 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => User::ROLE_DRIVER,
+            'driver_id' => null,
         ]);
     }
 }

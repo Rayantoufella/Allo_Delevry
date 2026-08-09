@@ -28,7 +28,7 @@ function ar41Driver(): User
     return $driver;
 }
 
-function ar41CreatePayload(int $serviceId, int $deliveryZoneId, ?int $draftId): array
+function ar41CreatePayload(int $serviceId, int $deliveryZoneId, ?int $draftId, bool $includeAmountToCollect = true): array
 {
     $payload = [
         'service_id' => $serviceId,
@@ -39,8 +39,11 @@ function ar41CreatePayload(int $serviceId, int $deliveryZoneId, ?int $draftId): 
         'delivery_address' => '18 Rue Lafayette, 75009 Paris',
         'package_description' => 'Carton 5kg',
         'product_amount' => 299.99,
-        'amount_to_collect' => 299.99,
     ];
+
+    if ($includeAmountToCollect) {
+        $payload['amount_to_collect'] = 299.99;
+    }
 
     if ($draftId !== null) {
         $payload['ai_request_draft_id'] = $draftId;
@@ -53,8 +56,8 @@ it('runs the full delivery lifecycle end to end from creation by the client', fu
     Queue::fake();
     Storage::fake('public');
 
-    $client = User::factory()->client()->create();
     $driver = ar41Driver();
+    $client = User::factory()->clientOf($driver)->create();
     $service = Service::factory()->create(['user_id' => $driver->id]);
     $deliveryZone = DeliveryZone::factory()->create(['user_id' => $driver->id]);
     $draft = AiRequestDraft::factory()->create([
@@ -77,29 +80,21 @@ it('runs the full delivery lifecycle end to end from creation by the client', fu
     $deliveryRequest = DeliveryRequest::findOrFail($requestId);
     expect($draft->refresh()->deliveryRequests()->count())->toBe(1);
 
-    // 2. Driver proposes a price.
+    // 2. Driver accepts directly (fixed zone tariff — no price proposal).
     Sanctum::actingAs($driver);
     $this->patchJson("/api/delivery-requests/{$requestId}/status", [
-        'status' => DeliveryRequest::STATUS_PRIX_PROPOSE,
-        'proposed_price' => 45.00,
+        'status' => DeliveryRequest::STATUS_CONFIRMEE,
     ])->assertSuccessful()
-        ->assertJsonPath('data.status', DeliveryRequest::STATUS_PRIX_PROPOSE);
-
-    // 3. Client accepts the price.
-    Sanctum::actingAs($client);
-    $this->postJson("/api/delivery-requests/{$requestId}/confirm-price")
-        ->assertSuccessful()
         ->assertJsonPath('data.status', DeliveryRequest::STATUS_CONFIRMEE);
 
-    // 4. Driver generates the confirmation code.
-    Sanctum::actingAs($driver);
+    // 3. Driver generates the confirmation code.
     $codeResponse = $this->postJson("/api/delivery-requests/{$requestId}/generate-code")
         ->assertSuccessful();
     $code = $codeResponse->json('code');
     expect($code)->toBeString()->toHaveLength(6);
     expect(Hash::check($code, $deliveryRequest->refresh()->confirmation_code_hash))->toBeTrue();
 
-    // 5. Driver uploads the pickup photo, then picks up the parcel.
+    // 4. Driver uploads the pickup photo, then picks up the parcel.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $requestId,
         'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
@@ -110,26 +105,26 @@ it('runs the full delivery lifecycle end to end from creation by the client', fu
         'status' => DeliveryRequest::STATUS_COLIS_RECUPERE,
     ])->assertSuccessful();
 
-    // 6. Driver is on the way.
+    // 5. Driver is on the way.
     $this->patchJson("/api/delivery-requests/{$requestId}/status", [
         'status' => DeliveryRequest::STATUS_EN_LIVRAISON,
     ])->assertSuccessful();
 
-    // 7. Driver uploads a proof of delivery.
+    // 6. Driver uploads a proof of delivery.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $requestId,
         'proof_type' => 'photo',
         'file' => UploadedFile::fake()->image('proof.jpg'),
     ])->assertCreated();
 
-    // 8. Client confirms the delivery with the code.
+    // 7. Client confirms the delivery with the code.
     Sanctum::actingAs($client);
     $this->postJson("/api/delivery-requests/{$requestId}/confirm-delivery", [
         'code' => $code,
     ])->assertSuccessful()
         ->assertJsonPath('data.status', DeliveryRequest::STATUS_LIVREE);
 
-    // 9. Timestamps and history are recorded.
+    // 8. Timestamps and history are recorded.
     $deliveryRequest->refresh();
     expect($deliveryRequest->status)->toBe(DeliveryRequest::STATUS_LIVREE);
     expect($deliveryRequest->picked_up_at)->not->toBeNull();
@@ -142,7 +137,6 @@ it('runs the full delivery lifecycle end to end from creation by the client', fu
         ->all();
 
     expect($history)->toBe([
-        DeliveryRequest::STATUS_PRIX_PROPOSE,
         DeliveryRequest::STATUS_CONFIRMEE,
         DeliveryRequest::STATUS_COLIS_RECUPERE,
         DeliveryRequest::STATUS_EN_LIVRAISON,
@@ -152,10 +146,31 @@ it('runs the full delivery lifecycle end to end from creation by the client', fu
     Queue::assertPushed(CreateDeliveryRequestNotificationJob::class);
 });
 
-it('rejects a request linked to a draft owned by another client', function () {
-    $client = User::factory()->client()->create();
-    $otherClient = User::factory()->client()->create();
+it('allows creating a request without amount_to_collect when the amount is unknown', function () {
+    Queue::fake();
+
     $driver = ar41Driver();
+    $client = User::factory()->clientOf($driver)->create();
+    $service = Service::factory()->create(['user_id' => $driver->id]);
+    $deliveryZone = DeliveryZone::factory()->create(['user_id' => $driver->id]);
+
+    Sanctum::actingAs($client);
+    $created = $this->postJson(
+        '/api/drivers/ar41-driver-slug/delivery-requests',
+        ar41CreatePayload($service->id, $deliveryZone->id, null, includeAmountToCollect: false)
+    )->assertCreated();
+
+    $created->assertJsonPath('status', DeliveryRequest::STATUS_EN_ATTENTE);
+
+    $deliveryRequest = DeliveryRequest::findOrFail($created->json('id'));
+    expect($deliveryRequest->amount_to_collect)->toBeNull();
+    expect($deliveryRequest->product_amount)->not->toBeNull();
+});
+
+it('rejects a request linked to a draft owned by another client', function () {
+    $driver = ar41Driver();
+    $client = User::factory()->clientOf($driver)->create();
+    $otherClient = User::factory()->client()->create();
     $service = Service::factory()->create(['user_id' => $driver->id]);
     $deliveryZone = DeliveryZone::factory()->create(['user_id' => $driver->id]);
     $foreignDraft = AiRequestDraft::factory()->create([

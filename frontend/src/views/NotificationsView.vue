@@ -5,6 +5,7 @@ import api from '../api/axios'
 import { apiError } from '../api/axios'
 import { usePolling } from '../composables/usePolling'
 import { timeAgo } from '../lib/statuses'
+import AppIcon from '../components/AppIcon.vue'
 import DriverSidebar from '../components/driver/DriverSidebar.vue'
 
 /**
@@ -26,14 +27,14 @@ const loadingMore = ref(false)
 const actionError = ref('')
 
 const TYPE_META = {
-  delivery_request_created: { icon: '📦', label: 'Nouvelle demande' },
-  status_changed: { icon: '🔄', label: 'Statut mis à jour' },
-  chat_message: { icon: '💬', label: 'Nouveau message' },
-  review: { icon: '⭐', label: 'Nouvel avis' },
+  delivery_request_created: { icon: 'package', label: 'Nouvelle demande' },
+  status_changed: { icon: 'refresh', label: 'Statut mis à jour' },
+  chat_message: { icon: 'chat', label: 'Nouveau message' },
+  review: { icon: 'star', label: 'Nouvel avis' },
 }
 
 function typeMeta(type) {
-  return TYPE_META[type] || { icon: '🔔', label: 'Notification' }
+  return TYPE_META[type] || { icon: 'bell', label: 'Notification' }
 }
 
 async function markAllRead() {
@@ -127,7 +128,7 @@ onMounted(() => {
           :class="{ unread: !n.read_at }"
           @click="openNotification(n)"
         >
-          <div class="notif-icon">{{ typeMeta(n.type).icon }}</div>
+          <div class="notif-icon"><AppIcon :name="typeMeta(n.type).icon" :size="18" /></div>
           <div class="notif-body">
             <div class="flex-between wrap">
               <span class="bold small">{{ n.title || typeMeta(n.type).label }}</span>
@@ -158,15 +159,15 @@ onMounted(() => {
 <style scoped>
 .block { display: block; }
 .skel-notif {
-  height: 84px;
+  height: 5.25rem;
 }
 .notif {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 0.875rem;
   text-align: left;
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   transition: border-color 0.2s, background 0.2s;
   position: relative;
 }
@@ -179,12 +180,13 @@ onMounted(() => {
   background: var(--surface-2);
 }
 .notif-icon {
-  font-size: 1.4rem;
+  /* Même couleur pour toutes les notifications : elles sont de même niveau. */
+  color: var(--green);
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  width: 44px;
-  height: 44px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.625rem;
+  width: 2.75rem;
+  height: 2.75rem;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -196,20 +198,20 @@ onMounted(() => {
 .chip-type {
   display: inline-block;
   background: var(--surface-2);
-  border-radius: 999px;
-  padding: 2px 10px;
-  margin-top: 8px;
+  border-radius: 62.4375rem;
+  padding: 0.125rem 0.625rem;
+  margin-top: 0.5rem;
 }
 .dot {
-  width: 10px;
-  height: 10px;
+  width: 0.625rem;
+  height: 0.625rem;
   border-radius: 50%;
   background: var(--green);
   flex-shrink: 0;
 }
 .empty {
   text-align: center;
-  padding: 36px 20px;
+  padding: 2.25rem 1.25rem;
 }
 .center { text-align: center; }
 </style>

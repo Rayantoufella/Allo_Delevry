@@ -32,7 +32,9 @@ class DeliveryRequest extends Model
 
     /** Statuts atteignables depuis chaque statut (machine à états). */
     private const TRANSITIONS = [
-        self::STATUS_EN_ATTENTE => [self::STATUS_PRIX_PROPOSE, self::STATUS_REFUSEE],
+        // Nouveau flux : le driver accepte (confirmee) ou refuse directement ;
+        // prix_propose reste accessible pour les demandes legacy en vol.
+        self::STATUS_EN_ATTENTE => [self::STATUS_PRIX_PROPOSE, self::STATUS_REFUSEE, self::STATUS_CONFIRMEE],
         self::STATUS_PRIX_PROPOSE => [self::STATUS_REFUSEE],
         self::STATUS_CONFIRMEE => [self::STATUS_COLIS_RECUPERE],
         self::STATUS_COLIS_RECUPERE => [self::STATUS_EN_LIVRAISON],

@@ -1,4 +1,5 @@
 ﻿<script setup>
+import AppIcon from "../components/AppIcon.vue"
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api, { apiError } from '../api/axios'
@@ -50,13 +51,13 @@ function loadMore() {
 
 <template>
   <div class="my-requests">
-    <h2 style="font-size: 1.75rem; margin-bottom: 20px">Mes demandes</h2>
+    <h2 style="font-size: 1.75rem; margin-bottom: 1.25rem">Mes demandes</h2>
 
     <!-- Loading -->
-    <div v-if="loading" class="flex-col" style="gap: 14px">
-      <div class="skeleton" style="height: 100px"></div>
-      <div class="skeleton" style="height: 100px"></div>
-      <div class="skeleton" style="height: 100px"></div>
+    <div v-if="loading" class="flex-col" style="gap: 0.875rem">
+      <div class="skeleton" style="height: 6.25rem"></div>
+      <div class="skeleton" style="height: 6.25rem"></div>
+      <div class="skeleton" style="height: 6.25rem"></div>
     </div>
 
     <!-- Error -->
@@ -64,12 +65,12 @@ function loadMore() {
 
     <!-- Empty -->
     <div v-else-if="!requests.length" class="empty-state card">
-      <span class="empty-icon">📦</span>
+      <span class="empty-icon"><AppIcon name="package" :size="34" /></span>
       <h3>Aucune demande pour le moment</h3>
-      <p class="muted small" style="margin-top: 8px">
+      <p class="muted small" style="margin-top: 0.5rem">
         Créez votre première demande de livraison pour commencer.
       </p>
-      <router-link class="btn btn-primary" style="margin-top: 16px" :to="{ name: 'landing' }">
+      <router-link class="btn btn-primary" style="margin-top: 1rem" :to="{ name: 'landing' }">
         Trouver un livreur
       </router-link>
     </div>
@@ -85,13 +86,13 @@ function loadMore() {
       </div>
 
       <!-- Load more -->
-      <div v-if="currentPage < totalPages" style="text-align: center; margin-top: 16px">
+      <div v-if="currentPage < totalPages" style="text-align: center; margin-top: 1rem">
         <button
           class="btn btn-outline"
           :disabled="loadingMore"
           @click="loadMore"
         >
-          <span v-if="loadingMore" class="spinner"></span>
+          <span v-if="loadingMore" class="spinner spinner-sm"></span>
           <span v-else>Charger plus</span>
         </button>
       </div>
@@ -101,39 +102,25 @@ function loadMore() {
 
 <style scoped>
 .my-requests {
-  max-width: 740px;
+  max-width: 46.25rem;
   margin: 0 auto;
-  padding-bottom: 48px;
+  padding-bottom: 3rem;
 }
 
 .requests-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .empty-state {
   text-align: center;
-  padding: 56px 16px;
+  padding: 3.5rem 1rem;
 }
 
 .empty-icon {
   font-size: 3rem;
   display: block;
-  margin-bottom: 12px;
-}
-
-.spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 2.5px solid var(--border);
-  border-top-color: var(--green);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  margin-bottom: 0.75rem;
 }
 </style>

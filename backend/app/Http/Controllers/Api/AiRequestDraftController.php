@@ -37,9 +37,22 @@ class AiRequestDraftController extends Controller
 
         $driverProfile = DriverProfile::where('slug', $request->validated()['driver_slug'])->firstOrFail();
 
+        $inputMessage = trim($request->validated()['input_message']);
+
+        // Anti-doublon : réutiliser un draft récent avec le même message
+        $existingDraft = AiRequestDraft::where('user_id', $request->user()->id)
+            ->where('input_message', $inputMessage)
+            ->whereIn('status', [AiRequestDraft::STATUS_PENDING, AiRequestDraft::STATUS_DONE])
+            ->where('created_at', '>=', now()->subMinutes(2))
+            ->first();
+
+        if ($existingDraft) {
+            return response()->json(new AiRequestDraftResource($existingDraft), 200);
+        }
+
         $draft = AiRequestDraft::create([
             'user_id' => $request->user()->id,
-            'input_message' => $request->validated()['input_message'],
+            'input_message' => $inputMessage,
             'status' => AiRequestDraft::STATUS_PENDING,
         ]);
 

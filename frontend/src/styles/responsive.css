@@ -1,0 +1,123 @@
+/* ---------- Points de rupture ----------
+   Paliers du projet : 1280 / 1024 / 768 / 480.
+   Chargé après les modules pour pouvoir les surcharger. Les règles responsive
+   propres à une seule vue restent dans sa balise <style>.
+
+   Règle de fond : les pistes de grille sont déclarées en `minmax(0, 1fr)` et
+   non en `1fr`. Le minimum implicite d'une piste `1fr` est la largeur
+   intrinsèque de son contenu : un enfant large (adresse, galerie, tableau)
+   empêche alors la colonne de se réduire et fait défiler la page. */
+
+/* ===== ≤ 80rem — on resserre l'ossature avant de toucher aux grilles =====
+   `.container` n'a plus besoin d'être resserré ici : sa marge latérale est
+   déjà celle du prototype (20px) et son cap à 1080px la rend sans effet
+   au-dessus de cette largeur. */
+@media (max-width: 1280px) {
+  .driver-main { padding: 1.5rem 1.375rem; }
+}
+
+/* ===== ≤ 64rem — les grilles denses tombent à deux colonnes ===== */
+@media (max-width: 1024px) {
+  /* Cartes de statistiques : 4 → 2 colonnes. */
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Blocs appariés (« Revenus 7 jours » / « Disponibilité ») : empilés. */
+  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ===== ≤ 56.25rem — la sidebar livreur devient une barre de navigation basse =====
+   Empilée verticalement, elle occupait tout le premier écran du téléphone et
+   repoussait le contenu de la page sous la ligne de flottaison. */
+@media (max-width: 900px) {
+  .driver-layout { grid-template-columns: minmax(0, 1fr); }
+  .driver-main {
+    min-width: 0;
+    /* Réserve la place de la barre fixe pour qu'elle ne recouvre jamais la
+       fin du contenu. */
+    padding-bottom: 5.25rem;
+  }
+
+  .driver-sidebar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 45;
+    padding: 0.375rem 0.5rem calc(0.375rem + env(safe-area-inset-bottom));
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-right: none;
+    border-top: 0.0625rem solid var(--border);
+    background: var(--bg-2);
+  }
+  .driver-sidebar::-webkit-scrollbar { display: none; }
+
+  /* Le bloc intérieur redevient une rangée : plus de sticky ni de hauteur
+     d'écran, c'est la barre elle-même qui est fixée en bas. */
+  .sidebar-sticky {
+    position: static;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-around;
+    gap: 0.25rem;
+    min-height: 0;
+  }
+
+  .sidebar-link {
+    flex: 1 0 auto;
+    width: auto;
+    min-width: 4rem;
+    /* Icône au-dessus du libellé : le format des barres de navigation basses. */
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.6875rem;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* Le compteur se pose sur l'icône plutôt que de pousser le libellé. */
+  .sidebar-link .counter {
+    position: absolute;
+    top: 0.125rem;
+    right: 50%;
+    margin-left: 0;
+    transform: translateX(1.625rem);
+  }
+  .sidebar-link { position: relative; }
+
+  /* Marque et revenus sont déjà présents dans le header et le tableau de bord :
+     leur place profite mieux au contenu sur petit écran. */
+  .sidebar-brand,
+  .sidebar-footer { display: none; }
+}
+
+/* ===== ≤ 48rem — passage en colonne unique ===== */
+@media (max-width: 768px) {
+  .grid-2,
+  .grid-3,
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-2,
+  .grid-3 { grid-template-columns: minmax(0, 1fr); }
+
+  .banner { gap: 0.625rem; padding: 0 0.875rem; }
+  .driver-main { padding: 1.25rem 1rem 5.25rem; }
+
+  /* Tout tableau devient défilant dans son propre cadre plutôt que d'élargir
+     la page. À réserver aux vraies tables ; les listes passent en cartes. */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll > table { min-width: 35rem; }
+}
+
+/* ===== ≤ 30rem — une seule colonne partout ===== */
+@media (max-width: 480px) {
+  .grid-2,
+  .grid-3,
+  .grid-4 { grid-template-columns: minmax(0, 1fr); }
+
+  .container { padding: 0 0.875rem; }
+  .page { padding: 1.25rem 0 3rem; }
+  .driver-main { padding: 1rem 0.75rem 5.25rem; }
+}

@@ -5,6 +5,7 @@ import api from '../../api/axios'
 import { usePolling } from '../../composables/usePolling'
 import { useAuthStore } from '../../stores/auth'
 import { TERMINAL_STATUSES, formatPrice } from '../../lib/statuses'
+import AppIcon from '../AppIcon.vue'
 
 /**
  * Sidebar permanente de l'espace livreur (conforme au prototype UI).
@@ -19,7 +20,7 @@ const auth = useAuthStore()
 
 const { data, start } = usePolling(async () => {
   const res = await api.get('/dashboard')
-  return res.data.data
+  return res.data
 }, 10000)
 
 const dash = computed(() => data.value || {})
@@ -58,6 +59,7 @@ const missionTarget = computed(() => {
 })
 
 const pendingCount = computed(() => dash.value.pending_requests ?? 0)
+const unreadCount = computed(() => dash.value.unread_notifications ?? 0)
 
 // ---- Revenus du jour (estimated sinon collected) ----
 const dailyRevenue = computed(() => {
@@ -68,10 +70,10 @@ const dailyRevenue = computed(() => {
 })
 
 const isMission = computed(() => route.name === 'driver-mission')
-const isZones = computed(() => route.name === 'driver-profile' && route.query?.section === 'zones')
+const isZones = computed(() => route.name === 'driver-zones')
 
 function goZones() {
-  router.push({ name: 'driver-profile', query: { section: 'zones' } })
+  router.push({ name: 'driver-zones' })
 }
 
 onMounted(() => {
@@ -82,14 +84,17 @@ onMounted(() => {
 
 <template>
   <aside class="driver-sidebar">
+    <div class="sidebar-sticky">
     <!-- Marque + présence -->
     <div class="sidebar-brand">
       <div class="brand-avatar">{{ brandLetter }}</div>
       <div class="brand-text">
         <div class="name">{{ brandName }}</div>
+        <!-- `isAvailable` était calculé mais jamais lu : la marque s'affichait
+             « en ligne » même pour un livreur en pause. -->
         <div class="sub">
-          <span class="dot-online"></span>
-          {{ brandCity ? `${brandCity} · ` : '' }}en ligne
+          <span :class="isAvailable ? 'dot-online' : 'dot-paused'"></span>
+          {{ brandCity ? `${brandCity} · ` : '' }}{{ isAvailable ? 'en ligne' : 'en pause' }}
         </div>
       </div>
     </div>
@@ -100,13 +105,8 @@ onMounted(() => {
       :class="{ active: route.name === 'driver-dashboard' }"
       @click="router.push({ name: 'driver-dashboard' })"
     >
-      <span class="side-icon">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 11 12 4l8 7" />
-          <path d="M6 10v10h12V10" />
-        </svg>
-      </span>
-      <span>Tableau de bord</span>
+      <span class="side-icon"><AppIcon name="home" :size="19" /></span>
+      <span class="side-label"><span class="lbl-long">Tableau de bord</span><span class="lbl-short">Accueil</span></span>
     </button>
 
     <button
@@ -114,13 +114,8 @@ onMounted(() => {
       :class="{ active: route.name === 'driver-requests' }"
       @click="router.push({ name: 'driver-requests' })"
     >
-      <span class="side-icon">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 12h-6l-2 3h-4l-2-3H2" />
-          <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-        </svg>
-      </span>
-      <span>Demandes</span>
+      <span class="side-icon"><AppIcon name="inbox" :size="19" /></span>
+      <span class="side-label"><span class="lbl-long">Demandes</span><span class="lbl-short">Demandes</span></span>
       <span v-if="pendingCount > 0" class="counter">{{ pendingCount }}</span>
     </button>
 
@@ -131,15 +126,21 @@ onMounted(() => {
       :title="canOpenMission ? 'Mission en cours' : 'Aucune mission active'"
       @click="canOpenMission && router.push(missionTarget)"
     >
-      <span class="side-icon">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M1 3h15v13H1z" />
-          <path d="M16 8h4l3 3v5h-7V8z" />
-          <circle cx="5.5" cy="18.5" r="2.5" />
-          <circle cx="18.5" cy="18.5" r="2.5" />
-        </svg>
-      </span>
-      <span>Mission active</span>
+      <span class="side-icon"><AppIcon name="truck" :size="19" /></span>
+      <span class="side-label"><span class="lbl-long">Mission active</span><span class="lbl-short">Mission</span></span>
+    </button>
+
+    <!-- Les notifications vivaient dans le bandeau, en doublon de cette
+         navigation. Elles rejoignent la sidebar, seul lieu de navigation de
+         l'espace livreur (barre basse sur mobile). -->
+    <button
+      class="sidebar-link"
+      :class="{ active: route.name === 'driver-notifications' }"
+      @click="router.push({ name: 'driver-notifications' })"
+    >
+      <span class="side-icon"><AppIcon name="bell" :size="19" /></span>
+      <span class="side-label"><span class="lbl-long">Notifications</span><span class="lbl-short">Notifs</span></span>
+      <span v-if="unreadCount > 0" class="counter">{{ unreadCount }}</span>
     </button>
 
     <button
@@ -147,23 +148,13 @@ onMounted(() => {
       :class="{ active: route.name === 'driver-profile' && !isZones }"
       @click="router.push({ name: 'driver-profile' })"
     >
-      <span class="side-icon">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" />
-        </svg>
-      </span>
-      <span>Profil &amp; marque</span>
+      <span class="side-icon"><AppIcon name="user" :size="19" /></span>
+      <span class="side-label"><span class="lbl-long">Profil &amp; marque</span><span class="lbl-short">Profil</span></span>
     </button>
 
     <button class="sidebar-link" :class="{ active: isZones }" @click="goZones()">
-      <span class="side-icon">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 21s-7-6.1-7-11a7 7 0 1 1 14 0c0 4.9-7 11-7 11z" />
-          <circle cx="12" cy="10" r="2.6" />
-        </svg>
-      </span>
-      <span>Zones &amp; tarifs</span>
+      <span class="side-icon"><AppIcon name="map" :size="19" /></span>
+      <span class="side-label"><span class="lbl-long">Zones &amp; tarifs</span><span class="lbl-short">Zones</span></span>
     </button>
 
     <!-- Revenus du jour -->
@@ -183,44 +174,63 @@ onMounted(() => {
         <template v-else>Objectif du jour : 1 850 DH</template>
       </div>
     </div>
+    </div>
   </aside>
 </template>
 
 <style scoped>
 /* --- Marque (prototype : avatar vert, pas de séparateur) --- */
 .sidebar-brand {
-  gap: 11px;
-  padding: 8px 10px 16px;
+  gap: 0.6875rem;
+  padding: 0.5rem 0.625rem 1rem;
   border-bottom: none;
   margin-bottom: 0;
 }
 .brand-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
   background: var(--green);
   color: var(--green-ink);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 20px;
+  font-size: 1.25rem;
   flex-shrink: 0;
 }
 .brand-text { min-width: 0; }
-.sidebar-brand .name { font-size: 15px; }
-.sidebar-brand .sub { display: flex; align-items: center; gap: 6px; }
+/* Une marque longue tient sur deux lignes au plus, sans repousser le reste
+   de la colonne. */
+.sidebar-brand .name {
+  font-size: 0.9375rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* La ligne de présence reste sur une seule ligne : dans les 240px de la colonne
+   elle se cassait en deux et déséquilibrait le bloc de marque. */
+.sidebar-brand .sub {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-/* --- Liens : icônes SVG --- */
+/* --- Liens : icônes SVG ---
+   L'icône prend la couleur de son entrée (`currentColor`) : la teinter en vert
+   sur l'entrée active ajoutait un second signal par-dessus le fond `--surface`,
+   là où le prototype n'en donne qu'un. */
 .side-icon {
   display: flex;
-  width: 20px;
+  width: 1.25rem;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--fg-3);
 }
-.sidebar-link.active .side-icon,
-.sidebar-link:hover .side-icon { color: var(--green); }
 
 .sidebar-link:disabled {
   opacity: 0.45;
@@ -228,24 +238,32 @@ onMounted(() => {
 }
 .sidebar-link .counter {
   margin-left: auto;
-  min-width: 22px;
+  min-width: 1.375rem;
   text-align: center;
 }
 
+/* Libellé court : réservé à la barre de navigation basse, où cinq entrées
+   doivent tenir sans défilement sur un écran de 375 px. */
+.lbl-short { display: none; }
+@media (max-width: 560px) {
+  .lbl-long { display: none; }
+  .lbl-short { display: inline; }
+}
+
 /* --- Pied : objectif de revenus --- */
-.foot-label { font-size: 12px; color: var(--fg-2); font-weight: 700; }
+.foot-label { font-size: 0.75rem; color: var(--fg-2); font-weight: 700; }
 .progress {
-  height: 6px;
-  border-radius: 4px;
+  height: 0.375rem;
+  border-radius: 0.25rem;
   background: var(--surface-2);
-  margin-top: 10px;
+  margin-top: 0.625rem;
   overflow: hidden;
 }
 .progress-fill {
   height: 100%;
   background: var(--green);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   transition: width 0.4s ease;
 }
-.foot-sub { font-size: 11px; color: var(--fg-3); margin-top: 6px; font-weight: 600; }
+.foot-sub { font-size: 0.6875rem; color: var(--fg-3); margin-top: 0.375rem; font-weight: 600; }
 </style>

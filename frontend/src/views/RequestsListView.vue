@@ -152,26 +152,26 @@ onMounted(load)
 <style scoped>
 .tabs {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
 }
 .tab {
-  border-radius: 999px;
-  padding: 8px 16px;
+  border-radius: 62.4375rem;
+  padding: 0.5rem 1rem;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 0.4375rem;
 }
 .tab-count {
   background: var(--surface-3);
   color: var(--fg-2);
-  border-radius: 999px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  border-radius: 62.4375rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 800;
 }
 .btn-primary .tab-count {
@@ -181,21 +181,21 @@ onMounted(load)
 .pill-pending {
   background: var(--green);
   color: var(--green-ink);
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-size: 13px;
+  border-radius: 62.4375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   white-space: nowrap;
 }
 .skel-card {
-  height: 130px;
+  height: 8.125rem;
 }
 .empty {
   text-align: center;
-  padding: 36px 20px;
+  padding: 2.25rem 1.25rem;
 }
 .center {
   text-align: center;

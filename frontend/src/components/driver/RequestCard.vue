@@ -1,7 +1,9 @@
 <script setup>
+import AppIcon from "../AppIcon.vue"
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { STATUS, formatPrice, timeAgo } from '../../lib/statuses'
+import { serviceIcon } from '../../lib/serviceIcons'
 import StatusBadge from '../StatusBadge.vue'
 
 /**
@@ -23,6 +25,9 @@ const isNew = computed(() => props.request.status === STATUS.EN_ATTENTE)
 const amount = computed(() =>
   props.request.amount_to_collect ?? props.request.proposed_price ?? null,
 )
+/* La ligne porte l'icône de son service, comme dans le prototype : une liste
+   de missions toutes marquées « colis » ne se parcourt pas du regard. */
+const icon = computed(() => serviceIcon(props.request.service))
 const routeLine = computed(() => {
   const from = props.request.pickup_address
   const to = props.request.delivery_address
@@ -38,15 +43,7 @@ function go() {
 <template>
   <div class="req" :class="{ clickable: arrow }" @click="arrow && go()">
     <div class="req-icon">
-      <svg
-        width="21" height="21" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="1.7"
-        stroke-linecap="round" stroke-linejoin="round"
-      >
-        <path d="M3.3 7.5 12 3l8.7 4.5v9L12 21l-8.7-4.5z" />
-        <path d="M3.3 7.5 12 12l8.7-4.5" />
-        <path d="M12 12v9" />
-      </svg>
+      <AppIcon :name="icon" :size="20" />
     </div>
 
     <div class="req-main">
@@ -56,12 +53,12 @@ function go() {
       </div>
       <div class="req-sub">
         <span v-if="request.pickup_address" class="req-stop">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6" /></svg>
+          <svg style="width:0.75rem;height:0.75rem" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6" /></svg>
           <span>{{ request.pickup_address }}</span>
         </span>
         <span v-if="request.pickup_address && request.delivery_address" class="req-sep">→</span>
         <span v-if="request.delivery_address" class="req-stop req-stop-dest">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z" /><circle cx="12" cy="10" r="2.6" /></svg>
+          <svg style="width:0.75rem;height:0.75rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z" /><circle cx="12" cy="10" r="2.6" /></svg>
           <span>{{ request.delivery_address }}</span>
         </span>
       </div>
@@ -77,7 +74,7 @@ function go() {
     <div v-if="!arrow" class="req-full">
       <p v-if="routeLine" class="req-route">{{ routeLine }}</p>
       <p v-if="request.recipient_name || request.recipient_phone" class="req-recipient">
-        📍 {{ request.recipient_name }}<template v-if="request.recipient_phone"> · {{ request.recipient_phone }}</template>
+        <AppIcon name="pin" :size="15" /> {{ request.recipient_name }}<template v-if="request.recipient_phone"> · {{ request.recipient_phone }}</template>
       </p>
       <button class="btn btn-outline" @click="go">Gérer la mission</button>
     </div>
@@ -90,11 +87,11 @@ function go() {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 14px;
-  padding: 16px 18px;
-  border-radius: 16px;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  border-radius: 1rem;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   transition: border-color 0.2s, transform 0.2s;
 }
 .req.clickable { cursor: pointer; }
@@ -103,9 +100,9 @@ function go() {
 
 .req-icon {
   flex: 0 0 auto;
-  width: 46px;
-  height: 46px;
-  border-radius: 13px;
+  width: 2.875rem;
+  height: 2.875rem;
+  border-radius: 0.8125rem;
   background: var(--surface-2);
   color: var(--green);
   display: flex;
@@ -114,45 +111,73 @@ function go() {
 }
 
 .req-main { flex: 1; min-width: 0; }
-.req-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.req-title { font-weight: 800; font-size: 15.5px; color: var(--fg); }
+.req-line { display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap; }
+.req-title { font-weight: 800; font-size: 0.9688rem; color: var(--fg); }
 
 .req-sub {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   flex-wrap: wrap;
-  margin-top: 3px;
+  margin-top: 0.1875rem;
 }
 .req-stop {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
   color: var(--fg-2);
   font-weight: 600;
 }
 .req-stop svg { flex-shrink: 0; color: var(--fg-3); }
 .req-stop-dest svg { color: var(--green); }
-.req-sep { color: var(--fg-3); font-weight: 800; font-size: 13px; }
+.req-sep { color: var(--fg-3); font-weight: 800; font-size: 0.8125rem; }
 
 .req-right {
   flex: 0 0 auto;
   text-align: right;
   margin-left: auto;
 }
-.req-price { font-weight: 800; font-size: 17px; color: var(--green); }
-.req-time { font-size: 12px; color: var(--fg-2); font-weight: 600; margin-top: 2px; }
+.req-price { font-weight: 800; font-size: 1.0625rem; color: var(--green); }
+.req-time { font-size: 0.75rem; color: var(--fg-2); font-weight: 600; margin-top: 0.125rem; }
 
 .req-arrow {
   flex: 0 0 auto;
   color: var(--fg-3);
   font-weight: 800;
-  font-size: 15px;
-  margin-left: 2px;
+  font-size: 0.9375rem;
+  margin-left: 0.125rem;
 }
 
-.req-full { flex: 1 1 100%; margin-top: 4px; }
-.req-route { font-size: 13px; color: var(--fg-2); margin-bottom: 6px; }
-.req-recipient { font-size: 13px; color: var(--fg-2); margin-bottom: 12px; }
+.req-full { flex: 1 1 100%; margin-top: 0.25rem; }
+.req-route { font-size: 0.8125rem; color: var(--fg-2); margin-bottom: 0.375rem; }
+.req-recipient { font-size: 0.8125rem; color: var(--fg-2); margin-bottom: 0.75rem; }
+
+/* Sur téléphone, prix et flèche volaient assez de largeur au bloc central
+   pour que les adresses se cassent après deux ou trois mots. On donne la
+   ligne entière au contenu et on descend le prix en dessous. */
+@media (max-width: 560px) {
+  .req {
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 0.875rem;
+  }
+  .req-icon {
+    width: 2.375rem;
+    height: 2.375rem;
+    border-radius: 0.6875rem;
+  }
+  .req-main { flex: 1 1 calc(100% - 3rem); }
+  .req-right {
+    flex: 1 1 100%;
+    margin-left: 0;
+    text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 0.625rem;
+  }
+  .req-time { margin-top: 0; }
+  /* La carte entière est cliquable : le chevron n'apporte rien ici. */
+  .req-arrow { display: none; }
+}
 </style>

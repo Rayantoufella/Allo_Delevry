@@ -1,14 +1,16 @@
 ﻿<script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../api/axios'
-import { apiError } from '../api/axios'
+import api, { apiError } from '../api/axios'
 import { useAuthStore } from '../stores/auth'
 import { usePolling } from '../composables/usePolling'
 import { formatPrice, timeAgo, statusLabel } from '../lib/statuses'
+import { copyPublicLink, prettyLink, publicUrl, qrUrl } from '../lib/driverLink'
 import DriverSidebar from '../components/driver/DriverSidebar.vue'
 import StatCard from '../components/driver/StatCard.vue'
 import RequestCard from '../components/driver/RequestCard.vue'
+import ToastMessage from '../components/driver/ToastMessage.vue'
+import AppIcon from '../components/AppIcon.vue'
 
 /**
  * Tableau de bord livreur — GET /dashboard (wrapper { success, data }) + polling 10 s.
@@ -19,7 +21,7 @@ const auth = useAuthStore()
 
 const { data, loading, error, start } = usePolling(async () => {
   const res = await api.get('/dashboard')
-  return res.data.data
+  return res.data
 }, 10000)
 
 const dash = computed(() => data.value || {})
@@ -42,38 +44,39 @@ async function loadProfiles() {
 const hasProfile = computed(() => profiles.value.length > 0)
 const hasError = computed(() => !!error.value && !data.value)
 
-// ---- Disponibilité : PATCH partiel driver-profiles/{id} (is_available) ----
-const availabilityBusy = ref(false)
-const isAvailable = computed(() =>
-  profiles.value[0] ? profiles.value[0].is_available !== false : true,
-)
+// ---- Lien client : la porte d'entrée du livreur ----
+const slug = computed(() => profiles.value[0]?.slug || '')
 
-async function toggleAvailability() {
-  const p = profiles.value[0]
-  if (!p || availabilityBusy.value) return
-  availabilityBusy.value = true
-  try {
-    const next = p.is_available === false
-    const res = await api.patch(`/driver-profiles/${p.id}`, { is_available: next })
-    const updated = res.data.data ?? res.data
-    if (updated && updated.id) profiles.value = [updated]
-  } catch {
-    // L'état local reste inchangé si la mise à jour échoue.
-  } finally {
-    availabilityBusy.value = false
-  }
+const toast = ref('')
+let toastTimer = null
+
+function showToast(message) {
+  toast.value = message
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toast.value = '' }, 3000)
 }
+
+async function copyClientLink() {
+  const message = await copyPublicLink(slug.value)
+  if (message) showToast(message)
+}
+
+function goPublicPage() {
+  if (slug.value) router.push({ name: 'driver-public', params: { slug: slug.value } })
+}
+
+onBeforeUnmount(() => clearTimeout(toastTimer))
 
 // ---- Onglets cosmétiques (pas de série par période côté API) ----
 const period = ref('today')
 
-// ---- Liste notifiante (📦 demandes, 💬 messages, ⭐ avis) ----
+// ---- Liste notifiante (demandes, messages, avis) ----
 const feedItems = computed(() => {
   const items = []
   for (const r of dash.value.recent_requests || []) {
     items.push({
       key: `req-${r.id}`,
-      icon: '📦',
+      icon: 'package',
       title: `Demande ${r.tracking_number || `#${r.id}`}`,
       body: statusLabel(r.status),
       at: r.created_at,
@@ -83,7 +86,7 @@ const feedItems = computed(() => {
   for (const m of dash.value.recent_messages || []) {
     items.push({
       key: `msg-${m.id}`,
-      icon: '💬',
+      icon: 'chat',
       title: m.sender_name || 'Client',
       body: m.content,
       at: m.created_at,
@@ -92,7 +95,7 @@ const feedItems = computed(() => {
   if (dash.value.average_rating != null) {
     items.push({
       key: 'rating',
-      icon: '⭐',
+      icon: 'star',
       title: 'Nouvel avis client',
       body: `Note moyenne : ${dash.value.average_rating}/5`,
       at: null,
@@ -120,7 +123,7 @@ onMounted(() => {
             <h2>Tableau de bord</h2>
             <p class="muted small">Bonjour {{ firstName }} — voici ton activité aujourd'hui.</p>
           </div>
-          <div class="flex wrap gap-10">
+          <div class="btn-group">
             <span class="pill-pending">Demandes : {{ dash.pending_requests ?? 0 }}</span>
             <RouterLink class="btn btn-primary btn-sm" :to="{ name: 'driver-requests' }">Voir les demandes</RouterLink>
           </div>
@@ -130,7 +133,7 @@ onMounted(() => {
       <div v-if="!profileLoading && !hasProfile" class="card banner-profil mb-16">
         <div class="flex-between wrap">
           <div>
-            <h3>Créez votre profil public ✨</h3>
+            <h3>Créez votre profil public</h3>
             <p class="muted small">Votre marque, vos services et vos zones : les clients vous trouvent et commandent via votre page publique et votre QR code.</p>
           </div>
           <button class="btn btn-primary" @click="router.push({ name: 'driver-profile' })">Configurer mon profil</button>
@@ -160,20 +163,14 @@ onMounted(() => {
       <template v-else>
         <!-- 4 cartes stats -->
         <div class="grid-4">
-          <StatCard label="Livraisons" :value="dash.delivered_missions ?? '—'" icon="📦" />
-          <StatCard label="Revenus" :value="formatPrice(dash.collected_revenue)" icon="💰" accent="green" />
-          <StatCard label="Missions actives" :value="dash.active_missions ?? '—'" icon="🛵" accent="blue" sub="temps réel" />
-          <StatCard label="Note" :value="dash.average_rating != null ? `${dash.average_rating}/5` : '—'" icon="⭐" accent="yellow" />
+          <StatCard label="Livraisons" :value="dash.delivered_missions ?? '—'" icon="truck" />
+          <StatCard label="Revenus" :value="formatPrice(dash.collected_revenue)" icon="cash" />
+          <StatCard label="Missions actives" :value="dash.active_missions ?? '—'" icon="bolt" sub="temps réel" />
+          <StatCard label="Note" :value="dash.average_rating != null ? `${dash.average_rating}/5` : '—'" icon="star" />
         </div>
 
-      <!-- Légende de disponibilité -->
-      <div class="legend mb-16">
-        <span class="legend-item"><span class="dot-online"></span> En ligne</span>
-        <span class="legend-item"><span class="legend-dot off"></span> En pause</span>
-      </div>
-
       <!-- Graphique sobre : pas de série quotidienne côté backend -->
-      <div class="grid-dash">
+      <div class="grid-dash mt-16">
         <div class="card chart">
           <div class="flex-between wrap">
             <div>
@@ -202,36 +199,9 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Disponibilité -->
-        <section class="card avail">
-          <div class="flex-between">
-            <h3>Disponibilité</h3>
-            <span class="status-dot" :class="isAvailable ? 'on' : 'off'"></span>
-          </div>
-          <p class="avail-text">{{ isAvailable ? 'Vous êtes en ligne' : 'Vous êtes en pause' }}</p>
-          <p class="small muted">
-            {{ isAvailable
-              ? 'Les clients peuvent vous envoyer des demandes de livraison.'
-              : 'Vous n’êtes plus visible pour les nouvelles demandes.' }}
-          </p>
-          <button
-            class="switch"
-            :class="{ on: isAvailable }"
-            :disabled="availabilityBusy || !hasProfile"
-            role="switch"
-            :aria-checked="isAvailable"
-            :title="hasProfile ? 'Changer ma disponibilité' : 'Créez d’abord votre profil public'"
-            @click="toggleAvailability()"
-          >
-            <span class="knob"></span>
-          </button>
-          <p class="faint small mt-8">
-            {{ hasProfile ? 'Mettez en pause quand vous n’êtes plus disponible.' : 'Créez votre profil public pour gérer votre disponibilité.' }}
-          </p>
-        </section>
-      </div>
-
-        <div class="grid-2 mt-16">
+        <!-- Colonne latérale : le fil d'activité en regard du graphique, comme
+             dans le prototype, puis le lien client. -->
+        <div class="dash-side">
           <!-- Notifications -->
           <section>
             <div class="flex-between wrap mb-16">
@@ -248,7 +218,7 @@ onMounted(() => {
                 class="card feed"
                 @click="item.to ? item.to() : router.push({ name: 'driver-notifications' })"
               >
-                <span class="feed-icon">{{ item.icon }}</span>
+                <span class="feed-icon"><AppIcon :name="item.icon" :size="18" /></span>
                 <span class="feed-body">
                   <span class="flex-between wrap">
                     <b class="small">{{ item.title }}</b>
@@ -263,31 +233,76 @@ onMounted(() => {
             </div>
           </section>
 
-          <!-- Missions -->
-          <section>
-            <div class="flex-between wrap mb-16">
-              <h3>Missions</h3>
-              <RouterLink class="small" :to="{ name: 'driver-requests' }">Voir tout →</RouterLink>
-            </div>
-            <div v-if="(dash.recent_requests || []).length" class="flex-col">
-              <RequestCard v-for="r in dash.recent_requests" :key="r.id" :request="r" arrow />
-            </div>
-            <div v-else class="card card-soft">
-              <p class="muted small">Aucune mission pour le moment. Vos demandes apparaîtront ici.</p>
-            </div>
+          <!-- Lien client : la porte d'entrée du livreur. Un compte client est
+               rattaché au livreur qui l'a amené — sans ce lien, personne ne
+               peut commander chez lui. -->
+          <section class="card link-card">
+            <h3 class="mb-16">Mon lien client</h3>
+
+            <template v-if="hasProfile">
+              <p class="small muted">
+                Partagez ce lien ou faites scanner le QR code : vos clients arrivent
+                directement sur votre page pour commander.
+              </p>
+              <div class="link-qr">
+                <img v-if="qrUrl(slug)" :src="qrUrl(slug)" alt="QR code de ma page client" />
+              </div>
+              <div class="link-line">
+                <b>{{ prettyLink(slug) }}</b>
+              </div>
+              <p class="faint small">
+                Lien actif : <code>{{ publicUrl(slug) }}</code>
+              </p>
+              <div class="flex wrap mt-16">
+                <button class="btn btn-primary" @click="copyClientLink()">
+                  <AppIcon name="clipboard" /> Copier le lien
+                </button>
+                <button class="btn btn-outline" @click="goPublicPage()">
+                  <AppIcon name="eye" :size="18" /> Aperçu client
+                </button>
+              </div>
+            </template>
+
+            <template v-else>
+              <p class="small muted">
+                Créez votre profil public pour obtenir le lien que vous partagerez à vos clients.
+              </p>
+              <RouterLink class="btn btn-primary mt-16" :to="{ name: 'driver-profile' }">
+                Créer mon profil public
+              </RouterLink>
+            </template>
           </section>
         </div>
+      </div>
+
+        <!-- Missions : pleine largeur, comme dans le prototype. Ce sont des
+             lignes larges (icône, service, trajet, montant) — les enfermer dans
+             une demi-colonne tronquait les adresses. -->
+        <section class="mt-16">
+          <div class="flex-between wrap mb-16">
+            <h3>Missions</h3>
+            <RouterLink class="small" :to="{ name: 'driver-requests' }">Voir tout →</RouterLink>
+          </div>
+          <div v-if="(dash.recent_requests || []).length" class="flex-col">
+            <RequestCard v-for="r in dash.recent_requests" :key="r.id" :request="r" arrow />
+          </div>
+          <div v-else class="card card-soft">
+            <p class="muted small">Aucune mission pour le moment. Vos demandes apparaîtront ici.</p>
+          </div>
+        </section>
       </template>
+
+      <ToastMessage :message="toast" @close="toast = ''" />
     </main>
   </div>
 </template>
 
 <style scoped>
-.tabs { display: flex; gap: 8px; }
-.tab { border-radius: 999px; padding: 8px 16px; }
-.skel-stat { height: 108px; }
+.tabs { display: flex; gap: 0.5rem; }
+.tab { border-radius: 62.4375rem; padding: 0.5rem 1rem; }
+.skel-stat { height: 6.75rem; }
 .banner-profil {
-  border: 1px dashed var(--border-2);
+  border: 0.0625rem dashed var(--border-2);
   background: var(--surface);
 }
 
@@ -295,81 +310,80 @@ onMounted(() => {
 .pill-pending {
   background: var(--green);
   color: var(--green-ink);
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-size: 13px;
+  border-radius: 62.4375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   white-space: nowrap;
 }
-.gap-10 { gap: 10px; }
+.gap-10 { gap: 0.625rem; }
 
 /* Légende de disponibilité */
-.legend {
-  display: flex;
-  gap: 18px;
-  align-items: center;
-  font-size: 12px;
-  color: var(--fg-2);
-  font-weight: 600;
-}
-.legend-item { display: inline-flex; align-items: center; gap: 6px; }
-.legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.legend-dot.off { background: var(--amber); }
-
-/* Graphique + carte disponibilité */
+/* Graphique + colonne latérale (notifications, lien client) */
 .grid-dash {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 14px;
+  /* minmax(0, …) : sans lui, le graphique impose sa largeur intrinsèque à la
+     piste et la page défile horizontalement. */
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 1.125rem;
   align-items: start;
 }
 
+.dash-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
 /* Graphique sobre */
-.chart { padding-bottom: 14px; }
+.chart { padding-bottom: 0.875rem; }
 
 /* Disponibilité */
-.avail { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--surface-3);
-  flex-shrink: 0;
-}
-.status-dot.on { background: var(--green); box-shadow: var(--green-glow) 0 0 0 4px; }
-.status-dot.off { background: var(--amber); }
-.avail-text { font-size: 1.35rem; font-weight: 800; color: var(--fg); margin-top: 8px; }
+/* Lien client */
+.link-card { display: flex; flex-direction: column; }
 
-.switch {
-  position: relative;
-  width: 46px;
-  height: 26px;
-  border-radius: 26px;
-  background: var(--surface-3);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.2s;
-  margin-top: 12px;
-  flex-shrink: 0;
-}
-.switch .knob {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+/* Le QR reste sur fond blanc quel que soit le thème : c'est un code optique,
+   il doit garder son contraste noir sur blanc pour rester scannable. */
+.link-qr {
+  align-self: center;
   background: #fff;
-  transition: transform 0.2s;
+  padding: 0.625rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--border);
+  margin: 1rem 0;
 }
-.switch.on { background: var(--green); border-color: transparent; }
-.switch.on .knob { transform: translateX(20px); }
-.switch:disabled { opacity: 0.5; cursor: not-allowed; }
-.chart-stats { gap: 22px; }
+.link-qr img {
+  width: 8.75rem;
+  height: 8.75rem;
+  display: block;
+}
+
+.link-line {
+  background: var(--surface-2);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  /* Un slug long ne doit pas élargir la colonne latérale. */
+  overflow-wrap: anywhere;
+}
+.link-line b { color: var(--green); }
+
+.link-card code {
+  background: var(--surface-2);
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.chart-stats { gap: 1.375rem; }
 .chart-stat {
   display: flex;
   flex-direction: column;
@@ -381,18 +395,18 @@ onMounted(() => {
 .bars {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
-  height: 92px;
-  margin-top: 18px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
+  gap: 0.625rem;
+  height: 5.75rem;
+  margin-top: 1.125rem;
+  padding-top: 0.5rem;
+  border-top: 0.0625rem solid var(--border);
 }
 .bar {
   flex: 1;
-  border-radius: 6px 6px 0 0;
+  border-radius: 0.375rem 0.375rem 0 0;
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  min-height: 8px;
+  border: 0.0625rem solid var(--border);
+  min-height: 0.5rem;
 }
 .bar:nth-child(3n) { background: rgba(34, 197, 111, 0.22); }
 .bar:nth-child(7) { background: rgba(34, 197, 111, 0.55); }
@@ -401,20 +415,20 @@ onMounted(() => {
 .feed {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 0.75rem;
   text-align: left;
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 0.0625rem solid var(--border);
   transition: border-color 0.2s, background 0.2s;
 }
 .feed:hover { border-color: var(--border-2); background: var(--surface-2); }
 .feed-icon {
   font-size: 1.2rem;
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  width: 38px;
-  height: 38px;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.625rem;
+  width: 2.375rem;
+  height: 2.375rem;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -424,7 +438,7 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.125rem;
 }
 .feed-body .small.muted {
   overflow: hidden;
@@ -433,7 +447,8 @@ onMounted(() => {
   -webkit-box-orient: vertical;
 }
 
-@media (max-width: 980px) {
-  .grid-dash { grid-template-columns: 1fr; }
+/* « Revenus 7 jours » et « Disponibilité » s'empilent au palier 1024. */
+@media (max-width: 1024px) {
+  .grid-dash { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

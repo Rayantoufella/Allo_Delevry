@@ -13,6 +13,7 @@ use Illuminate\Database\Seeder;
 class DeliveryRequestsSeeder extends Seeder
 {
     use WithoutModelEvents;
+    
 
     /**
      * Run the database seeds.
@@ -23,16 +24,20 @@ class DeliveryRequestsSeeder extends Seeder
             return;
         }
 
-        $clients = User::where('role', User::ROLE_CLIENT)->get();
-
-        if ($clients->isEmpty()) {
-            $clients = User::factory()->count(10)->client()->create();
-        }
-
         $drivers = User::where('role', User::ROLE_DRIVER)->get();
 
         if ($drivers->isEmpty()) {
             $drivers = User::factory()->count(10)->driver()->create();
+        }
+
+        // Chaque client est rattaché à un livreur précis (RG scoping) : on va chercher,
+        // pour chaque livreur, ses propres clients plutôt que de piocher au hasard dans
+        // une liste globale, sinon une demande pourrait se retrouver avec un client_id
+        // et un driver_id qui ne correspondent pas au même livreur.
+        $clients = User::where('role', User::ROLE_CLIENT)->whereIn('driver_id', $drivers->pluck('id'))->get();
+
+        if ($clients->isEmpty()) {
+            $clients = $drivers->flatMap(fn (User $driver) => User::factory()->count(2)->clientOf($driver)->create());
         }
 
         $services = Service::all();
@@ -53,29 +58,36 @@ class DeliveryRequestsSeeder extends Seeder
             $drafts = AiRequestDraft::factory()->count(10)->recycle([$clients, $services])->create();
         }
 
-        $recycle = [$clients, $drivers, $services, $zones, $drafts];
+        // On ne recycle pas $clients et $drivers indépendamment : ça pourrait associer
+        // le client d'un livreur A à une demande dont driver_id pointe vers un livreur B.
+        // On tire donc des paires (client, son propre livreur) déjà cohérentes.
+        $pairs = $clients->map(fn (User $client) => [
+            'client' => $client,
+            'driver' => $drivers->firstWhere('id', $client->driver_id) ?? $drivers->random(),
+        ]);
 
-        DeliveryRequest::factory()
-            ->count(15)
-            ->recycle($recycle)
-            ->create();
+        $recycle = [$services, $zones, $drafts];
 
-        DeliveryRequest::factory()
-            ->count(10)
-            ->confirmed()
-            ->recycle($recycle)
-            ->create();
+        $createBatch = function (int $count, ?string $state = null) use ($pairs, $recycle): void {
+            for ($i = 0; $i < $count; $i++) {
+                $pair = $pairs->random();
 
-        DeliveryRequest::factory()
-            ->count(5)
-            ->inDelivery()
-            ->recycle($recycle)
-            ->create();
+                $factory = DeliveryRequest::factory()
+                    ->forClient($pair['client'])
+                    ->forDriver($pair['driver'])
+                    ->recycle($recycle);
 
-        DeliveryRequest::factory()
-            ->count(10)
-            ->delivered()
-            ->recycle($recycle)
-            ->create();
+                if ($state !== null) {
+                    $factory = $factory->{$state}();
+                }
+
+                $factory->create();
+            }
+        };
+
+        $createBatch(15);
+        $createBatch(10, 'confirmed');
+        $createBatch(5, 'inDelivery');
+        $createBatch(10, 'delivered');
     }
 }

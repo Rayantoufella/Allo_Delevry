@@ -29,7 +29,7 @@ function flowDriver(): User
     return $driver;
 }
 
-it('performs the full RG06 flow with client-side delivery confirmation', function () {
+it('performs the full RG06 flow with direct driver acceptance (fixed zone tariff)', function () {
     Queue::fake();
     Storage::fake('public');
 
@@ -41,26 +41,20 @@ it('performs the full RG06 flow with client-side delivery confirmation', functio
         ->forDriver($driver)
         ->create(['status' => DeliveryRequest::STATUS_EN_ATTENTE]);
 
+    // Driver accepts directly (no proposed_price — fixed zone tariff).
     Sanctum::actingAs($driver);
     $this->patchJson("/api/delivery-requests/{$deliveryRequest->id}/status", [
-        'status' => DeliveryRequest::STATUS_PRIX_PROPOSE,
-        'proposed_price' => 5000,
+        'status' => DeliveryRequest::STATUS_CONFIRMEE,
     ])->assertSuccessful()
-        ->assertJsonPath('data.status', DeliveryRequest::STATUS_PRIX_PROPOSE)
-        ->assertJsonPath('data.proposed_price', '5000.00');
-
-    Sanctum::actingAs($client);
-    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-price")
-        ->assertSuccessful()
         ->assertJsonPath('data.status', DeliveryRequest::STATUS_CONFIRMEE);
 
-    Sanctum::actingAs($driver);
+    // Generate confirmation code.
     $codeResponse = $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/generate-code")
         ->assertSuccessful();
     $code = $codeResponse->json('code');
     expect($code)->toBeString()->toHaveLength(6);
 
-    Sanctum::actingAs($driver);
+    // Upload pickup photo and pick up parcel.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
         'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
@@ -73,16 +67,90 @@ it('performs the full RG06 flow with client-side delivery confirmation', functio
 
     expect($deliveryRequest->refresh()->picked_up_at)->not->toBeNull();
 
+    // In transit.
     $this->patchJson("/api/delivery-requests/{$deliveryRequest->id}/status", [
         'status' => DeliveryRequest::STATUS_EN_LIVRAISON,
     ])->assertSuccessful();
 
+    // Upload delivery proof.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
         'proof_type' => 'signature',
         'file' => UploadedFile::fake()->image('signature.jpg'),
     ])->assertCreated();
 
+    // Client confirms delivery with code.
+    Sanctum::actingAs($client);
+    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-delivery", [
+        'code' => $code,
+    ])->assertSuccessful()
+        ->assertJsonPath('data.status', DeliveryRequest::STATUS_LIVREE);
+
+    expect($deliveryRequest->refresh()->delivered_at)->not->toBeNull();
+});
+
+it('performs the legacy RG06 flow via prix_propose with confirmPrice (backward compat)', function () {
+    Queue::fake();
+    Storage::fake('public');
+
+    $client = flowClient();
+    $driver = flowDriver();
+
+    $deliveryRequest = DeliveryRequest::factory()
+        ->forClient($client)
+        ->forDriver($driver)
+        ->create(['status' => DeliveryRequest::STATUS_EN_ATTENTE]);
+
+    // Driver proposes a price (legacy flow).
+    Sanctum::actingAs($driver);
+    $this->patchJson("/api/delivery-requests/{$deliveryRequest->id}/status", [
+        'status' => DeliveryRequest::STATUS_PRIX_PROPOSE,
+        'proposed_price' => 5000,
+    ])->assertSuccessful()
+        ->assertJsonPath('data.status', DeliveryRequest::STATUS_PRIX_PROPOSE)
+        ->assertJsonPath('data.proposed_price', '5000.00');
+
+    // Client confirms the price.
+    Sanctum::actingAs($client);
+    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-price")
+        ->assertSuccessful()
+        ->assertJsonPath('data.status', DeliveryRequest::STATUS_CONFIRMEE);
+
+    // Switch back to driver for the rest of the flow.
+    Sanctum::actingAs($driver);
+
+    // Generate confirmation code.
+    $codeResponse = $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/generate-code")
+        ->assertSuccessful();
+    $code = $codeResponse->json('code');
+    expect($code)->toBeString()->toHaveLength(6);
+
+    // Upload pickup photo and pick up parcel.
+    $this->postJson('/api/delivery-proofs', [
+        'delivery_request_id' => $deliveryRequest->id,
+        'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
+        'file' => UploadedFile::fake()->image('pickup.jpg'),
+    ])->assertCreated();
+
+    $this->patchJson("/api/delivery-requests/{$deliveryRequest->id}/status", [
+        'status' => DeliveryRequest::STATUS_COLIS_RECUPERE,
+    ])->assertSuccessful();
+
+    expect($deliveryRequest->refresh()->picked_up_at)->not->toBeNull();
+
+    // In transit.
+    $this->patchJson("/api/delivery-requests/{$deliveryRequest->id}/status", [
+        'status' => DeliveryRequest::STATUS_EN_LIVRAISON,
+    ])->assertSuccessful();
+
+    // Upload delivery proof.
+    $this->postJson('/api/delivery-proofs', [
+        'delivery_request_id' => $deliveryRequest->id,
+        'proof_type' => 'signature',
+        'file' => UploadedFile::fake()->image('signature.jpg'),
+    ])->assertCreated();
+
+    // Client confirms delivery with code.
     Sanctum::actingAs($client);
     $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-delivery", [
         'code' => $code,

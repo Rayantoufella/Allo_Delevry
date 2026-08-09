@@ -3,7 +3,13 @@
 namespace App\Http\Requests\Api\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
+/**
+ * Inscription d'un livreur (POST /register). Le rôle "driver" est forcé côté
+ * contrôleur : ce n'est pas une inscription cliente, désormais réservée aux
+ * routes scopées `/drivers/{slug}/register`.
+ */
 class RegisterRequest extends FormRequest
 {
     public function authorize(): bool
@@ -15,10 +21,9 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email'],
+            'email' => ['required', 'email', Rule::unique('users', 'email')->whereNull('driver_id')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'role' => ['required', 'string', 'in:client,driver'],
         ];
     }
 
@@ -34,8 +39,6 @@ class RegisterRequest extends FormRequest
             'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
             'phone.string' => 'Le numéro de téléphone doit être une chaîne de caractères.',
             'phone.max' => 'Le numéro de téléphone ne peut pas dépasser :max caractères.',
-            'role.required' => 'Le rôle est requis.',
-            'role.in' => 'Le rôle doit être soit "client" soit "driver".',
         ];
     }
 }

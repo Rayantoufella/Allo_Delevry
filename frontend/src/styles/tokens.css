@@ -1,0 +1,51 @@
+/* ---------- Tokens de thème ----------
+   Palette dark (défaut) et light. Uniquement des variables : n'ajouter aucune
+   règle ici, elle échapperait à l'ordre de cascade défini par index.css. */
+
+
+:root,
+[data-theme='dark'] {
+  --bg: #0b0d0c;
+  --bg-2: #0f1211;
+  --surface: #161a18;
+  --surface-2: #1d221f;
+  --surface-3: #252b27;
+  --fg: #f3f6f4;
+  --fg-2: #a4afa8;
+  --fg-3: #6c7772;
+  --border: #28302b;
+  --border-2: #333c36;
+  --green: #22c56f;
+  --green-2: #3ad884;
+  --green-ink: #04140b;
+  --blue: #5b9dff;
+  --amber: #f5b544;
+  --violet: #a98bff;
+  --red: #ff6a6a;
+  --shadow: 0 1.5rem 3.75rem -1.25rem rgba(0, 0, 0, 0.7);
+  --green-glow: rgba(34, 197, 111, 0.55);
+  --header-bg: rgba(11, 13, 12, 0.82);
+}
+
+[data-theme='light'] {
+  --bg: #f4f5f3;
+  --bg-2: #eceee9;
+  --surface: #ffffff;
+  --surface-2: #f5f6f3;
+  --surface-3: #eceee9;
+  --fg: #0a0f0c;
+  --fg-2: #5a635c;
+  --fg-3: #8a938c;
+  --border: #e6e8e2;
+  --border-2: #d8dcd3;
+  --green: #0aa85b;
+  --green-2: #06c167;
+  --green-ink: #ffffff;
+  --blue: #2f6fe0;
+  --amber: #c98a12;
+  --violet: #7a56d6;
+  --red: #e0483d;
+  --shadow: 0 1.5rem 3.75rem -1.5rem rgba(20, 40, 25, 0.22);
+  --green-glow: rgba(10, 168, 91, 0.35);
+  --header-bg: rgba(244, 245, 243, 0.82);
+}
