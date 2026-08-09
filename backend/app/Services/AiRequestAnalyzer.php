@@ -9,27 +9,163 @@ use Illuminate\Support\Facades\Log;
 class AiRequestAnalyzer
 {
     /**
-     * Analyze free text and return structured delivery request data.
+     * Analyse un texte libre et retourne les données structurées de la demande de livraison.
      *
-     * @param  string  $freeText  The client's free text message
-     * @param  array  $activeServiceNames  List of active service names allowed for the driver
+     * @param  string  $freeText  Message libre du client
+     * @param  array<int, string>  $activeServiceNames  Noms des services actifs autorisés pour le livreur
      * @return array{recipient_name: string|null, recipient_phone: string|null, pickup_address: string|null, delivery_address: string|null, package_description: string|null, product_amount: float|null, amount_to_collect: float|null, scheduled_at: string|null, service: string|null}
      *
      * @throws AiAnalysisException
      */
     public function analyze(string $freeText, array $activeServiceNames): array
     {
-        $apiKey = config('services.openrouter.api_key');
-        $model = config('services.openrouter.model');
-        $baseUrl = config('services.openrouter.base_url');
+        $this->ensureApiKeyIsConfigured();
 
-        if (empty($apiKey)) {
+        $rawContent = $this->requestRawContent($freeText, $activeServiceNames);
+
+        $decoded = $this->decodeRawContent($rawContent);
+
+        return $this->normalizeResult($decoded, $activeServiceNames);
+    }
+
+    /**
+     * Vérifie que la clé API OpenRouter est configurée.
+     *
+     * @throws AiAnalysisException
+     */
+    private function ensureApiKeyIsConfigured(): void
+    {
+        if (empty(config('services.openrouter.api_key'))) {
             Log::channel('jobs')->error('Clé API OpenRouter non configurée (OPENROUTER_API_KEY).');
 
             throw new AiAnalysisException('Clé API OpenRouter non configurée (OPENROUTER_API_KEY).');
         }
+    }
 
-        $systemPrompt = <<<'PROMPT'
+    /**
+     * Retourne la liste ordonnée des modèles à tester (principal + fallbacks).
+     *
+     * @return list<string>
+     */
+    private function getModels(): array
+    {
+        $fallbackModels = config('services.openrouter.fallback_models', '');
+
+        $fallbacks = array_filter(array_map('trim', explode(',', (string) $fallbackModels)));
+
+        return array_merge(
+            [config('services.openrouter.model')],
+            $fallbacks
+        );
+    }
+
+    /**
+     * Itère sur les modèles (principal + fallbacks) et retourne le premier contenu brut validé en JSON.
+     *
+     * @param  array<int, string>  $activeServiceNames
+     *
+     * @throws AiAnalysisException
+     */
+    private function requestRawContent(string $freeText, array $activeServiceNames): string
+    {
+        $models = $this->getModels();
+        $lastException = null;
+
+        foreach ($models as $index => $model) {
+            $payload = $this->buildPayload($freeText, $activeServiceNames, $model);
+
+            try {
+                $response = Http::withToken(config('services.openrouter.api_key'))
+                    ->acceptJson()
+                    ->withHeaders([
+                        'HTTP-Referer' => config('app.url', 'http://localhost'),
+                        'X-Title' => 'Allo Delivery',
+                    ])
+                    ->timeout(60)
+                    ->post(config('services.openrouter.base_url').'/chat/completions', $payload);
+            } catch (\Throwable $e) {
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Modèle {$model} échoué (exception: {$e->getMessage()})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('Erreur lors de l\'appel API OpenRouter : '.$e->getMessage(), $e);
+                continue;
+            }
+
+            if (! $response->successful()) {
+                $reason = 'HTTP '.$response->status();
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Modèle {$model} échoué ({$reason})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('Erreur API OpenRouter (HTTP '.$response->status().').');
+                continue;
+            }
+
+            $content = $response->json('choices.0.message.content');
+
+            if (empty($content) || ! is_string($content)) {
+                $reason = 'réponse vide ou non string';
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Modèle {$model} échoué ({$reason})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('Réponse IA vide ou format inattendu.');
+                continue;
+            }
+
+            // Valide que le contenu est du JSON exploitable
+            $decoded = json_decode($content, true);
+            if (! is_array($decoded)) {
+                $reason = 'JSON invalide';
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Modèle {$model} échoué ({$reason})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('JSON invalide retourné par l\'IA.');
+                continue;
+            }
+
+            return $content;
+        }
+
+        Log::channel('jobs')->error('Tous les modèles IA ont échoué.', [
+            'last_error' => $lastException?->getMessage(),
+        ]);
+
+        throw $lastException ?? new AiAnalysisException('Aucun modèle IA disponible.');
+    }
+
+    /**
+     * Construit la requête Chat Completions (messages + paramètres de génération).
+     *
+     * @param  array<int, string>  $activeServiceNames
+     * @return array<string, mixed>
+     */
+    private function buildPayload(string $freeText, array $activeServiceNames, ?string $model = null): array
+    {
+        return [
+            'model' => $model ?? config('services.openrouter.model'),
+            'messages' => [
+                ['role' => 'system', 'content' => $this->systemPrompt()],
+                ['role' => 'user', 'content' => $this->buildUserMessage($freeText, $activeServiceNames)],
+            ],
+            'temperature' => 0.1,
+            'max_completion_tokens' => 800,
+            'response_format' => ['type' => 'json_object'],
+        ];
+    }
+
+    /**
+     * Prompt système : règles d'extraction des champs de la demande.
+     */
+    private function systemPrompt(): string
+    {
+        return <<<'PROMPT'
 Tu es l'assistant de création de demande de livraison Allo Delivery. À partir du message libre du client, tu remplis le formulaire de demande : destinataire, téléphone, adresses de retrait et de livraison, description du colis, montant à encaisser, date souhaitée, et le service demandé. Tu ne calcules jamais de prix. Tu ne choisis le service QUE parmi la liste fournie.
 
 Réponds UNIQUEMENT avec un objet JSON valide, sans texte ni balise, au format suivant :
@@ -42,68 +178,57 @@ Règles :
 - service = exactement un des noms de services dans la liste fournie, ou null si non mentionné ou non reconnu.
 - Si une information n'est pas disponible dans le texte, mets null.
 PROMPT;
+    }
 
-        $userServiceMessage = $freeText;
+    /**
+     * Message utilisateur : texte libre + liste des services autorisés.
+     *
+     * @param  array<int, string>  $activeServiceNames
+     */
+    private function buildUserMessage(string $freeText, array $activeServiceNames): string
+    {
         if (empty($activeServiceNames)) {
-            $userServiceMessage .= "\n\nServices autorisés : aucun service autorisé.";
-        } else {
-            $userServiceMessage .= "\n\nServices autorisés : ".implode(', ', $activeServiceNames).'.';
+            return $freeText."\n\nServices autorisés : aucun service autorisé.";
         }
 
-        $payload = [
-            'model' => $model,
-            'messages' => [
-                ['role' => 'system', 'content' => $systemPrompt],
-                ['role' => 'user', 'content' => $userServiceMessage],
-            ],
-            'temperature' => 0.1,
-            'max_completion_tokens' => 800,
-            'response_format' => ['type' => 'json_object'],
-        ];
+        return $freeText."\n\nServices autorisés : ".implode(', ', $activeServiceNames).'.';
+    }
 
-        try {
-            $response = Http::withToken($apiKey)
-                ->acceptJson()
-                ->withHeaders([
-                    'HTTP-Referer' => config('app.url', 'http://localhost'),
-                    'X-Title' => 'Allo Delivery',
-                ])
-                ->timeout(60)
-                ->post($baseUrl.'/chat/completions', $payload);
-        } catch (\Throwable $e) {
-            Log::channel('jobs')->error('Exception lors de l\'appel API OpenRouter : '.$e->getMessage());
-
-            throw new AiAnalysisException('Erreur lors de l\'appel API OpenRouter : '.$e->getMessage(), $e);
-        }
-
-        if (! $response->successful()) {
-            Log::channel('jobs')->error('Erreur API OpenRouter HTTP '.$response->status().': '.$response->body());
-
-            throw new AiAnalysisException('Erreur API OpenRouter (HTTP '.$response->status().').');
-        }
-
-        $content = $response->json('choices.0.message.content');
-
-        if (empty($content) || ! is_string($content)) {
-            Log::channel('jobs')->error('Réponse IA vide ou non string : '.($content ?? 'null'));
-
-            throw new AiAnalysisException('Réponse IA vide ou format inattendu.');
-        }
-
-        $decoded = json_decode($content, true);
+    /**
+     * Décode le contenu JSON renvoyé par l'IA (défensif, le JSON est déjà validé dans la boucle).
+     *
+     * @return array<string, mixed>
+     *
+     * @throws AiAnalysisException
+     */
+    private function decodeRawContent(string $rawContent): array
+    {
+        $decoded = json_decode($rawContent, true);
 
         if (! is_array($decoded)) {
-            Log::channel('jobs')->error('JSON invalide retourné par l\'IA : '.$content);
+            Log::channel('jobs')->error('JSON invalide retourné par l\'IA : '.$rawContent);
 
             throw new AiAnalysisException('JSON invalide retourné par l\'IA.');
         }
 
+        return $decoded;
+    }
+
+    /**
+     * Normalise la réponse : ne conserve le service que s'il appartient au catalogue autorisé.
+     *
+     * @param  array<string, mixed>  $decoded
+     * @param  array<int, string>  $activeServiceNames
+     * @return array{recipient_name: string|null, recipient_phone: string|null, pickup_address: string|null, delivery_address: string|null, package_description: string|null, product_amount: float|null, amount_to_collect: float|null, scheduled_at: string|null, service: string|null}
+     */
+    private function normalizeResult(array $decoded, array $activeServiceNames): array
+    {
         $allowedServicesLower = array_map('strtolower', $activeServiceNames);
 
         $service = $decoded['service'] ?? null;
+
         if (is_string($service)) {
-            $serviceLower = strtolower($service);
-            $serviceIndex = array_search($serviceLower, $allowedServicesLower);
+            $serviceIndex = array_search(strtolower($service), $allowedServicesLower, true);
             $service = $serviceIndex !== false ? $activeServiceNames[$serviceIndex] : null;
         } else {
             $service = null;

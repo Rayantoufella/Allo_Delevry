@@ -2,15 +2,17 @@
 
 namespace App\Http\Requests\Api\Auth;
 
+use App\Models\DriverProfile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Inscription d'un livreur (POST /register). Le rôle "driver" est forcé côté
- * contrôleur : ce n'est pas une inscription cliente, désormais réservée aux
- * routes scopées `/drivers/{slug}/register`.
+ * Inscription d'un client dans le contexte d'un livreur précis
+ * (POST /drivers/{slug}/register). Le rôle "client" et le rattachement au
+ * livreur sont forcés côté contrôleur à partir du slug de l'URL, jamais du
+ * corps de la requête.
  */
-class RegisterRequest extends FormRequest
+class ClientRegisterRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -19,9 +21,13 @@ class RegisterRequest extends FormRequest
 
     public function rules(): array
     {
+        $driverId = DriverProfile::where('slug', $this->route('slug'))->value('user_id');
+
+        abort_unless($driverId !== null, 404);
+
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', Rule::unique('users', 'email')->whereNull('driver_id')],
+            'email' => ['required', 'email', Rule::unique('users', 'email')->where('driver_id', $driverId)],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone' => ['nullable', 'string', 'max:20'],
         ];
@@ -33,7 +39,7 @@ class RegisterRequest extends FormRequest
             'name.required' => 'Le nom est requis.',
             'email.required' => "L'adresse e-mail est requise.",
             'email.email' => "L'adresse e-mail doit être valide.",
-            'email.unique' => 'Cette adresse e-mail est déjà utilisée.',
+            'email.unique' => 'Cette adresse e-mail est déjà utilisée chez ce livreur.',
             'password.required' => 'Le mot de passe est requis.',
             'password.min' => 'Le mot de passe doit contenir au moins :min caractères.',
             'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',

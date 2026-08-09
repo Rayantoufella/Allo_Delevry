@@ -16,6 +16,8 @@ class DeliveryRequestResource extends JsonResource
             'driver_id' => $this->driver_id,
             'service_id' => $this->service_id,
             'delivery_zone_id' => $this->delivery_zone_id,
+            'service' => new ServiceResource($this->whenLoaded('service')),
+            'delivery_zone' => new DeliveryZoneResource($this->whenLoaded('deliveryZone')),
             'ai_request_draft_id' => $this->ai_request_draft_id,
             'recipient_name' => $this->recipient_name,
             'recipient_phone' => $this->recipient_phone,

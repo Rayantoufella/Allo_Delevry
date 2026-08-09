@@ -41,8 +41,8 @@ function notificationPayload(int $serviceId, int $deliveryZoneId): array
 it('dispatches the notification job when a client creates a request', function () {
     Queue::fake();
 
-    $client = User::factory()->client()->create();
     $driver = notificationDriver();
+    $client = User::factory()->clientOf($driver)->create();
     $service = Service::factory()->create(['user_id' => $driver->id]);
     $deliveryZone = DeliveryZone::factory()->create(['user_id' => $driver->id]);
 
@@ -56,8 +56,8 @@ it('dispatches the notification job when a client creates a request', function (
 it('does not dispatch the job on invalid payload', function () {
     Queue::fake();
 
-    $client = User::factory()->client()->create();
-    notificationDriver();
+    $driver = notificationDriver();
+    $client = User::factory()->clientOf($driver)->create();
 
     Sanctum::actingAs($client);
     $this->postJson('/api/drivers/notification-driver-slug/delivery-requests', [
@@ -70,8 +70,8 @@ it('does not dispatch the job on invalid payload', function () {
 it('creates the notification when the job runs', function () {
     Queue::fake();
 
-    $client = User::factory()->client()->create();
     $driver = notificationDriver();
+    $client = User::factory()->clientOf($driver)->create();
     $service = Service::factory()->create(['user_id' => $driver->id]);
     $deliveryZone = DeliveryZone::factory()->create(['user_id' => $driver->id]);
 

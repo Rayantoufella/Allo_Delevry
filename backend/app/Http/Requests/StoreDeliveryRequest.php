@@ -33,7 +33,6 @@ class StoreDeliveryRequest extends FormRequest
             'package_description' => ['nullable', 'string'],
             'product_amount' => ['nullable', 'numeric', 'min:0'],
             'amount_to_collect' => ['nullable', 'numeric', 'min:0'],
-            'proposed_price' => ['nullable', 'numeric', 'min:0'],
             'scheduled_at' => ['nullable', 'date'],
         ];
     }

@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDeliveryRequest;
 use App\Http\Requests\UpdateDeliveryRequest;
 use App\Http\Resources\DeliveryRequestResource;
+use App\Http\Resources\DeliveryZoneResource;
 use App\Http\Resources\PublicTrackingResource;
+use App\Http\Resources\ServiceResource;
 use App\Jobs\CreateDeliveryRequestNotificationJob;
 use App\Jobs\ExpireConfirmationCodeJob;
 use App\Models\AiRequestDraft;
@@ -29,7 +31,7 @@ class DeliveryRequestController extends Controller
         $query = DeliveryRequest::with(['client', 'driver', 'service', 'deliveryZone']);
 
         if ($user->isClient()) {
-            $query->where('client_id', $user->id);
+            $query->where('client_id', $user->id)->where('driver_id', $user->driver_id);
         } elseif ($user->isDriver()) {
             $query->where('driver_id', $user->id);
         }
@@ -42,6 +44,10 @@ class DeliveryRequestController extends Controller
         $profile = DriverProfile::where('slug', $slug)->firstOrFail();
 
         $this->authorize('create', DeliveryRequest::class);
+
+        if ($request->user()->driver_id !== $profile->user_id) {
+            abort(403, 'Vous ne pouvez créer une demande que chez votre livreur.');
+        }
 
         $data = $request->validated();
 
@@ -67,6 +73,8 @@ class DeliveryRequestController extends Controller
         $deliveryRequest = DeliveryRequest::findOrFail($id);
 
         $this->authorize('view', $deliveryRequest);
+
+        $deliveryRequest->loadMissing(['service', 'deliveryZone']);
 
         return new DeliveryRequestResource($deliveryRequest);
     }
@@ -256,6 +264,7 @@ class DeliveryRequestController extends Controller
 
         $deliveryRequest = DeliveryRequest::findOrFail($id);
 
+        
         $this->authorize('confirmDelivery', $deliveryRequest);
 
         if ($deliveryRequest->status !== DeliveryRequest::STATUS_EN_LIVRAISON) {

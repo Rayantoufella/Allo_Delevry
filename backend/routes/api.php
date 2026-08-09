@@ -22,6 +22,8 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,
 
 Route::get('/drivers/{slug}', [DriverProfileController::class, 'showPublic'])->middleware('throttle:60,1');
 Route::get('/drivers/{slug}/qr', [DriverProfileController::class, 'qrCode'])->middleware('throttle:60,1');
+Route::post('/drivers/{slug}/register', [AuthController::class, 'registerForDriver'])->middleware('throttle:5,1');
+Route::post('/drivers/{slug}/login', [AuthController::class, 'loginForDriver'])->middleware('throttle:5,1');
 
 Route::get('/tracking/{privateToken}', [DeliveryRequestController::class, 'tracking'])->middleware('throttle:60,1');
 

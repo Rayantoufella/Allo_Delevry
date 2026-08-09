@@ -24,6 +24,22 @@ services:
             - mysql
         networks:
             - sail
+    queue:
+        image: 'sail-8.4/app'
+        restart: unless-stopped
+        depends_on:
+            - mysql
+        volumes:
+            - '.:/var/www/html'
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
+            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
+            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+        command: php artisan queue:work database --tries=3 --sleep=3 --timeout=60
+        networks:
+            - sail
     frontend:
         image: 'node:22-alpine'
         working_dir: /app

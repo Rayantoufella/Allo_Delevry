@@ -9,7 +9,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Hidden(['password', 'remember_token'])]
+// driver_key est une colonne générée interne, support de l'unicité
+// (email, livreur) : elle n'a aucun sens hors de la base.
+#[Hidden(['password', 'remember_token', 'driver_key'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -25,6 +27,7 @@ class User extends Authenticatable
         'password',
         'role',
         'phone',
+        'driver_id',
     ];
 
     public function isClient(): bool
@@ -48,6 +51,16 @@ class User extends Authenticatable
     public function driverProfile()
     {
         return $this->hasOne(DriverProfile::class);
+    }
+
+    public function driver()
+    {
+        return $this->belongsTo(User::class, 'driver_id');
+    }
+
+    public function clients()
+    {
+        return $this->hasMany(User::class, 'driver_id');
     }
 
     public function services()

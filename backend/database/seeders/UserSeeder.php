@@ -15,20 +15,23 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::firstOrCreate(
-            ['email' => 'client@example.com'],
-            [
-                'name' => 'Client Demo',
-                'role' => User::ROLE_CLIENT,
-                'password' => 'password',
-            ],
-        );
-
-        User::firstOrCreate(
+        $demoDriver = User::firstOrCreate(
             ['email' => 'driver@example.com'],
             [
                 'name' => 'Livreur Demo',
                 'role' => User::ROLE_DRIVER,
+                'password' => 'password',
+            ],
+        );
+
+        // Le client démo est rattaché au livreur démo (RG scoping client/livreur) :
+        // l'email n'est unique que par driver_key, donc client@example.com peut aussi
+        // exister chez d'autres livreurs sans conflit.
+        User::firstOrCreate(
+            ['email' => 'client@example.com', 'driver_id' => $demoDriver->id],
+            [
+                'name' => 'Client Demo',
+                'role' => User::ROLE_CLIENT,
                 'password' => 'password',
             ],
         );

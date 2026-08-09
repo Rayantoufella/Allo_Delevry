@@ -74,7 +74,7 @@ return [
         ],
 
         'jobs' => [
-            'driver' => 'daily',
+            'driver' => env('APP_ENV') === 'testing' ? 'null' : 'daily',
             'path' => storage_path('logs/jobs.log'),
             'level' => env('LOG_JOBS_LEVEL', 'info'),
             'days' => env('LOG_JOBS_DAYS', 14),

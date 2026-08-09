@@ -16,6 +16,7 @@ class DriverProfile extends Model
         'logo_path',
         'city',
         'rib',
+        'description',
         'is_available',
     ];
 
