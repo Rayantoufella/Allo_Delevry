@@ -11,8 +11,21 @@ use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * @group Avis
+ *
+ * Système de notation et d'avis sur les livraisons terminées.
+ * Un avis ne peut être laissé qu'une seule fois par demande livrée.
+ *
+ * @authenticated
+ */
 class ReviewController extends Controller
 {
+    /**
+     * Lister mes avis
+     *
+     * Retourne les avis laissés par l'utilisateur connecté.
+     */
     public function index(Request $request)
     {
         return ReviewResource::collection(
@@ -20,6 +33,15 @@ class ReviewController extends Controller
         );
     }
 
+    /**
+     * Laisser un avis
+     *
+     * Crée un avis sur une demande livrée. Un seul avis par demande et par utilisateur.
+     *
+     * @bodyParam delivery_request_id int required L'ID de la demande livrée. Example: 1
+     * @bodyParam rating int required Note de 1 à 5. Example: 4
+     * @bodyParam comment string Commentaire optionnel. Example: Très bon service, rapide et efficace
+     */
     public function store(StoreReviewRequest $request)
     {
         $deliveryRequest = DeliveryRequest::findOrFail($request->validated()['delivery_request_id']);
@@ -43,6 +65,13 @@ class ReviewController extends Controller
         return response()->json(new ReviewResource(Review::create($data)), 201);
     }
 
+    /**
+     * Détail d'un avis
+     *
+     * Retourne les détails d'un avis spécifique.
+     *
+     * @urlParam id int required L'identifiant de l'avis. Example: 1
+     */
     public function show($id, Request $request)
     {
         $review = Review::findOrFail($id);
@@ -52,6 +81,15 @@ class ReviewController extends Controller
         return new ReviewResource($review);
     }
 
+    /**
+     * Modifier un avis
+     *
+     * Met à jour le commentaire ou la note d'un avis existant.
+     *
+     * @urlParam id int required L'identifiant de l'avis. Example: 1
+     * @bodyParam rating int La nouvelle note. Example: 5
+     * @bodyParam comment string Le nouveau commentaire. Example: Service excellent
+     */
     public function update(UpdateReviewRequest $request, $id)
     {
         $review = Review::findOrFail($id);
@@ -63,6 +101,15 @@ class ReviewController extends Controller
         return new ReviewResource($review->refresh());
     }
 
+    /**
+     * Supprimer un avis
+     *
+     * Supprime définitivement un avis.
+     *
+     * @urlParam id int required L'identifiant de l'avis. Example: 1
+     *
+     * @response 200 {"message": "Avis supprimé avec succès"}
+     */
     public function destroy($id, Request $request)
     {
         $review = Review::findOrFail($id);

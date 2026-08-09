@@ -12,8 +12,21 @@ use App\Models\AiRequestDraft;
 use App\Models\DriverProfile;
 use Illuminate\Http\Request;
 
+/**
+ * @group Assistant IA
+ *
+ * Brouillons de demandes générés par l'assistant IA. L'analyse transforme un message
+ * libre en données structurées (destinataire, adresses, service, montant).
+ *
+ * @authenticated
+ */
 class AiRequestDraftController extends Controller
 {
+    /**
+     * Lister mes brouillons IA
+     *
+     * Retourne les brouillons de l'utilisateur connecté. Pagination : 20 éléments par page.
+     */
     public function index(Request $request)
     {
         return AiRequestDraftResource::collection(
@@ -21,6 +34,14 @@ class AiRequestDraftController extends Controller
         );
     }
 
+    /**
+     * Créer un brouillon IA
+     *
+     * Crée manuellement un brouillon de demande (sans analyse IA).
+     *
+     * @bodyParam input_message string required Le message décrivant la demande. Example: Envoie un colis à Sara
+     * @bodyParam status string Le statut du brouillon. Example: pending
+     */
     public function store(StoreAiRequestDraftRequest $request)
     {
         $this->authorize('create', AiRequestDraft::class);
@@ -31,6 +52,18 @@ class AiRequestDraftController extends Controller
         return response()->json(new AiRequestDraftResource(AiRequestDraft::create($data)), 201);
     }
 
+    /**
+     * Analyser un message avec l'IA
+     *
+     * Envoie un message libre à l'IA pour extraction de données structurées.
+     * Un brouillon est créé et un job d'analyse est dispatché en arrière-plan.
+     * Anti-doublon : si un brouillon identique existe (< 2 min), il est réutilisé.
+     *
+     * @bodyParam input_message string required Le message à analyser. Example: Envoie un colis à Sara, 420 DH à récupérer
+     * @bodyParam driver_slug string required Le slug du livreur. Example: rayan-express
+     *
+     * @response 201 {"id": 1, "input_message": "Envoie un colis à Sara", "status": "pending", "user_id": 2}
+     */
     public function analyze(AnalyzeAiRequestDraftRequest $request)
     {
         $this->authorize('create', AiRequestDraft::class);
@@ -61,6 +94,13 @@ class AiRequestDraftController extends Controller
         return response()->json(new AiRequestDraftResource($draft), 201);
     }
 
+    /**
+     * Détail d'un brouillon IA
+     *
+     * Retourne les détails d'un brouillon spécifique, y compris les données générées par l'IA.
+     *
+     * @urlParam id int required L'identifiant du brouillon. Example: 1
+     */
     public function show($id, Request $request)
     {
         $draft = AiRequestDraft::findOrFail($id);
@@ -70,6 +110,16 @@ class AiRequestDraftController extends Controller
         return new AiRequestDraftResource($draft);
     }
 
+    /**
+     * Modifier un brouillon IA
+     *
+     * Met à jour les données d'un brouillon existant (avant utilisation pour créer une demande).
+     *
+     * @urlParam id int required L'identifiant du brouillon. Example: 1
+     * @bodyParam input_message string Le message original. Example: Nouveau message
+     * @bodyParam generated_data array Les données structurées générées. Example: {"recipient_name": "Sara"}
+     * @bodyParam status string Le statut. Example: done
+     */
     public function update(UpdateAiRequestDraftRequest $request, $id)
     {
         $draft = AiRequestDraft::findOrFail($id);
@@ -81,6 +131,15 @@ class AiRequestDraftController extends Controller
         return new AiRequestDraftResource($draft->refresh());
     }
 
+    /**
+     * Supprimer un brouillon IA
+     *
+     * Supprime définitivement un brouillon.
+     *
+     * @urlParam id int required L'identifiant du brouillon. Example: 1
+     *
+     * @response 200 {"message": "Brouillon IA supprimé avec succès"}
+     */
     public function destroy($id, Request $request)
     {
         $draft = AiRequestDraft::findOrFail($id);

@@ -1,0 +1,2905 @@
+openapi: 3.0.3
+info:
+  title: 'Allo Delivery API'
+  description: 'API de la plateforme Allo Delivery — gestion des livraisons, profils de livreurs, suivi en temps réel, chat et paiements.'
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8000'
+tags:
+  - name: 'Assistant IA'
+    description: "\nBrouillons de demandes générés par l'assistant IA. L'analyse transforme un message\nlibre en données structurées (destinataire, adresses, service, montant)."
+  - name: Authentification
+    description: "\nEndpoints d'inscription, connexion et gestion de session.\nLes comptes clients sont créés dans le contexte d'un livreur spécifique (via son slug)."
+  - name: Avis
+    description: "\nSystème de notation et d'avis sur les livraisons terminées.\nUn avis ne peut être laissé qu'une seule fois par demande livrée."
+  - name: Chat
+    description: "\nMessages de chat entre clients et livreurs pour une demande de livraison.\nLes messages sont diffusés en temps réel via WebSocket (Reverb)."
+  - name: 'Dashboard livreur'
+    description: "\nTableau de bord du livreur (AR-39). Un seul endpoint retournant des indicateurs agrégés :\ndemandes, missions en cours, chiffre d'affaires, avis et notifications."
+  - name: 'Demandes de livraison'
+    description: "\nGestion complète des demandes de livraison : création, suivi, transitions de statut,\ngénération de code de confirmation, preuves et validation finale."
+  - name: GPS
+    description: "\nSuivi de position GPS en temps réel pour les livraisons en cours.\nLes positions sont enregistrées par le livreur pendant le trajet."
+  - name: 'Historique des statuts'
+    description: "\nHistorique des transitions de statut d'une demande de livraison.\nChaque changement de statut est enregistré avec l'utilisateur, la date et un commentaire."
+  - name: Incidents
+    description: "\nSignalement d'incidents liés à une demande de livraison (retard, problème, etc.)."
+  - name: Notifications
+    description: "\nGestion des notifications utilisateur. Les notifications sont générées automatiquement\nlors des événements importants (nouvelle demande, message chat, etc.)."
+  - name: Paiements
+    description: "\nTransactions de paiement liées aux livraisons (espèces, virement, etc.)."
+  - name: Preuves
+    description: "\nPreuves de livraison (photos, signatures, tickets).\nLa photo de récupération du colis (pickup_photo) est obligatoire avant le statut \"colis_recupere\"."
+  - name: 'Profils livreurs'
+    description: "\nGestion des profils de livreurs. Inclut le profil public accessible sans authentification,\nla page publique avec services et zones, ainsi que le CRUD pour les livreurs connectés."
+  - name: Services
+    description: "\nCRUD des services proposés par un livreur (envoi de colis, documents, courses, etc.).\nChaque service a un nom, une description et un prix de base."
+  - name: 'Zones & tarifs'
+    description: "\nGestion des zones de livraison et de leurs tarifs fixes.\nChaque zone a un nom, une destination/origine et un prix fixe."
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      description: 'Token Sanctum Bearer. Récupérez-le via `/api/register` ou `/api/login` (champ `token` de la réponse).'
+security:
+  -
+    default: []
+paths:
+  /api/ai-request-drafts:
+    get:
+      summary: 'Lister mes brouillons IA'
+      operationId: listerMesBrouillonsIA
+      description: "Retourne les brouillons de l'utilisateur connecté. Pagination : 20 éléments par page."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Assistant IA'
+    post:
+      summary: 'Créer un brouillon IA'
+      operationId: crerUnBrouillonIA
+      description: 'Crée manuellement un brouillon de demande (sans analyse IA).'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Assistant IA'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_id:
+                  type: string
+                  description: 'Must match an existing stored value.'
+                  example: null
+                  nullable: true
+                input_message:
+                  type: string
+                  description: 'Le message décrivant la demande.'
+                  example: 'Envoie un colis à Sara'
+                generated_data:
+                  type: string
+                  description: 'Must be a valid JSON string.'
+                  example: '["architecto","architecto"]'
+                  nullable: true
+                status:
+                  type: string
+                  description: 'Le statut du brouillon.'
+                  example: pending
+                  nullable: true
+                error_message:
+                  type: string
+                  description: ''
+                  example: architecto
+                  nullable: true
+                validated_at:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-08-09T21:18:19'
+                  nullable: true
+              required:
+                - input_message
+  '/api/ai-request-drafts/{id}':
+    get:
+      summary: "Détail d'un brouillon IA"
+      operationId: dtailDunBrouillonIA
+      description: "Retourne les détails d'un brouillon spécifique, y compris les données générées par l'IA."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Assistant IA'
+    delete:
+      summary: 'Supprimer un brouillon IA'
+      operationId: supprimerUnBrouillonIA
+      description: 'Supprime définitivement un brouillon.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Assistant IA'
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant du brouillon."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/ai-request-drafts/analyze:
+    post:
+      summary: "Analyser un message avec l'IA"
+      operationId: analyserUnMessageAvecLIA
+      description: "Envoie un message libre à l'IA pour extraction de données structurées.\nUn brouillon est créé et un job d'analyse est dispatché en arrière-plan.\nAnti-doublon : si un brouillon identique existe (< 2 min), il est réutilisé."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Assistant IA'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                input_message:
+                  type: string
+                  description: 'Le message à analyser.'
+                  example: 'Envoie un colis à Sara, 420 DH à récupérer'
+                driver_slug:
+                  type: string
+                  description: 'Le slug du livreur.'
+                  example: rayan-express
+              required:
+                - input_message
+                - driver_slug
+  /api/register:
+    post:
+      summary: 'Inscrire un livreur'
+      operationId: inscrireUnLivreur
+      description: 'Crée un nouveau compte livreur avec rôle "driver" forcé côté serveur.'
+      parameters: []
+      responses:
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'La confirmation du mot de passe ne correspond pas.'
+                  errors:
+                    password:
+                      - 'La confirmation du mot de passe ne correspond pas.'
+                properties:
+                  message:
+                    type: string
+                    example: 'La confirmation du mot de passe ne correspond pas.'
+                  errors:
+                    type: object
+                    properties:
+                      password:
+                        type: array
+                        example:
+                          - 'La confirmation du mot de passe ne correspond pas.'
+                        items:
+                          type: string
+      tags:
+        - Authentification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Le nom du livreur.'
+                  example: Ahmed
+                email:
+                  type: string
+                  description: "L'adresse email."
+                  example: ahmed@example.com
+                password:
+                  type: string
+                  description: 'Le mot de passe (min 8 caractères).'
+                  example: secret123
+                phone:
+                  type: string
+                  description: 'Le numéro de téléphone.'
+                  example: '+212600000000'
+                  nullable: true
+              required:
+                - name
+                - email
+                - password
+      security: []
+  /api/login:
+    post:
+      summary: 'Connecter un livreur'
+      operationId: connecterUnLivreur
+      description: 'Authentifie un livreur existant par email et mot de passe.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'Invalid credentials'
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'Invalid credentials'
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - Authentification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: "L'adresse email."
+                  example: ahmed@example.com
+                password:
+                  type: string
+                  description: 'Le mot de passe.'
+                  example: secret123
+              required:
+                - email
+                - password
+      security: []
+  '/api/drivers/{slug}/login':
+    post:
+      summary: 'Connecter un client (contexte livreur)'
+      operationId: connecterUnClientcontexteLivreur
+      description: "Authentifie un client rattaché au livreur du slug.\nUn client du livreur A ne peut pas se connecter via l'URL du livreur B."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: false
+                  message: 'Invalid credentials'
+                  errors: null
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'Invalid credentials'
+                  errors:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - Authentification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: "L'adresse email."
+                  example: sara@example.com
+                password:
+                  type: string
+                  description: 'Le mot de passe.'
+                  example: secret123
+              required:
+                - email
+                - password
+      security: []
+    parameters:
+      -
+        in: path
+        name: slug
+        description: 'Le slug du livreur.'
+        example: rayan-express
+        required: true
+        schema:
+          type: string
+  /api/logout:
+    post:
+      summary: Déconnexion
+      operationId: dconnexion
+      description: "Supprime le token Sanctum courant de l'utilisateur."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Authentification
+  /api/me:
+    get:
+      summary: 'Profil utilisateur courant'
+      operationId: profilUtilisateurCourant
+      description: "Retourne les informations de l'utilisateur connecté et son contexte livreur\n(marque, logo) si applicable."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Authentification
+  /api/reviews:
+    get:
+      summary: 'Lister mes avis'
+      operationId: listerMesAvis
+      description: "Retourne les avis laissés par l'utilisateur connecté."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Avis
+    post:
+      summary: 'Laisser un avis'
+      operationId: laisserUnAvis
+      description: 'Crée un avis sur une demande livrée. Un seul avis par demande et par utilisateur.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Avis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                delivery_request_id:
+                  type: integer
+                  description: "L'ID de la demande livrée."
+                  example: 1
+                rating:
+                  type: integer
+                  description: 'Note de 1 à 5.'
+                  example: 4
+                comment:
+                  type: string
+                  description: 'Commentaire optionnel.'
+                  example: 'Très bon service, rapide et efficace'
+                  nullable: true
+              required:
+                - delivery_request_id
+                - rating
+  '/api/reviews/{id}':
+    get:
+      summary: "Détail d'un avis"
+      operationId: dtailDunAvis
+      description: "Retourne les détails d'un avis spécifique."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Avis
+    put:
+      summary: 'Modifier un avis'
+      operationId: modifierUnAvis
+      description: "Met à jour le commentaire ou la note d'un avis existant."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Avis
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  description: 'La nouvelle note.'
+                  example: 5
+                comment:
+                  type: string
+                  description: 'Le nouveau commentaire.'
+                  example: 'Service excellent'
+                  nullable: true
+    delete:
+      summary: 'Supprimer un avis'
+      operationId: supprimerUnAvis
+      description: 'Supprime définitivement un avis.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Avis
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant de l'avis."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/chat-messages:
+    get:
+      summary: 'Lister les messages'
+      operationId: listerLesMessages
+      description: "Retourne les messages d'une demande spécifique ou tous les messages de l'utilisateur.\nPagination : 20 éléments par page."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Chat
+    post:
+      summary: 'Envoyer un message'
+      operationId: envoyerUnMessage
+      description: "Envoie un message dans le chat d'une demande de livraison.\nLe message est diffusé en temps réel aux participants."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                delivery_request_id:
+                  type: integer
+                  description: "L'ID de la demande."
+                  example: 1
+                message_type:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: 'n'
+                  nullable: true
+                content:
+                  type: string
+                  description: 'Le contenu du message.'
+                  example: "Bonjour, j'arrive dans 10 min"
+                is_read:
+                  type: boolean
+                  description: ''
+                  example: false
+              required:
+                - delivery_request_id
+                - content
+  '/api/chat-messages/{id}':
+    get:
+      summary: "Détail d'un message"
+      operationId: dtailDunMessage
+      description: "Retourne les détails d'un message spécifique."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Chat
+    put:
+      summary: 'Modifier un message'
+      operationId: modifierUnMessage
+      description: "Met à jour le contenu d'un message existant."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Chat
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message_type:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: b
+                  nullable: true
+                content:
+                  type: string
+                  description: 'Le nouveau contenu.'
+                  example: 'Message modifié'
+                is_read:
+                  type: boolean
+                  description: ''
+                  example: false
+    delete:
+      summary: 'Supprimer un message'
+      operationId: supprimerUnMessage
+      description: 'Supprime définitivement un message du chat.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Chat
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant du message."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/dashboard:
+    get:
+      summary: 'Tableau de bord du livreur'
+      operationId: tableauDeBordDuLivreur
+      description: "Retourne les indicateurs du livreur connecté : nombre de demandes,\nmissions actives, en attente, livrées, chiffre d'affaires estimé/encaissé,\nnote moyenne, notifications non lues, les 5 dernières demandes et les 5 derniers messages."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Dashboard livreur'
+  '/api/tracking/{privateToken}':
+    get:
+      summary: "Suivi public d'une demande"
+      operationId: suiviPublicDuneDemande
+      description: "Affiche les informations de suivi d'une demande via son jeton privé.\nAccessible sans authentification. Inclut l'historique des statuts, les participants,\nle service, la zone, le chat et les preuves de livraison."
+      parameters: []
+      responses:
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'No query results for model [App\Models\DeliveryRequest].'
+                properties:
+                  message:
+                    type: string
+                    example: 'No query results for model [App\Models\DeliveryRequest].'
+      tags:
+        - 'Demandes de livraison'
+      security: []
+    parameters:
+      -
+        in: path
+        name: privateToken
+        description: 'Le jeton privé de suivi.'
+        example: abc123def456...
+        required: true
+        schema:
+          type: string
+  '/api/drivers/{slug}/delivery-requests':
+    post:
+      summary: 'Créer une demande (via un livreur)'
+      operationId: crerUneDemandeviaUnLivreur
+      description: "Crée une nouvelle demande de livraison dans le contexte d'un livreur spécifique.\nLe client doit être rattaché au livreur (inscription via `/drivers/{slug}/register`)."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Demandes de livraison'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_id:
+                  type: integer
+                  description: 'ID du service choisi.'
+                  example: 1
+                  nullable: true
+                delivery_zone_id:
+                  type: integer
+                  description: 'ID de la zone de livraison.'
+                  example: 2
+                  nullable: true
+                ai_request_draft_id:
+                  type: integer
+                  description: 'ID du brouillon IA utilisé pour pré-remplir la demande.'
+                  example: 5
+                  nullable: true
+                recipient_name:
+                  type: string
+                  description: 'Nom du destinataire.'
+                  example: Sara
+                recipient_phone:
+                  type: string
+                  description: 'Téléphone du destinataire.'
+                  example: '+212600000000'
+                pickup_address:
+                  type: string
+                  description: 'Adresse de retrait.'
+                  example: '12 Rue Principale, Agadir'
+                delivery_address:
+                  type: string
+                  description: 'Adresse de livraison.'
+                  example: '45 Avenue Hassan II, Agadir'
+                package_description:
+                  type: string
+                  description: 'Description du colis.'
+                  example: 'Petit carton 2kg'
+                  nullable: true
+                product_amount:
+                  type: number
+                  description: 'Montant du produit à encaisser en DH.'
+                  example: 150.0
+                  nullable: true
+                amount_to_collect:
+                  type: number
+                  description: 'Montant à encaisser du destinataire en DH.'
+                  example: 42.85
+                  nullable: true
+                scheduled_at:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-08-09T21:18:18'
+                  nullable: true
+              required:
+                - recipient_name
+                - recipient_phone
+                - pickup_address
+                - delivery_address
+    parameters:
+      -
+        in: path
+        name: slug
+        description: 'Le slug du livreur.'
+        example: rayan-express
+        required: true
+        schema:
+          type: string
+  /api/delivery-requests:
+    get:
+      summary: 'Lister mes demandes'
+      operationId: listerMesDemandes
+      description: "Retourne les demandes de livraison de l'utilisateur connecté (client ou livreur).\nLes clients voient uniquement leurs propres demandes ; les livreurs voient toutes les demandes qui leur sont assignées.\nPagination : 20 éléments par page."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Demandes de livraison'
+  '/api/delivery-requests/{id}':
+    get:
+      summary: "Détail d'une demande"
+      operationId: dtailDuneDemande
+      description: "Retourne le détail complet d'une demande de livraison, y compris service et zone."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Demandes de livraison'
+    put:
+      summary: 'Modifier une demande'
+      operationId: modifierUneDemande
+      description: 'Met à jour une demande non encore en cours de livraison.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Demandes de livraison'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_id:
+                  type: string
+                  description: 'Must match an existing stored value.'
+                  example: null
+                delivery_zone_id:
+                  type: string
+                  description: 'Must match an existing stored value.'
+                  example: null
+                  nullable: true
+                ai_request_draft_id:
+                  type: string
+                  description: 'Must match an existing stored value.'
+                  example: null
+                  nullable: true
+                recipient_name:
+                  type: string
+                  description: 'Nom du destinataire.'
+                  example: Sara
+                recipient_phone:
+                  type: string
+                  description: 'Must not be greater than 20 characters.'
+                  example: ngzmiyvdljnikhwa
+                pickup_address:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: 'y'
+                delivery_address:
+                  type: string
+                  description: 'Adresse de livraison.'
+                  example: 'Nouvelle adresse'
+                package_description:
+                  type: string
+                  description: ''
+                  example: architecto
+                  nullable: true
+                product_amount:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 39
+                  nullable: true
+                amount_to_collect:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 84
+                  nullable: true
+                scheduled_at:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-08-09T21:18:18'
+                  nullable: true
+    delete:
+      summary: 'Supprimer une demande'
+      operationId: supprimerUneDemande
+      description: 'Supprime une demande uniquement si elle est à un statut terminal (livrée, annulée, refusée).'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Demandes de livraison'
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la demande."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/delivery-requests/{deliveryRequest}/status':
+    patch:
+      summary: "Mettre à jour le statut d'une demande"
+      operationId: mettreJourLeStatutDuneDemande
+      description: "Fait transitionner une demande vers un nouveau statut (selon les règles métier).\nLa photo de récupération (pickup_photo) est requise avant le passage à \"colis_recupere\"."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Demandes de livraison'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  description: 'Nouveau statut.'
+                  example: en_livraison
+                comment:
+                  type: string
+                  description: 'Commentaire optionnel.'
+                  example: 'Colis récupéré'
+                  nullable: true
+                proposed_price:
+                  type: number
+                  description: 'Prix proposé (requis pour le statut "prix_propose").'
+                  example: 25.0
+                  nullable: true
+              required:
+                - status
+    parameters:
+      -
+        in: path
+        name: deliveryRequest
+        description: ''
+        example: 1
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la demande."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/delivery-requests/{deliveryRequest}/confirm-price':
+    post:
+      summary: 'Confirmer le prix proposé'
+      operationId: confirmerLePrixPropos
+      description: 'Le client confirme le prix proposé par le livreur (transition vers "confirmee").'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Demandes de livraison'
+    parameters:
+      -
+        in: path
+        name: deliveryRequest
+        description: "L'identifiant de la demande."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/delivery-requests/{deliveryRequest}/cancel':
+    post:
+      summary: 'Annuler une demande'
+      operationId: annulerUneDemande
+      description: 'Annule une demande aux statuts "en_attente" ou "prix_propose".'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Demandes de livraison'
+    parameters:
+      -
+        in: path
+        name: deliveryRequest
+        description: "L'identifiant de la demande."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/delivery-requests/{deliveryRequest}/generate-code':
+    post:
+      summary: 'Générer un code de confirmation'
+      operationId: gnrerUnCodeDeConfirmation
+      description: 'Génère un code à 6 chiffres pour la remise du colis. Le code expire après 30 minutes.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Demandes de livraison'
+    parameters:
+      -
+        in: path
+        name: deliveryRequest
+        description: ''
+        example: 1
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la demande."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/delivery-requests/{deliveryRequest}/confirm-delivery':
+    post:
+      summary: 'Confirmer la livraison'
+      operationId: confirmerLaLivraison
+      description: "Le client confirme la réception en fournissant le code de confirmation.\nUne preuve de livraison (RG06) doit être présente. Max 5 tentatives."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Demandes de livraison'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: 'Le code de confirmation à 6 chiffres.'
+                  example: '482951'
+              required:
+                - code
+    parameters:
+      -
+        in: path
+        name: deliveryRequest
+        description: ''
+        example: 1
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la demande."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/gps-locations:
+    get:
+      summary: 'Lister les positions GPS'
+      operationId: listerLesPositionsGPS
+      description: "Retourne les positions d'une demande spécifique ou toutes les positions de l'utilisateur."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - GPS
+    post:
+      summary: 'Enregistrer une position GPS'
+      operationId: enregistrerUnePositionGPS
+      description: "Ajoute un point de géolocalisation pour une demande de livraison.\nLa date d'enregistrement est définie automatiquement si non fournie."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - GPS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                delivery_request_id:
+                  type: integer
+                  description: "L'ID de la demande."
+                  example: 1
+                latitude:
+                  type: number
+                  description: 'La latitude.'
+                  example: 30.4278
+                longitude:
+                  type: number
+                  description: 'La longitude.'
+                  example: -9.5981
+                recorded_at:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-08-09T21:18:19'
+                  nullable: true
+              required:
+                - delivery_request_id
+                - latitude
+                - longitude
+  '/api/gps-locations/{id}':
+    get:
+      summary: "Détail d'une position GPS"
+      operationId: dtailDunePositionGPS
+      description: "Retourne les informations d'un point de géolocalisation spécifique."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - GPS
+    put:
+      summary: 'Modifier une position GPS'
+      operationId: modifierUnePositionGPS
+      description: "Met à jour les coordonnées d'un point de géolocalisation."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - GPS
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latitude:
+                  type: number
+                  description: 'La nouvelle latitude.'
+                  example: 30.428
+                longitude:
+                  type: number
+                  description: 'La nouvelle longitude.'
+                  example: -9.5983
+                recorded_at:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-08-09T21:18:19'
+                  nullable: true
+    delete:
+      summary: 'Supprimer une position GPS'
+      operationId: supprimerUnePositionGPS
+      description: 'Supprime définitivement un point de géolocalisation.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - GPS
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la position."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/request-status-histories:
+    get:
+      summary: "Lister l'historique"
+      operationId: listerLhistorique
+      description: "Retourne l'historique des statuts d'une demande spécifique ou toutes les entrées de l'utilisateur.\nPagination : 20 éléments par page."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Historique des statuts'
+  '/api/request-status-histories/{id}':
+    get:
+      summary: "Détail d'une entrée d'historique"
+      operationId: dtailDuneEntreDhistorique
+      description: "Retourne les détails d'une transition de statut spécifique."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Historique des statuts'
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant de l'entrée."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/incidents:
+    get:
+      summary: 'Lister les incidents'
+      operationId: listerLesIncidents
+      description: "Retourne les incidents d'une demande spécifique ou tous les incidents de l'utilisateur."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Incidents
+    post:
+      summary: 'Signaler un incident'
+      operationId: signalerUnIncident
+      description: "Crée un signalement d'incident pour une demande de livraison."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Incidents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                delivery_request_id:
+                  type: integer
+                  description: "L'ID de la demande."
+                  example: 1
+                type:
+                  type: string
+                  description: "Le type d'incident."
+                  example: retard
+                description:
+                  type: string
+                  description: 'La description détaillée.'
+                  example: "Le destinataire n'est pas joignable"
+                  nullable: true
+                status:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: v
+                  nullable: true
+              required:
+                - delivery_request_id
+                - type
+  '/api/incidents/{id}':
+    get:
+      summary: "Détail d'un incident"
+      operationId: dtailDunIncident
+      description: "Retourne les détails d'un incident spécifique."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Incidents
+    put:
+      summary: 'Modifier un incident'
+      operationId: modifierUnIncident
+      description: "Met à jour les informations d'un incident existant."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Incidents
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  description: 'Must not be greater than 100 characters.'
+                  example: b
+                description:
+                  type: string
+                  description: 'La nouvelle description.'
+                  example: 'Mise à jour du problème'
+                  nullable: true
+                status:
+                  type: string
+                  description: 'Le nouveau statut.'
+                  example: resolved
+                  nullable: true
+    delete:
+      summary: 'Supprimer un incident'
+      operationId: supprimerUnIncident
+      description: 'Supprime définitivement un incident.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Incidents
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant de l'incident."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/notifications:
+    get:
+      summary: 'Lister mes notifications'
+      operationId: listerMesNotifications
+      description: "Retourne les notifications de l'utilisateur connecté, de la plus récente à l'ancienne.\nPagination : 20 éléments par page."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Notifications
+  '/api/notifications/{id}':
+    get:
+      summary: "Détail d'une notification"
+      operationId: dtailDuneNotification
+      description: "Retourne les détails d'une notification spécifique."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Notifications
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la notification."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/notifications/{notification}/read':
+    patch:
+      summary: 'Marquer une notification comme lue'
+      operationId: marquerUneNotificationCommeLue
+      description: 'Marque une notification spécifique comme lue (définit `read_at`).'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Notifications
+    parameters:
+      -
+        in: path
+        name: notification
+        description: 'The notification.'
+        example: architecto
+        required: true
+        schema:
+          type: string
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la notification."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/notifications/read-all:
+    patch:
+      summary: 'Marquer toutes les notifications comme lues'
+      operationId: marquerToutesLesNotificationsCommeLues
+      description: "Marque toutes les notifications non lues de l'utilisateur comme lues."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Notifications
+  /api/payment-transactions:
+    get:
+      summary: 'Lister les transactions'
+      operationId: listerLesTransactions
+      description: "Retourne les transactions d'une demande spécifique ou toutes les transactions de l'utilisateur."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Paiements
+    post:
+      summary: 'Enregistrer une transaction'
+      operationId: enregistrerUneTransaction
+      description: 'Crée une nouvelle transaction de paiement pour une demande.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Paiements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                delivery_request_id:
+                  type: integer
+                  description: "L'ID de la demande."
+                  example: 1
+                provider:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: 'n'
+                reference:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: g
+                  nullable: true
+                amount:
+                  type: number
+                  description: 'Le montant en DH.'
+                  example: 42.85
+                  nullable: true
+                currency:
+                  type: string
+                  description: 'Must be 3 characters.'
+                  example: miy
+                  nullable: true
+                status:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: v
+                  nullable: true
+                environment:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: d
+                  nullable: true
+                type:
+                  type: string
+                  description: 'Le type de transaction.'
+                  example: payment
+                method:
+                  type: string
+                  description: 'La méthode de paiement.'
+                  example: cash
+              required:
+                - delivery_request_id
+                - provider
+                - amount
+                - type
+  '/api/payment-transactions/{id}':
+    get:
+      summary: "Détail d'une transaction"
+      operationId: dtailDuneTransaction
+      description: "Retourne les informations d'une transaction spécifique."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Paiements
+    put:
+      summary: 'Modifier une transaction'
+      operationId: modifierUneTransaction
+      description: "Met à jour les informations d'une transaction existante."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Paiements
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                delivery_request_id:
+                  type: string
+                  description: 'Must match an existing stored value.'
+                  example: null
+                provider:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                reference:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: 'n'
+                  nullable: true
+                amount:
+                  type: number
+                  description: 'Le nouveau montant.'
+                  example: 50.0
+                  nullable: true
+                currency:
+                  type: string
+                  description: 'Must be 3 characters.'
+                  example: zmi
+                  nullable: true
+                status:
+                  type: string
+                  description: 'Le nouveau statut.'
+                  example: completed
+                  nullable: true
+                environment:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: v
+                  nullable: true
+    delete:
+      summary: 'Supprimer une transaction'
+      operationId: supprimerUneTransaction
+      description: 'Supprime définitivement une transaction de paiement.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Paiements
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la transaction."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/delivery-proofs:
+    get:
+      summary: 'Lister les preuves'
+      operationId: listerLesPreuves
+      description: "Retourne les preuves d'une demande spécifique ou toutes les preuves de l'utilisateur."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Preuves
+    post:
+      summary: 'Ajouter une preuve'
+      operationId: ajouterUnePreuve
+      description: "Upload un fichier de preuve (photo, signature, ticket) pour une demande.\nLe fichier est stocké sur le disque `public`."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Preuves
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                delivery_request_id:
+                  type: integer
+                  description: "L'ID de la demande."
+                  example: 1
+                proof_type:
+                  type: string
+                  description: 'Le type de preuve (photo, signature, ticket, pickup_photo, pickup_id_card).'
+                  example: pickup_photo
+                file:
+                  type: string
+                  format: binary
+                  description: 'Le fichier de preuve (image/jpeg, image/png).'
+                receiver_name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: 'n'
+                  nullable: true
+              required:
+                - delivery_request_id
+                - proof_type
+                - file
+  '/api/delivery-proofs/{id}':
+    get:
+      summary: "Détail d'une preuve"
+      operationId: dtailDunePreuve
+      description: "Retourne les informations d'une preuve spécifique."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Preuves
+    put:
+      summary: 'Modifier une preuve'
+      operationId: modifierUnePreuve
+      description: "Remplace le fichier ou modifie le type d'une preuve existante."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Preuves
+      requestBody:
+        required: false
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                proof_type:
+                  type: string
+                  description: 'Le nouveau type.'
+                  example: photo
+                file:
+                  type: string
+                  format: binary
+                  description: 'Le nouveau fichier.'
+                receiver_name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: 'n'
+                  nullable: true
+    delete:
+      summary: 'Supprimer une preuve'
+      operationId: supprimerUnePreuve
+      description: 'Supprime définitivement une preuve et son fichier associé.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Preuves
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la preuve."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/drivers/{slug}':
+    get:
+      summary: "Profil public d'un livreur"
+      operationId: profilPublicDunLivreur
+      description: "Affiche le profil public d'un livreur par son slug, incluant les services actifs\net les zones de livraison actives. Accessible sans authentification."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  data:
+                    id: 1
+                    brand_name: 'Rayan Express'
+                    slug: rayan-express
+                    logo_path: null
+                    city: Agadir
+                    description: 'Livraison express & courses à Agadir, 7j/7.'
+                    is_available: true
+                    services:
+                      -
+                        id: 1
+                        name: 'Envoi de colis'
+                        description: 'Petit à moyen colis, main propre'
+                        base_price: '15.00'
+                        is_active: true
+                      -
+                        id: 2
+                        name: 'Documents & plis'
+                        description: 'Papiers, contrats, plis urgents'
+                        base_price: '12.00'
+                        is_active: true
+                      -
+                        id: 43
+                        name: 'Courses & achats'
+                        description: 'Achat puis livraison'
+                        base_price: '20.00'
+                        is_active: true
+                      -
+                        id: 44
+                        name: 'Plats & repas'
+                        description: 'Récupération et livraison de repas'
+                        base_price: '18.00'
+                        is_active: true
+                      -
+                        id: 45
+                        name: Pharmacie
+                        description: 'Médicaments et parapharmacie'
+                        base_price: '14.00'
+                        is_active: true
+                    delivery_zones:
+                      -
+                        id: 1
+                        origin_zone: Centre-ville
+                        destination_zone: Centre-ville
+                        fixed_price: '15.00'
+                        is_active: true
+                        deliveries_count: 0
+                      -
+                        id: 2
+                        origin_zone: 'Al Houda'
+                        destination_zone: 'Al Houda'
+                        fixed_price: '20.00'
+                        is_active: true
+                        deliveries_count: 0
+                      -
+                        id: 3
+                        origin_zone: 'Hay Mohammadi'
+                        destination_zone: 'Hay Mohammadi'
+                        fixed_price: '25.00'
+                        is_active: true
+                        deliveries_count: 0
+                      -
+                        id: 66
+                        origin_zone: Périphérie
+                        destination_zone: Périphérie
+                        fixed_price: '35.00'
+                        is_active: true
+                        deliveries_count: 0
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      brand_name:
+                        type: string
+                        example: 'Rayan Express'
+                      slug:
+                        type: string
+                        example: rayan-express
+                      logo_path:
+                        type: string
+                        example: null
+                        nullable: true
+                      city:
+                        type: string
+                        example: Agadir
+                      description:
+                        type: string
+                        example: 'Livraison express & courses à Agadir, 7j/7.'
+                      is_available:
+                        type: boolean
+                        example: true
+                      services:
+                        type: array
+                        example:
+                          - id: 1
+                            name: 'Envoi de colis'
+                            description: 'Petit à moyen colis, main propre'
+                            base_price: '15.00'
+                            is_active: true
+                          - id: 2
+                            name: 'Documents & plis'
+                            description: 'Papiers, contrats, plis urgents'
+                            base_price: '12.00'
+                            is_active: true
+                          - id: 43
+                            name: 'Courses & achats'
+                            description: 'Achat puis livraison'
+                            base_price: '20.00'
+                            is_active: true
+                          - id: 44
+                            name: 'Plats & repas'
+                            description: 'Récupération et livraison de repas'
+                            base_price: '18.00'
+                            is_active: true
+                          - id: 45
+                            name: Pharmacie
+                            description: 'Médicaments et parapharmacie'
+                            base_price: '14.00'
+                            is_active: true
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            name:
+                              type: string
+                              example: 'Envoi de colis'
+                            description:
+                              type: string
+                              example: 'Petit à moyen colis, main propre'
+                            base_price:
+                              type: string
+                              example: '15.00'
+                            is_active:
+                              type: boolean
+                              example: true
+                      delivery_zones:
+                        type: array
+                        example:
+                          - id: 1
+                            origin_zone: Centre-ville
+                            destination_zone: Centre-ville
+                            fixed_price: '15.00'
+                            is_active: true
+                            deliveries_count: 0
+                          - id: 2
+                            origin_zone: 'Al Houda'
+                            destination_zone: 'Al Houda'
+                            fixed_price: '20.00'
+                            is_active: true
+                            deliveries_count: 0
+                          - id: 3
+                            origin_zone: 'Hay Mohammadi'
+                            destination_zone: 'Hay Mohammadi'
+                            fixed_price: '25.00'
+                            is_active: true
+                            deliveries_count: 0
+                          - id: 66
+                            origin_zone: Périphérie
+                            destination_zone: Périphérie
+                            fixed_price: '35.00'
+                            is_active: true
+                            deliveries_count: 0
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            origin_zone:
+                              type: string
+                              example: Centre-ville
+                            destination_zone:
+                              type: string
+                              example: Centre-ville
+                            fixed_price:
+                              type: string
+                              example: '15.00'
+                            is_active:
+                              type: boolean
+                              example: true
+                            deliveries_count:
+                              type: integer
+                              example: 0
+      tags:
+        - 'Profils livreurs'
+      security: []
+    parameters:
+      -
+        in: path
+        name: slug
+        description: 'Le slug unique du livreur.'
+        example: rayan-express
+        required: true
+        schema:
+          type: string
+  '/api/drivers/{slug}/qr':
+    get:
+      summary: 'QR Code du livreur'
+      operationId: qRCodeDuLivreur
+      description: 'Génère un QR code SVG pointant vers la page publique du livreur.'
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"100\" height=\"100\" viewBox=\"0 0 100 100\"><rect x=\"0\" y=\"0\" width=\"100\" height=\"100\" fill=\"#ffffff\"/><g transform=\"scale(3.448)\"><g transform=\"translate(0,0)\"><path fill-rule=\"evenodd\" d=\"M9 0L9 1L8 1L8 2L9 2L9 3L8 3L8 4L10 4L10 7L11 7L11 4L12 4L12 5L15 5L15 6L14 6L14 7L15 7L15 6L16 6L16 8L17 8L17 9L16 9L16 10L15 10L15 8L13 8L13 6L12 6L12 9L14 9L14 10L15 10L15 12L13 12L13 13L12 13L12 11L13 11L13 10L11 10L11 11L10 11L10 9L11 9L11 8L6 8L6 9L7 9L7 10L6 10L6 11L7 11L7 12L4 12L4 11L5 11L5 8L0 8L0 9L2 9L2 10L1 10L1 11L0 11L0 14L1 14L1 15L0 15L0 21L1 21L1 18L2 18L2 20L3 20L3 21L7 21L7 20L6 20L6 19L8 19L8 23L9 23L9 24L8 24L8 29L13 29L13 28L12 28L12 27L14 27L14 28L15 28L15 27L16 27L16 28L17 28L17 29L19 29L19 28L21 28L21 29L22 29L22 28L21 28L21 25L25 25L25 26L22 26L22 27L23 27L23 29L24 29L24 27L25 27L25 28L26 28L26 29L27 29L27 28L28 28L28 26L29 26L29 23L28 23L28 24L26 24L26 23L27 23L27 22L29 22L29 20L28 20L28 19L27 19L27 16L28 16L28 15L27 15L27 12L28 12L28 11L27 11L27 12L25 12L25 13L21 13L21 12L22 12L22 11L23 11L23 12L24 12L24 11L25 11L25 9L26 9L26 8L25 8L25 9L24 9L24 8L23 8L23 9L22 9L22 8L20 8L20 7L21 7L21 5L20 5L20 3L21 3L21 0L18 0L18 1L20 1L20 2L18 2L18 3L17 3L17 0L16 0L16 1L14 1L14 3L13 3L13 4L12 4L12 2L13 2L13 1L11 1L11 2L10 2L10 0ZM10 3L10 4L11 4L11 3ZM15 3L15 5L16 5L16 6L17 6L17 8L18 8L18 9L20 9L20 10L19 10L19 11L18 11L18 10L17 10L17 11L16 11L16 13L15 13L15 14L14 14L14 13L13 13L13 14L12 14L12 13L11 13L11 12L10 12L10 13L9 13L9 9L8 9L8 12L7 12L7 13L4 13L4 14L7 14L7 13L9 13L9 14L10 14L10 13L11 13L11 15L10 15L10 16L8 16L8 17L9 17L9 18L8 18L8 19L10 19L10 20L9 20L9 21L10 21L10 22L9 22L9 23L10 23L10 22L11 22L11 24L10 24L10 26L9 26L9 27L10 27L10 26L14 26L14 27L15 27L15 26L16 26L16 25L15 25L15 26L14 26L14 25L12 25L12 23L13 23L13 24L14 24L14 23L15 23L15 24L18 24L18 25L17 25L17 26L19 26L19 27L17 27L17 28L19 28L19 27L20 27L20 23L19 23L19 24L18 24L18 23L17 23L17 22L19 22L19 21L20 21L20 18L22 18L22 19L21 19L21 20L22 20L22 19L23 19L23 20L24 20L24 19L25 19L25 21L26 21L26 20L27 20L27 19L25 19L25 18L24 18L24 19L23 19L23 18L22 18L22 17L26 17L26 16L27 16L27 15L26 15L26 13L25 13L25 16L24 16L24 15L23 15L23 16L22 16L22 14L21 14L21 13L20 13L20 12L19 12L19 11L20 11L20 10L21 10L21 9L20 9L20 8L18 8L18 6L17 6L17 5L19 5L19 7L20 7L20 5L19 5L19 3L18 3L18 4L17 4L17 3ZM8 5L8 7L9 7L9 5ZM27 8L27 9L28 9L28 10L29 10L29 9L28 9L28 8ZM2 10L2 12L1 12L1 14L2 14L2 13L3 13L3 11L4 11L4 10ZM23 10L23 11L24 11L24 10ZM17 12L17 13L16 13L16 14L15 14L15 16L13 16L13 15L14 15L14 14L13 14L13 15L12 15L12 17L15 17L15 16L16 16L16 18L14 18L14 20L13 20L13 21L12 21L12 19L13 19L13 18L11 18L11 17L10 17L10 18L11 18L11 20L10 20L10 21L12 21L12 22L13 22L13 23L14 23L14 22L15 22L15 23L16 23L16 22L17 22L17 21L18 21L18 20L17 20L17 21L16 21L16 19L17 19L17 17L18 17L18 18L20 18L20 17L21 17L21 16L20 16L20 17L18 17L18 16L19 16L19 15L18 15L18 14L17 14L17 13L18 13L18 12ZM19 13L19 14L20 14L20 15L21 15L21 14L20 14L20 13ZM28 13L28 14L29 14L29 13ZM2 15L2 16L4 16L4 17L5 17L5 18L7 18L7 17L6 17L6 16L7 16L7 15L6 15L6 16L4 16L4 15ZM16 15L16 16L18 16L18 15ZM28 17L28 18L29 18L29 17ZM13 21L13 22L14 22L14 21ZM15 21L15 22L16 22L16 21ZM21 21L21 24L24 24L24 21ZM22 22L22 23L23 23L23 22ZM25 24L25 25L26 25L26 24ZM25 26L25 27L26 27L26 28L27 28L27 26ZM0 0L0 7L7 7L7 0ZM1 1L1 6L6 6L6 1ZM2 2L2 5L5 5L5 2ZM22 0L22 7L29 7L29 0ZM23 1L23 6L28 6L28 1ZM24 2L24 5L27 5L27 2ZM0 22L0 29L7 29L7 22ZM1 23L1 28L6 28L6 23ZM2 24L2 27L5 27L5 24Z\" fill=\"#000000\"/></g></g></svg>\n"
+      tags:
+        - 'Profils livreurs'
+      security: []
+    parameters:
+      -
+        in: path
+        name: slug
+        description: 'Le slug du livreur.'
+        example: rayan-express
+        required: true
+        schema:
+          type: string
+  /api/driver-profiles:
+    get:
+      summary: 'Lister mes profils livreur'
+      operationId: listerMesProfilsLivreur
+      description: 'Retourne les profils du livreur connecté, du plus récent au plus ancien.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Profils livreurs'
+    post:
+      summary: 'Créer un profil livreur'
+      operationId: crerUnProfilLivreur
+      description: "Crée un nouveau profil de marque pour le livreur connecté.\nLe slug est rendu unique automatiquement (suffixe -2, -3... si déjà pris)."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Profils livreurs'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                brand_name:
+                  type: string
+                  description: 'Le nom de la marque.'
+                  example: 'Rayan Express'
+                slug:
+                  type: string
+                  description: "L'identifiant URL unique."
+                  example: rayan-express
+                logo_path:
+                  type: string
+                  description: 'Le chemin du logo.'
+                  example: logos/mon-logo.png
+                  nullable: true
+                city:
+                  type: string
+                  description: 'La ville.'
+                  example: Agadir
+                  nullable: true
+                rib:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: m
+                  nullable: true
+                description:
+                  type: string
+                  description: 'La description du livreur.'
+                  example: 'Livraison rapide à Agadir'
+                  nullable: true
+                phone:
+                  type: string
+                  description: 'Le téléphone du profil.'
+                  example: '+212600000000'
+                  nullable: true
+                is_available:
+                  type: boolean
+                  description: ''
+                  example: false
+              required:
+                - brand_name
+                - slug
+  '/api/driver-profiles/{id}':
+    get:
+      summary: "Détail d'un profil livreur"
+      operationId: dtailDunProfilLivreur
+      description: "Retourne les détails d'un profil spécifique appartenant au livreur connecté."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Profils livreurs'
+    put:
+      summary: 'Modifier un profil livreur'
+      operationId: modifierUnProfilLivreur
+      description: 'Met à jour un profil existant. Le slug est rendu unique si modifié.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Profils livreurs'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                brand_name:
+                  type: string
+                  description: 'Le nom de la marque.'
+                  example: 'Rayan Express Updated'
+                slug:
+                  type: string
+                  description: 'Le slug.'
+                  example: rayan-express-v2
+                logo_path:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: g
+                  nullable: true
+                city:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: z
+                  nullable: true
+                rib:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: m
+                  nullable: true
+                description:
+                  type: string
+                  description: 'La description.'
+                  example: 'Nouvelle description'
+                  nullable: true
+                phone:
+                  type: string
+                  description: 'Must not be greater than 30 characters.'
+                  example: 'n'
+                  nullable: true
+                is_available:
+                  type: boolean
+                  description: ''
+                  example: true
+    delete:
+      summary: 'Supprimer un profil livreur'
+      operationId: supprimerUnProfilLivreur
+      description: 'Supprime définitivement un profil de marque.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Profils livreurs'
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant du profil."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/services:
+    get:
+      summary: 'Lister mes services'
+      operationId: listerMesServices
+      description: 'Retourne la liste des services du livreur connecté.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Services
+    post:
+      summary: 'Créer un service'
+      operationId: crerUnService
+      description: 'Ajoute un nouveau service au catalogue du livreur.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Services
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Le nom du service.'
+                  example: 'Envoi de colis'
+                description:
+                  type: string
+                  description: 'La description.'
+                  example: 'Envoi rapide de colis dans la ville'
+                  nullable: true
+                base_price:
+                  type: number
+                  description: 'Le prix de base en DH.'
+                  example: 15.0
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: false
+              required:
+                - name
+  '/api/services/{id}':
+    get:
+      summary: "Détail d'un service"
+      operationId: dtailDunService
+      description: "Retourne les informations d'un service spécifique."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Services
+    put:
+      summary: 'Modifier un service'
+      operationId: modifierUnService
+      description: "Met à jour les informations d'un service existant."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Services
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Le nom.'
+                  example: 'Envoi de colis express'
+                description:
+                  type: string
+                  description: ''
+                  example: 'Eius et animi quos velit et.'
+                  nullable: true
+                base_price:
+                  type: number
+                  description: 'Le prix de base.'
+                  example: 20.0
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: true
+    delete:
+      summary: 'Supprimer un service'
+      operationId: supprimerUnService
+      description: 'Supprime définitivement un service du catalogue.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Services
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant du service."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/delivery-zones:
+    get:
+      summary: 'Lister mes zones de livraison'
+      operationId: listerMesZonesDeLivraison
+      description: 'Retourne les zones du livreur connecté avec le nombre de livraisons par zone.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Zones & tarifs'
+    post:
+      summary: 'Créer une zone de livraison'
+      operationId: crerUneZoneDeLivraison
+      description: 'Ajoute une nouvelle zone avec son tarif fixe.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Zones & tarifs'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                origin_zone:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                destination_zone:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: 'n'
+                fixed_price:
+                  type: number
+                  description: 'Prix fixe de la livraison en DH.'
+                  example: 20.0
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: false
+                origin:
+                  type: string
+                  description: 'Lieu de départ.'
+                  example: Centre-ville
+                destination:
+                  type: string
+                  description: "Lieu d'arrivée."
+                  example: 'Al Houda'
+              required:
+                - origin_zone
+                - destination_zone
+                - fixed_price
+                - origin
+                - destination
+  '/api/delivery-zones/{id}':
+    get:
+      summary: "Détail d'une zone"
+      operationId: dtailDuneZone
+      description: "Retourne les informations d'une zone spécifique."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Zones & tarifs'
+    put:
+      summary: 'Modifier une zone'
+      operationId: modifierUneZone
+      description: "Met à jour le nom ou le tarif d'une zone existante."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Zones & tarifs'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                origin_zone:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                destination_zone:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: 'n'
+                fixed_price:
+                  type: number
+                  description: 'Le tarif fixe en DH.'
+                  example: 25.0
+                  nullable: true
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: false
+                origin:
+                  type: string
+                  description: 'Le lieu de départ.'
+                  example: Centre-ville
+                destination:
+                  type: string
+                  description: "Le lieu d'arrivée."
+                  example: 'Al Houda'
+    delete:
+      summary: 'Supprimer une zone'
+      operationId: supprimerUneZone
+      description: 'Supprime définitivement une zone de livraison.'
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Zones & tarifs'
+    parameters:
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la zone."
+        example: 1
+        required: true
+        schema:
+          type: integer
+  '/api/delivery-zones/{deliveryZone}/toggle-active':
+    patch:
+      summary: 'Activer/Désactiver une zone'
+      operationId: activerDsactiverUneZone
+      description: "Bascule le statut actif/inactif d'une zone de livraison."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Zones & tarifs'
+    parameters:
+      -
+        in: path
+        name: deliveryZone
+        description: ''
+        example: 1
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: id
+        description: "L'identifiant de la zone."
+        example: 1
+        required: true
+        schema:
+          type: integer

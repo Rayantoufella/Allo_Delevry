@@ -8,8 +8,24 @@ use App\Models\DeliveryRequest;
 use App\Models\RequestStatusHistory;
 use Illuminate\Http\Request;
 
+/**
+ * @group Historique des statuts
+ *
+ * Historique des transitions de statut d'une demande de livraison.
+ * Chaque changement de statut est enregistré avec l'utilisateur, la date et un commentaire.
+ *
+ * @authenticated
+ */
 class RequestStatusHistoryController extends Controller
 {
+    /**
+     * Lister l'historique
+     *
+     * Retourne l'historique des statuts d'une demande spécifique ou toutes les entrées de l'utilisateur.
+     * Pagination : 20 éléments par page.
+     *
+     * @query delivery_request_id int Filtrer par ID de demande. Example: 1
+     */
     public function index(Request $request)
     {
         $query = RequestStatusHistory::query();
@@ -28,6 +44,13 @@ class RequestStatusHistoryController extends Controller
         return RequestStatusHistoryResource::collection($query->latest()->paginate(20));
     }
 
+    /**
+     * Détail d'une entrée d'historique
+     *
+     * Retourne les détails d'une transition de statut spécifique.
+     *
+     * @urlParam id int required L'identifiant de l'entrée. Example: 1
+     */
     public function show($id, Request $request)
     {
         $history = RequestStatusHistory::findOrFail($id);

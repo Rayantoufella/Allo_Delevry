@@ -1,0 +1,114 @@
+name: 'Historique des statuts'
+description: |-
+
+  Historique des transitions de statut d'une demande de livraison.
+  Chaque changement de statut est enregistré avec l'utilisateur, la date et un commentaire.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/request-status-histories
+    metadata:
+      custom: []
+      groupName: 'Historique des statuts'
+      groupDescription: |-
+
+        Historique des transitions de statut d'une demande de livraison.
+        Chaque changement de statut est enregistré avec l'utilisateur, la date et un commentaire.
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Lister l'historique"
+      description: |-
+        Retourne l'historique des statuts d'une demande spécifique ou toutes les entrées de l'utilisateur.
+        Pagination : 20 éléments par page.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/request-status-histories/{id}'
+    metadata:
+      custom: []
+      groupName: 'Historique des statuts'
+      groupDescription: |-
+
+        Historique des transitions de statut d'une demande de livraison.
+        Chaque changement de statut est enregistré avec l'utilisateur, la date et un commentaire.
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Détail d'une entrée d'historique"
+      description: "Retourne les détails d'une transition de statut spécifique."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de l'entrée."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

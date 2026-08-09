@@ -11,14 +11,22 @@ use App\Models\Review;
 use Illuminate\Http\Request;
 
 /**
- * Tableau de bord du livreur (AR-39).
+ * @group Dashboard livreur
  *
- * Un seul endpoint : GET /api/dashboard.
- * Il renvoie des indicateurs simples (demandes, missions, chiffre d'affaires,
- * avis, notifications) calculés uniquement sur les données du livreur connecté.
+ * Tableau de bord du livreur (AR-39). Un seul endpoint retournant des indicateurs agrégés :
+ * demandes, missions en cours, chiffre d'affaires, avis et notifications.
+ *
+ * @authenticated
  */
 class DashboardController extends Controller
 {
+    /**
+     * Tableau de bord du livreur
+     *
+     * Retourne les indicateurs du livreur connecté : nombre de demandes,
+     * missions actives, en attente, livrées, chiffre d'affaires estimé/encaissé,
+     * note moyenne, notifications non lues, les 5 dernières demandes et les 5 derniers messages.
+     */
     public function index(Request $request)
     {
         $driverId = $request->user()->id;
