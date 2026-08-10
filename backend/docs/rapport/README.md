@@ -23,7 +23,7 @@ Rapport de chaque tâche réalisée sur le projet, pour la révision complète d
 | UI-01 | Conformité de l'UI au prototype (jeu d'icônes, bandeau, navigation livreur, champs, couleurs de statut, suivi) — *frontend* | [rapport_ui_conformite_prototype.md](rapport_ui_conformite_prototype.md) | Terminé (rendu visuel non vérifié) |
 | UI-02 | Logo de la marque (détourage, monogramme, verrouillage clair/sombre, favicons, `npm run logo`) — *frontend* | [rapport_ui_logo_marque.md](rapport_ui_logo_marque.md) | Terminé (rendu visuel non vérifié) |
 | Scribe | Documentation API avec Scribe v5.11.0 (annotations PHPDoc, 53 endpoints, docs statiques HTML/Postman/OpenAPI) | [rapport_scribe_api_docs.md](rapport_scribe_api_docs.md) | Terminé |
-| ChatIA | Assistant IA conversationnel **implémenté puis retiré** (revert `94eaabb` sur demande) — flux d'analyse classique + chat client↔livreur + désactivation Reverb (env) conservés | [rapport_chat_ia_assistant.md](rapport_chat_ia_assistant.md) | Terminé (retiré) |
+| ChatIA | Assistant IA conversationnel (chat avec persona livreur, 2 modèles nano/ultra, formulaire rempli au fil du chat) + désactivation Reverb (env) | [rapport_chat_ia_assistant.md](rapport_chat_ia_assistant.md) | Terminé |
 
 ## Guide du code par feature (`docs/guide/`)
 

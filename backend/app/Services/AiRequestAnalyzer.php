@@ -29,6 +29,173 @@ class AiRequestAnalyzer
     }
 
     /**
+     * Génère une réponse conversationnelle (texte libre) en tant que livreur IA.
+     *
+     * @param  array<int, array{role: string, content: string, created_at?: string}>  $history  Historique de la conversation
+     * @param  array<int, string>  $activeServiceNames  Noms des services actifs du livreur
+     * @return string  Texte de la réponse de l'assistant
+     *
+     * @throws AiAnalysisException
+     */
+    public function chatReply(array $history, array $activeServiceNames): string
+    {
+        $this->ensureApiKeyIsConfigured();
+
+        $models = $this->getChatModels();
+        $lastException = null;
+
+        $messages = [
+            ['role' => 'system', 'content' => $this->chatSystemPrompt()],
+            ...$this->stripCreatedAt($history),
+        ];
+
+        $payload = [
+            'model' => $models[0],
+            'messages' => $messages,
+            'temperature' => 0.7,
+            'max_completion_tokens' => 500,
+        ];
+
+        foreach ($models as $index => $model) {
+            $payload['model'] = $model;
+
+            try {
+                $response = $this->sendRequest($payload);
+            } catch (\Throwable $e) {
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Chat modèle {$model} échoué (exception: {$e->getMessage()})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('Erreur lors de l\'appel API OpenRouter : '.$e->getMessage(), $e);
+                continue;
+            }
+
+            if (! $response->successful()) {
+                $reason = 'HTTP '.$response->status();
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Chat modèle {$model} échoué ({$reason})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('Erreur API OpenRouter (HTTP '.$response->status().').');
+                continue;
+            }
+
+            $content = $response->json('choices.0.message.content');
+
+            if (empty($content) || ! is_string($content)) {
+                $reason = 'réponse vide ou non string';
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Chat modèle {$model} échoué ({$reason})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('Réponse IA vide ou format inattendu.');
+                continue;
+            }
+
+            return $content;
+        }
+
+        Log::channel('jobs')->error('Tous les modèles chat IA ont échoué.', [
+            'last_error' => $lastException?->getMessage(),
+        ]);
+
+        throw $lastException ?? new AiAnalysisException('Aucun modèle IA disponible.');
+    }
+
+    /**
+     * Extrait les données structurées de la demande à partir de l'historique conversationnel complet.
+     *
+     * @param  array<int, array{role: string, content: string, created_at?: string}>  $history  Historique complet de la conversation
+     * @param  array<int, string>  $activeServiceNames  Noms des services actifs autorisés pour le livreur
+     * @return array{recipient_name: string|null, recipient_phone: string|null, pickup_address: string|null, delivery_address: string|null, package_description: string|null, product_amount: float|null, amount_to_collect: float|null, scheduled_at: string|null, service: string|null}
+     *
+     * @throws AiAnalysisException
+     */
+    public function extractFromConversation(array $history, array $activeServiceNames): array
+    {
+        $this->ensureApiKeyIsConfigured();
+
+        $models = $this->getExtractModels();
+        $lastException = null;
+
+        $conversationText = $this->buildConversationText($history, $activeServiceNames);
+
+        $payload = [
+            'model' => $models[0],
+            'messages' => [
+                ['role' => 'system', 'content' => $this->systemPrompt()],
+                ['role' => 'user', 'content' => $conversationText],
+            ],
+            'temperature' => 0.1,
+            'max_completion_tokens' => 800,
+            'response_format' => ['type' => 'json_object'],
+        ];
+
+        foreach ($models as $index => $model) {
+            $payload['model'] = $model;
+
+            try {
+                $response = $this->sendRequest($payload);
+            } catch (\Throwable $e) {
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Extract modèle {$model} échoué (exception: {$e->getMessage()})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('Erreur lors de l\'appel API OpenRouter : '.$e->getMessage(), $e);
+                continue;
+            }
+
+            if (! $response->successful()) {
+                $reason = 'HTTP '.$response->status();
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Extract modèle {$model} échoué ({$reason})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('Erreur API OpenRouter (HTTP '.$response->status().').');
+                continue;
+            }
+
+            $content = $response->json('choices.0.message.content');
+
+            if (empty($content) || ! is_string($content)) {
+                $reason = 'réponse vide ou non string';
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Extract modèle {$model} échoué ({$reason})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('Réponse IA vide ou format inattendu.');
+                continue;
+            }
+
+            $decoded = json_decode($content, true);
+            if (! is_array($decoded)) {
+                $reason = 'JSON invalide';
+                $nextModel = $models[$index + 1] ?? null;
+                Log::channel('jobs')->warning(
+                    "Extract modèle {$model} échoué ({$reason})"
+                    .($nextModel ? ", bascule sur {$nextModel}" : '')
+                );
+                $lastException = new AiAnalysisException('JSON invalide retourné par l\'IA.');
+                continue;
+            }
+
+            return $this->normalizeResult($decoded, $activeServiceNames);
+        }
+
+        Log::channel('jobs')->error('Tous les modèles extract IA ont échoué.', [
+            'last_error' => $lastException?->getMessage(),
+        ]);
+
+        throw $lastException ?? new AiAnalysisException('Aucun modèle IA disponible.');
+    }
+
+    /**
      * Vérifie que la clé API OpenRouter est configurée.
      *
      * @throws AiAnalysisException
@@ -43,7 +210,24 @@ class AiRequestAnalyzer
     }
 
     /**
-     * Retourne la liste ordonnée des modèles à tester (principal + fallbacks).
+     * Envoie une requête HTTP vers OpenRouter.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function sendRequest(array $payload): \Illuminate\Http\Client\Response
+    {
+        return Http::withToken(config('services.openrouter.api_key'))
+            ->acceptJson()
+            ->withHeaders([
+                'HTTP-Referer' => config('app.url', 'http://localhost'),
+                'X-Title' => 'Allo Delivery',
+            ])
+            ->timeout(60)
+            ->post(config('services.openrouter.base_url').'/chat/completions', $payload);
+    }
+
+    /**
+     * Retourne la liste ordonnée des modèles à tester pour l'extraction (principal + fallbacks).
      *
      * @return list<string>
      */
@@ -55,6 +239,40 @@ class AiRequestAnalyzer
 
         return array_merge(
             [config('services.openrouter.model')],
+            $fallbacks
+        );
+    }
+
+    /**
+     * Retourne la liste ordonnée des modèles pour le chat (chat_model + fallbacks).
+     *
+     * @return list<string>
+     */
+    private function getChatModels(): array
+    {
+        $fallbackModels = config('services.openrouter.fallback_models', '');
+
+        $fallbacks = array_filter(array_map('trim', explode(',', (string) $fallbackModels)));
+
+        return array_merge(
+            [config('services.openrouter.chat_model')],
+            $fallbacks
+        );
+    }
+
+    /**
+     * Retourne la liste ordonnée des modèles pour l'extraction conversationnelle (extract_model + fallbacks).
+     *
+     * @return list<string>
+     */
+    private function getExtractModels(): array
+    {
+        $fallbackModels = config('services.openrouter.fallback_models', '');
+
+        $fallbacks = array_filter(array_map('trim', explode(',', (string) $fallbackModels)));
+
+        return array_merge(
+            [config('services.openrouter.extract_model')],
             $fallbacks
         );
     }
@@ -75,14 +293,7 @@ class AiRequestAnalyzer
             $payload = $this->buildPayload($freeText, $activeServiceNames, $model);
 
             try {
-                $response = Http::withToken(config('services.openrouter.api_key'))
-                    ->acceptJson()
-                    ->withHeaders([
-                        'HTTP-Referer' => config('app.url', 'http://localhost'),
-                        'X-Title' => 'Allo Delivery',
-                    ])
-                    ->timeout(60)
-                    ->post(config('services.openrouter.base_url').'/chat/completions', $payload);
+                $response = $this->sendRequest($payload);
             } catch (\Throwable $e) {
                 $nextModel = $models[$index + 1] ?? null;
                 Log::channel('jobs')->warning(
@@ -90,7 +301,6 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Erreur lors de l\'appel API OpenRouter : '.$e->getMessage(), $e);
-
                 continue;
             }
 
@@ -102,7 +312,6 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Erreur API OpenRouter (HTTP '.$response->status().').');
-
                 continue;
             }
 
@@ -116,7 +325,6 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Réponse IA vide ou format inattendu.');
-
                 continue;
             }
 
@@ -130,7 +338,6 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('JSON invalide retourné par l\'IA.');
-
                 continue;
             }
 
@@ -145,7 +352,7 @@ class AiRequestAnalyzer
     }
 
     /**
-     * Construit la requête Chat Completions (messages + paramètres de génération).
+     * Construit la requête Chat Completions (messages + paramètres de génération) pour l'extraction directe.
      *
      * @param  array<int, string>  $activeServiceNames
      * @return array<string, mixed>
@@ -185,6 +392,16 @@ PROMPT;
     }
 
     /**
+     * Prompt système pour le chat conversationnel (persona livreur).
+     */
+    private function chatSystemPrompt(): string
+    {
+        return <<<'PROMPT'
+Tu es un livreur d'Allo Delivery qui discute avec le client pour compléter sa demande de livraison. Tu poses une question à la fois sur les informations manquantes (nom du destinataire, téléphone, adresse de retrait, adresse de livraison, description du colis, montant à encaisser, service souhaité). Tu ne calcules JAMAIS de prix (tarif fixé par zone par le livreur). Tu ne confirmes jamais la création de la demande. Tu réponds en français, court et naturel.
+PROMPT;
+    }
+
+    /**
      * Message utilisateur : texte libre + liste des services autorisés.
      *
      * @param  array<int, string>  $activeServiceNames
@@ -196,6 +413,44 @@ PROMPT;
         }
 
         return $freeText."\n\nServices autorisés : ".implode(', ', $activeServiceNames).'.';
+    }
+
+    /**
+     * Construit le texte de la conversation pour l'extraction (extrait les infos utiles de l'historique).
+     *
+     * @param  array<int, array{role: string, content: string, created_at?: string}>  $history
+     * @param  array<int, string>  $activeServiceNames
+     */
+    private function buildConversationText(array $history, array $activeServiceNames): string
+    {
+        $lines = [];
+
+        foreach ($history as $message) {
+            $role = $message['role'] === 'user' ? 'Client' : 'Livreur';
+            $lines[] = "{$role} : {$message['content']}";
+        }
+
+        $conversationText = implode("\n", $lines);
+
+        if (! empty($activeServiceNames)) {
+            $conversationText .= "\n\nServices autorisés : ".implode(', ', $activeServiceNames).'.';
+        }
+
+        return $conversationText;
+    }
+
+    /**
+     * Supprime les created_at des messages d'historique avant envoi à l'API.
+     *
+     * @param  array<int, array{role: string, content: string, created_at?: string}>  $history
+     * @return array<int, array{role: string, content: string}>
+     */
+    private function stripCreatedAt(array $history): array
+    {
+        return array_map(fn (array $message): array => [
+            'role' => $message['role'],
+            'content' => $message['content'],
+        ], $history);
     }
 
     /**

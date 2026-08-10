@@ -40,6 +40,8 @@ return [
         'api_key' => env('OPENROUTER_API_KEY'),
         'model' => env('OPENROUTER_MODEL', 'nvidia/nemotron-3-super-120b-a12b:free'),
         'fallback_models' => env('OPENROUTER_FALLBACK_MODELS', 'nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'),
+        'chat_model' => env('OPENROUTER_CHAT_MODEL', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'),
+        'extract_model' => env('OPENROUTER_EXTRACT_MODEL', 'nvidia/nemotron-3-ultra-550b-a55b:free'),
     ],
 
 ];
