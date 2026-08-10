@@ -182,7 +182,31 @@ function resetForm() {
   }
 }
 
-// Crée la session de chat (appelée au montage et par « Nouvelle demande »).
+// Au montage : reprendre la dernière conversation en cours plutôt que d'en
+// créer une nouvelle à chaque visite (la page se recharge et le chat repartait
+// de zéro). On cherche le dernier draft NON VIDE (une conversation a au moins
+// un message) : les drafts vides créés par de simples visites sont ignorés.
+// « Nouvelle demande » appelle start() pour repartir de zéro.
+async function resumeOrStart() {
+  try {
+    const { data } = await api.get('/ai-request-drafts?per_page=10')
+    const last = (data.data || []).find((d) => d.chat_history?.length > 0)
+    if (last) {
+      draftId.value = last.id
+      draftData.value = last
+      draftStatus.value = last.status
+      if (last.status === 'done' && last.generated_data) {
+        applyDraft(last)
+      }
+      return
+    }
+  } catch {
+    // Pas de liste disponible : on retombe sur une nouvelle conversation.
+  }
+  start()
+}
+
+// Crée la session de chat (appelée par « Nouvelle demande »).
 async function start() {
   clearPolling()
   draftId.value = null
@@ -294,7 +318,8 @@ function pollDraft(id) {
     }
   }, 2500)
 
-  // Sécurité : l'IA fait 2 appels (réponse + extraction). Au-delà, on rend la main.
+  // Sécurité : l'IA fait 2 appels (réponse + extraction) qui peuvent prendre
+  // plus d'une minute au total (fallbacks inclus). Au-delà, on rend la main.
   pollTimeout = setTimeout(() => {
     clearPolling()
     if (sending.value) {
@@ -304,7 +329,7 @@ function pollDraft(id) {
         content: "Le traitement IA prend plus de temps que prévu. Tu peux renvoyer un message ou remplir le formulaire manuellement.",
       })
     }
-  }, 45000)
+  }, 120000)
 }
 
 function finishDone(data) {
@@ -391,7 +416,7 @@ watch(sending, (v) => {
 })
 
 loadDriver()
-start()
+resumeOrStart()
 </script>
 
 <template>

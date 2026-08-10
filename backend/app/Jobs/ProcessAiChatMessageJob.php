@@ -17,7 +17,9 @@ class ProcessAiChatMessageJob implements ShouldQueue
 
     public int $tries = 3;
 
-    public int $timeout = 60;
+    // Deux appels OpenRouter (réponse + extraction), fallbacks inclus : laisser
+    // le temps à une API lente de répondre sans tuer le job au milieu.
+    public int $timeout = 180;
 
     public function __construct(
         public AiRequestDraft $draft,
@@ -39,15 +41,31 @@ class ProcessAiChatMessageJob implements ShouldQueue
         $services = $this->activeServices();
         $activeServiceNames = $services->pluck('name')->all();
 
-        // 1. Générer la réponse conversationnelle (modèle rapide)
-        $reply = (new AiRequestAnalyzer)->chatReply($history, $activeServiceNames);
+        // Idempotence du retry : si une réponse assistant existe déjà pour le
+        // dernier message utilisateur (échec de l'extraction lors d'une
+        // tentative précédente), on ne re-génère pas la réponse — on ne
+        // relance que l'extraction pour éviter les doublons dans le chat.
+        $lastMessage = $history ? end($history) : null;
 
-        // 2. Ajouter la réponse de l'assistant à l'historique
-        $history[] = [
-            'role' => 'assistant',
-            'content' => $reply,
-            'created_at' => now()->toIso8601String(),
-        ];
+        if ($lastMessage === null || $lastMessage['role'] !== 'assistant') {
+            // 1. Générer la réponse conversationnelle (modèle rapide)
+            $reply = (new AiRequestAnalyzer)->chatReply($history, $activeServiceNames);
+
+            // 2. Ajouter la réponse de l'assistant à l'historique et la publier
+            // immédiatement : le client voit la question posée pendant que
+            // l'extraction (2e appel, plus lent) tourne encore en arrière-plan.
+            $history[] = [
+                'role' => 'assistant',
+                'content' => $reply,
+                'created_at' => now()->toIso8601String(),
+            ];
+
+            $this->draft->update([
+                'chat_history' => $history,
+                'status' => AiRequestDraft::STATUS_PENDING,
+                'error_message' => null,
+            ]);
+        }
 
         // 3. Extraire les données structurées (modèle puissant)
         $extracted = (new AiRequestAnalyzer)->extractFromConversation($history, $activeServiceNames);
