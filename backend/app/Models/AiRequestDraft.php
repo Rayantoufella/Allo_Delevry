@@ -19,7 +19,6 @@ class AiRequestDraft extends Model
         'user_id',
         'service_id',
         'input_message',
-        'chat_history',
         'generated_data',
         'status',
         'error_message',
@@ -29,7 +28,6 @@ class AiRequestDraft extends Model
     protected function casts(): array
     {
         return [
-            'chat_history' => 'array',
             'generated_data' => 'array',
             'validated_at' => 'datetime',
         ];
