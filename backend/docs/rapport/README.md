@@ -24,6 +24,7 @@ Rapport de chaque tâche réalisée sur le projet, pour la révision complète d
 | UI-02 | Logo de la marque (détourage, monogramme, verrouillage clair/sombre, favicons, `npm run logo`) — *frontend* | [rapport_ui_logo_marque.md](rapport_ui_logo_marque.md) | Terminé (rendu visuel non vérifié) |
 | Scribe | Documentation API avec Scribe v5.11.0 (annotations PHPDoc, 53 endpoints, docs statiques HTML/Postman/OpenAPI) | [rapport_scribe_api_docs.md](rapport_scribe_api_docs.md) | Terminé |
 | ChatIA | Assistant IA conversationnel (chat avec persona livreur, 2 modèles nano/ultra, formulaire rempli au fil du chat) + désactivation Reverb (env) | [rapport_chat_ia_assistant.md](rapport_chat_ia_assistant.md) | Terminé |
+| NoMyRequests | Suppression de la page `/my/requests` — le client est redirigé vers le chat IA de son livreur (route, vues, guard, post-login/register) | [rapport_suppression_my_requests.md](rapport_suppression_my_requests.md) | Terminé |
 
 ## Guide du code par feature (`docs/guide/`)
 
