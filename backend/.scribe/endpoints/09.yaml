@@ -1,0 +1,338 @@
+name: Avis
+description: |-
+
+  Système de notation et d'avis sur les livraisons terminées.
+  Un avis ne peut être laissé qu'une seule fois par demande livrée.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/reviews
+    metadata:
+      custom: []
+      groupName: Avis
+      groupDescription: |-
+
+        Système de notation et d'avis sur les livraisons terminées.
+        Un avis ne peut être laissé qu'une seule fois par demande livrée.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Lister mes avis'
+      description: "Retourne les avis laissés par l'utilisateur connecté."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/reviews
+    metadata:
+      custom: []
+      groupName: Avis
+      groupDescription: |-
+
+        Système de notation et d'avis sur les livraisons terminées.
+        Un avis ne peut être laissé qu'une seule fois par demande livrée.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Laisser un avis'
+      description: 'Crée un avis sur une demande livrée. Un seul avis par demande et par utilisateur.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      delivery_request_id:
+        custom: []
+        name: delivery_request_id
+        description: "L'ID de la demande livrée."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      rating:
+        custom: []
+        name: rating
+        description: 'Note de 1 à 5.'
+        required: true
+        example: 4
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      comment:
+        custom: []
+        name: comment
+        description: 'Commentaire optionnel.'
+        required: false
+        example: 'Très bon service, rapide et efficace'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      delivery_request_id: 1
+      rating: 4
+      comment: 'Très bon service, rapide et efficace'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/reviews/{id}'
+    metadata:
+      custom: []
+      groupName: Avis
+      groupDescription: |-
+
+        Système de notation et d'avis sur les livraisons terminées.
+        Un avis ne peut être laissé qu'une seule fois par demande livrée.
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Détail d'un avis"
+      description: "Retourne les détails d'un avis spécifique."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de l'avis."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+      - PATCH
+    uri: 'api/reviews/{id}'
+    metadata:
+      custom: []
+      groupName: Avis
+      groupDescription: |-
+
+        Système de notation et d'avis sur les livraisons terminées.
+        Un avis ne peut être laissé qu'une seule fois par demande livrée.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Modifier un avis'
+      description: "Met à jour le commentaire ou la note d'un avis existant."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de l'avis."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      rating:
+        custom: []
+        name: rating
+        description: 'La nouvelle note.'
+        required: false
+        example: 5
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      comment:
+        custom: []
+        name: comment
+        description: 'Le nouveau commentaire.'
+        required: false
+        example: 'Service excellent'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      rating: 5
+      comment: 'Service excellent'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/reviews/{id}'
+    metadata:
+      custom: []
+      groupName: Avis
+      groupDescription: |-
+
+        Système de notation et d'avis sur les livraisons terminées.
+        Un avis ne peut être laissé qu'une seule fois par demande livrée.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Supprimer un avis'
+      description: 'Supprime définitivement un avis.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de l'avis."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

@@ -1,0 +1,347 @@
+name: Authentification
+description: |-
+
+  Endpoints d'inscription, connexion et gestion de session.
+  Les comptes clients sont créés dans le contexte d'un livreur spécifique (via son slug).
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/register
+    metadata:
+      custom: []
+      groupName: Authentification
+      groupDescription: |-
+
+        Endpoints d'inscription, connexion et gestion de session.
+        Les comptes clients sont créés dans le contexte d'un livreur spécifique (via son slug).
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Inscrire un livreur'
+      description: 'Crée un nouveau compte livreur avec rôle "driver" forcé côté serveur.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      name:
+        custom: []
+        name: name
+        description: 'Le nom du livreur.'
+        required: true
+        example: Ahmed
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: "L'adresse email."
+        required: true
+        example: ahmed@example.com
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: 'Le mot de passe (min 8 caractères).'
+        required: true
+        example: secret123
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      phone:
+        custom: []
+        name: phone
+        description: 'Le numéro de téléphone.'
+        required: false
+        example: '+212600000000'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      name: Ahmed
+      email: ahmed@example.com
+      password: secret123
+      phone: '+212600000000'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 422
+        content: '{"message":"La confirmation du mot de passe ne correspond pas.","errors":{"password":["La confirmation du mot de passe ne correspond pas."]}}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          x-ratelimit-limit: '5'
+          x-ratelimit-remaining: '4'
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/login
+    metadata:
+      custom: []
+      groupName: Authentification
+      groupDescription: |-
+
+        Endpoints d'inscription, connexion et gestion de session.
+        Les comptes clients sont créés dans le contexte d'un livreur spécifique (via son slug).
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Connecter un livreur'
+      description: 'Authentifie un livreur existant par email et mot de passe.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      email:
+        custom: []
+        name: email
+        description: "L'adresse email."
+        required: true
+        example: ahmed@example.com
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: 'Le mot de passe.'
+        required: true
+        example: secret123
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      email: ahmed@example.com
+      password: secret123
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"message":"Invalid credentials","errors":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          x-ratelimit-limit: '5'
+          x-ratelimit-remaining: '4'
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/drivers/{slug}/login'
+    metadata:
+      custom: []
+      groupName: Authentification
+      groupDescription: |-
+
+        Endpoints d'inscription, connexion et gestion de session.
+        Les comptes clients sont créés dans le contexte d'un livreur spécifique (via son slug).
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Connecter un client (contexte livreur)'
+      description: |-
+        Authentifie un client rattaché au livreur du slug.
+        Un client du livreur A ne peut pas se connecter via l'URL du livreur B.
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      slug:
+        custom: []
+        name: slug
+        description: 'Le slug du livreur.'
+        required: true
+        example: rayan-express
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      slug: rayan-express
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      email:
+        custom: []
+        name: email
+        description: "L'adresse email."
+        required: true
+        example: sara@example.com
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: 'Le mot de passe.'
+        required: true
+        example: secret123
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      email: sara@example.com
+      password: secret123
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"message":"Invalid credentials","errors":null}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          x-ratelimit-limit: '5'
+          x-ratelimit-remaining: '4'
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/logout
+    metadata:
+      custom: []
+      groupName: Authentification
+      groupDescription: |-
+
+        Endpoints d'inscription, connexion et gestion de session.
+        Les comptes clients sont créés dans le contexte d'un livreur spécifique (via son slug).
+      subgroup: ''
+      subgroupDescription: ''
+      title: Déconnexion
+      description: "Supprime le token Sanctum courant de l'utilisateur."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/me
+    metadata:
+      custom: []
+      groupName: Authentification
+      groupDescription: |-
+
+        Endpoints d'inscription, connexion et gestion de session.
+        Les comptes clients sont créés dans le contexte d'un livreur spécifique (via son slug).
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Profil utilisateur courant'
+      description: |-
+        Retourne les informations de l'utilisateur connecté et son contexte livreur
+        (marque, logo) si applicable.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

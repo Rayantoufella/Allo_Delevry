@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class AnalyzeAiRequestDraftRequest extends FormRequest
+class SendAiChatMessageRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,7 +23,7 @@ class AnalyzeAiRequestDraftRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'input_message' => ['required', 'string'],
+            'content' => ['required', 'string', 'max:2000'],
             'driver_slug' => ['required', 'string', 'exists:driver_profiles,slug'],
         ];
     }

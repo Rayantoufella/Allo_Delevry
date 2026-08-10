@@ -23,8 +23,23 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * @group Demandes de livraison
+ *
+ * Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+ * génération de code de confirmation, preuves et validation finale.
+ *
+ * @authenticated
+ */
 class DeliveryRequestController extends Controller
 {
+    /**
+     * Lister mes demandes
+     *
+     * Retourne les demandes de livraison de l'utilisateur connecté (client ou livreur).
+     * Les clients voient uniquement leurs propres demandes ; les livreurs voient toutes les demandes qui leur sont assignées.
+     * Pagination : 20 éléments par page.
+     */
     public function index(Request $request)
     {
         $user = $request->user();
@@ -39,6 +54,26 @@ class DeliveryRequestController extends Controller
         return DeliveryRequestResource::collection($query->latest()->paginate(20));
     }
 
+    /**
+     * Créer une demande (via un livreur)
+     *
+     * Crée une nouvelle demande de livraison dans le contexte d'un livreur spécifique.
+     * Le client doit être rattaché au livreur (inscription via `/drivers/{slug}/register`).
+     *
+     * @urlParam slug string required Le slug du livreur. Example: rayan-express
+     * @bodyParam recipient_name string required Nom du destinataire. Example: Sara
+     * @bodyParam recipient_phone string required Téléphone du destinataire. Example: +212600000000
+     * @bodyParam pickup_address string required Adresse de retrait. Example: 12 Rue Principale, Agadir
+     * @bodyParam delivery_address string required Adresse de livraison. Example: 45 Avenue Hassan II, Agadir
+     * @bodyParam service_id int ID du service choisi. Example: 1
+     * @bodyParam delivery_zone_id int ID de la zone de livraison. Example: 2
+     * @bodyParam package_description string Description du colis. Example: Petit carton 2kg
+     * @bodyParam product_amount float Montant du produit à encaisser en DH. Example: 150.00
+     * @bodyParam amount_to_collect float Montant à encaisser du destinataire en DH. Example: 42.85
+     * @bodyParam ai_request_draft_id int ID du brouillon IA utilisé pour pré-remplir la demande. Example: 5
+     *
+     * @response 201 {"id": 1, "tracking_number": "DLV-ABC123", "status": "en_attente", "client_id": 2, "driver_id": 1}
+     */
     public function storeForDriver(string $slug, StoreDeliveryRequest $request)
     {
         $profile = DriverProfile::where('slug', $slug)->firstOrFail();
@@ -68,6 +103,13 @@ class DeliveryRequestController extends Controller
         return response()->json(new DeliveryRequestResource($deliveryRequest), 201);
     }
 
+    /**
+     * Détail d'une demande
+     *
+     * Retourne le détail complet d'une demande de livraison, y compris service et zone.
+     *
+     * @urlParam id int required L'identifiant de la demande. Example: 1
+     */
     public function show($id, Request $request)
     {
         $deliveryRequest = DeliveryRequest::findOrFail($id);
@@ -79,6 +121,15 @@ class DeliveryRequestController extends Controller
         return new DeliveryRequestResource($deliveryRequest);
     }
 
+    /**
+     * Modifier une demande
+     *
+     * Met à jour une demande non encore en cours de livraison.
+     *
+     * @urlParam deliveryRequest int required L'identifiant de la demande. Example: 1
+     * @bodyParam recipient_name string Nom du destinataire. Example: Sara
+     * @bodyParam delivery_address string Adresse de livraison. Example: Nouvelle adresse
+     */
     public function update(UpdateDeliveryRequest $request, DeliveryRequest $deliveryRequest)
     {
         $this->authorize('update', $deliveryRequest);
@@ -98,6 +149,15 @@ class DeliveryRequestController extends Controller
         return new DeliveryRequestResource($deliveryRequest->refresh());
     }
 
+    /**
+     * Supprimer une demande
+     *
+     * Supprime une demande uniquement si elle est à un statut terminal (livrée, annulée, refusée).
+     *
+     * @urlParam id int required L'identifiant de la demande. Example: 1
+     *
+     * @response 200 {"message": "Demande de livraison supprimée avec succès"}
+     */
     public function destroy($id, Request $request)
     {
         $deliveryRequest = DeliveryRequest::findOrFail($id);
@@ -115,6 +175,17 @@ class DeliveryRequestController extends Controller
         return response()->json(['message' => 'Demande de livraison supprimée avec succès']);
     }
 
+    /**
+     * Mettre à jour le statut d'une demande
+     *
+     * Fait transitionner une demande vers un nouveau statut (selon les règles métier).
+     * La photo de récupération (pickup_photo) est requise avant le passage à "colis_recupere".
+     *
+     * @urlParam id int required L'identifiant de la demande. Example: 1
+     * @bodyParam status string required Nouveau statut. Example: en_livraison
+     * @bodyParam comment string Commentaire optionnel. Example: Colis récupéré
+     * @bodyParam proposed_price float Prix proposé (requis pour le statut "prix_propose"). Example: 25.00
+     */
     public function updateStatus(Request $request, $id)
     {
         $validated = $request->validate([
@@ -163,6 +234,13 @@ class DeliveryRequestController extends Controller
         return new DeliveryRequestResource($deliveryRequest);
     }
 
+    /**
+     * Confirmer le prix proposé
+     *
+     * Le client confirme le prix proposé par le livreur (transition vers "confirmee").
+     *
+     * @urlParam deliveryRequest int required L'identifiant de la demande. Example: 1
+     */
     public function confirmPrice(Request $request, $id)
     {
         $deliveryRequest = DeliveryRequest::findOrFail($id);
@@ -184,6 +262,13 @@ class DeliveryRequestController extends Controller
         return new DeliveryRequestResource($deliveryRequest);
     }
 
+    /**
+     * Annuler une demande
+     *
+     * Annule une demande aux statuts "en_attente" ou "prix_propose".
+     *
+     * @urlParam deliveryRequest int required L'identifiant de la demande. Example: 1
+     */
     public function cancel(Request $request, $id)
     {
         $deliveryRequest = DeliveryRequest::findOrFail($id);
@@ -206,13 +291,15 @@ class DeliveryRequestController extends Controller
     }
 
     /**
-     * Suivi privé d'une demande de livraison (F11 — AR-37/40).
+     * Suivi public d'une demande
      *
-     * Accessible sans authentification via le jeton privé (throttle:60,1).
-     * Charge tout le contexte requis par la page de suivi : historique des
-     * statuts, participants (client/livreur + marque), service, zone,
-     * chat et preuves de livraison.
-     * La position GPS reste hors périmètre (bonus à implémenter plus tard).
+     * Affiche les informations de suivi d'une demande via son jeton privé.
+     * Accessible sans authentification. Inclut l'historique des statuts, les participants,
+     * le service, la zone, le chat et les preuves de livraison.
+     *
+     * @unauthenticated
+     *
+     * @urlParam privateToken string required Le jeton privé de suivi. Example: abc123def456...
      */
     public function tracking(string $privateToken)
     {
@@ -229,6 +316,15 @@ class DeliveryRequestController extends Controller
         return new PublicTrackingResource($deliveryRequest);
     }
 
+    /**
+     * Générer un code de confirmation
+     *
+     * Génère un code à 6 chiffres pour la remise du colis. Le code expire après 30 minutes.
+     *
+     * @urlParam id int required L'identifiant de la demande. Example: 1
+     *
+     * @response 200 {"code": "482951"}
+     */
     public function generateCode(Request $request, $id)
     {
         $deliveryRequest = DeliveryRequest::findOrFail($id);
@@ -256,6 +352,15 @@ class DeliveryRequestController extends Controller
         return response()->json(['code' => $code]);
     }
 
+    /**
+     * Confirmer la livraison
+     *
+     * Le client confirme la réception en fournissant le code de confirmation.
+     * Une preuve de livraison (RG06) doit être présente. Max 5 tentatives.
+     *
+     * @urlParam id int required L'identifiant de la demande. Example: 1
+     * @bodyParam code string required Le code de confirmation à 6 chiffres. Example: 482951
+     */
     public function confirmDelivery(Request $request, $id)
     {
         $validated = $request->validate([

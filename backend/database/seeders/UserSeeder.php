@@ -15,7 +15,10 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $demoDriver = User::firstOrCreate(
+        // Comptes démo déterministes : le mot de passe est FORCÉ à chaque seed
+        // (updateOrCreate), sinon un ancien hash survit à firstOrCreate et le
+        // login démo renvoie 401 « Invalid credentials » (vu en QA réelle).
+        $demoDriver = User::updateOrCreate(
             ['email' => 'driver@example.com'],
             [
                 'name' => 'Livreur Demo',
@@ -27,7 +30,7 @@ class UserSeeder extends Seeder
         // Le client démo est rattaché au livreur démo (RG scoping client/livreur) :
         // l'email n'est unique que par driver_key, donc client@example.com peut aussi
         // exister chez d'autres livreurs sans conflit.
-        User::firstOrCreate(
+        User::updateOrCreate(
             ['email' => 'client@example.com', 'driver_id' => $demoDriver->id],
             [
                 'name' => 'Client Demo',

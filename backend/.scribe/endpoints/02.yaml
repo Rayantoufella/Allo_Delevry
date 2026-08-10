@@ -1,0 +1,1014 @@
+name: 'Demandes de livraison'
+description: |-
+
+  Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+  génération de code de confirmation, preuves et validation finale.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/tracking/{privateToken}'
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Suivi public d'une demande"
+      description: |-
+        Affiche les informations de suivi d'une demande via son jeton privé.
+        Accessible sans authentification. Inclut l'historique des statuts, les participants,
+        le service, la zone, le chat et les preuves de livraison.
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      privateToken:
+        custom: []
+        name: privateToken
+        description: 'Le jeton privé de suivi.'
+        required: true
+        example: abc123def456...
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      privateToken: abc123def456...
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+              "message": "No query results for model [App\\Models\\DeliveryRequest]."
+          }
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          x-ratelimit-limit: '60'
+          x-ratelimit-remaining: '59'
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/drivers/{slug}/delivery-requests'
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Créer une demande (via un livreur)'
+      description: |-
+        Crée une nouvelle demande de livraison dans le contexte d'un livreur spécifique.
+        Le client doit être rattaché au livreur (inscription via `/drivers/{slug}/register`).
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      slug:
+        custom: []
+        name: slug
+        description: 'Le slug du livreur.'
+        required: true
+        example: rayan-express
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      slug: rayan-express
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      service_id:
+        custom: []
+        name: service_id
+        description: 'ID du service choisi.'
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+      delivery_zone_id:
+        custom: []
+        name: delivery_zone_id
+        description: 'ID de la zone de livraison.'
+        required: false
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+      ai_request_draft_id:
+        custom: []
+        name: ai_request_draft_id
+        description: 'ID du brouillon IA utilisé pour pré-remplir la demande.'
+        required: false
+        example: 5
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+      recipient_name:
+        custom: []
+        name: recipient_name
+        description: 'Nom du destinataire.'
+        required: true
+        example: Sara
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      recipient_phone:
+        custom: []
+        name: recipient_phone
+        description: 'Téléphone du destinataire.'
+        required: true
+        example: '+212600000000'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      pickup_address:
+        custom: []
+        name: pickup_address
+        description: 'Adresse de retrait.'
+        required: true
+        example: '12 Rue Principale, Agadir'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      delivery_address:
+        custom: []
+        name: delivery_address
+        description: 'Adresse de livraison.'
+        required: true
+        example: '45 Avenue Hassan II, Agadir'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      package_description:
+        custom: []
+        name: package_description
+        description: 'Description du colis.'
+        required: false
+        example: 'Petit carton 2kg'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+      product_amount:
+        custom: []
+        name: product_amount
+        description: 'Montant du produit à encaisser en DH.'
+        required: false
+        example: 150.0
+        type: number
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+      amount_to_collect:
+        custom: []
+        name: amount_to_collect
+        description: 'Montant à encaisser du destinataire en DH.'
+        required: false
+        example: 42.85
+        type: number
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+      scheduled_at:
+        custom: []
+        name: scheduled_at
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-08-09T21:18:18'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      service_id: 1
+      delivery_zone_id: 2
+      ai_request_draft_id: 5
+      recipient_name: Sara
+      recipient_phone: '+212600000000'
+      pickup_address: '12 Rue Principale, Agadir'
+      delivery_address: '45 Avenue Hassan II, Agadir'
+      package_description: 'Petit carton 2kg'
+      product_amount: 150.0
+      amount_to_collect: 42.85
+      scheduled_at: '2026-08-09T21:18:18'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/delivery-requests
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Lister mes demandes'
+      description: |-
+        Retourne les demandes de livraison de l'utilisateur connecté (client ou livreur).
+        Les clients voient uniquement leurs propres demandes ; les livreurs voient toutes les demandes qui leur sont assignées.
+        Pagination : 20 éléments par page.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/delivery-requests/{id}'
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Détail d'une demande"
+      description: "Retourne le détail complet d'une demande de livraison, y compris service et zone."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la demande."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+      - PATCH
+    uri: 'api/delivery-requests/{id}'
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Modifier une demande'
+      description: 'Met à jour une demande non encore en cours de livraison.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the delivery request.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      deliveryRequest:
+        custom: []
+        name: deliveryRequest
+        description: "L'identifiant de la demande."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+      deliveryRequest: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      service_id:
+        custom: []
+        name: service_id
+        description: 'Must match an existing stored value.'
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      delivery_zone_id:
+        custom: []
+        name: delivery_zone_id
+        description: 'Must match an existing stored value.'
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      ai_request_draft_id:
+        custom: []
+        name: ai_request_draft_id
+        description: 'Must match an existing stored value.'
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      recipient_name:
+        custom: []
+        name: recipient_name
+        description: 'Nom du destinataire.'
+        required: false
+        example: Sara
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      recipient_phone:
+        custom: []
+        name: recipient_phone
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ngzmiyvdljnikhwa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      pickup_address:
+        custom: []
+        name: pickup_address
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: 'y'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      delivery_address:
+        custom: []
+        name: delivery_address
+        description: 'Adresse de livraison.'
+        required: false
+        example: 'Nouvelle adresse'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      package_description:
+        custom: []
+        name: package_description
+        description: ''
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      product_amount:
+        custom: []
+        name: product_amount
+        description: 'Must be at least 0.'
+        required: false
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      amount_to_collect:
+        custom: []
+        name: amount_to_collect
+        description: 'Must be at least 0.'
+        required: false
+        example: 84
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      scheduled_at:
+        custom: []
+        name: scheduled_at
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-08-09T21:18:18'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      recipient_name: Sara
+      recipient_phone: ngzmiyvdljnikhwa
+      pickup_address: 'y'
+      delivery_address: 'Nouvelle adresse'
+      package_description: architecto
+      product_amount: 39
+      amount_to_collect: 84
+      scheduled_at: '2026-08-09T21:18:18'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/delivery-requests/{id}'
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Supprimer une demande'
+      description: 'Supprime une demande uniquement si elle est à un statut terminal (livrée, annulée, refusée).'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la demande."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/delivery-requests/{deliveryRequest}/status'
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Mettre à jour le statut d'une demande"
+      description: |-
+        Fait transitionner une demande vers un nouveau statut (selon les règles métier).
+        La photo de récupération (pickup_photo) est requise avant le passage à "colis_recupere".
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      deliveryRequest:
+        custom: []
+        name: deliveryRequest
+        description: ''
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la demande."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      deliveryRequest: 1
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      status:
+        custom: []
+        name: status
+        description: 'Nouveau statut.'
+        required: true
+        example: en_livraison
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      comment:
+        custom: []
+        name: comment
+        description: 'Commentaire optionnel.'
+        required: false
+        example: 'Colis récupéré'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+      proposed_price:
+        custom: []
+        name: proposed_price
+        description: 'Prix proposé (requis pour le statut "prix_propose").'
+        required: false
+        example: 25.0
+        type: number
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      status: en_livraison
+      comment: 'Colis récupéré'
+      proposed_price: 25.0
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/delivery-requests/{deliveryRequest}/confirm-price'
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Confirmer le prix proposé'
+      description: 'Le client confirme le prix proposé par le livreur (transition vers "confirmee").'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      deliveryRequest:
+        custom: []
+        name: deliveryRequest
+        description: "L'identifiant de la demande."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      deliveryRequest: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/delivery-requests/{deliveryRequest}/cancel'
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Annuler une demande'
+      description: 'Annule une demande aux statuts "en_attente" ou "prix_propose".'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      deliveryRequest:
+        custom: []
+        name: deliveryRequest
+        description: "L'identifiant de la demande."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      deliveryRequest: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/delivery-requests/{deliveryRequest}/generate-code'
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Générer un code de confirmation'
+      description: 'Génère un code à 6 chiffres pour la remise du colis. Le code expire après 30 minutes.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      deliveryRequest:
+        custom: []
+        name: deliveryRequest
+        description: ''
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la demande."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      deliveryRequest: 1
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/delivery-requests/{deliveryRequest}/confirm-delivery'
+    metadata:
+      custom: []
+      groupName: 'Demandes de livraison'
+      groupDescription: |-
+
+        Gestion complète des demandes de livraison : création, suivi, transitions de statut,
+        génération de code de confirmation, preuves et validation finale.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Confirmer la livraison'
+      description: |-
+        Le client confirme la réception en fournissant le code de confirmation.
+        Une preuve de livraison (RG06) doit être présente. Max 5 tentatives.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      deliveryRequest:
+        custom: []
+        name: deliveryRequest
+        description: ''
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la demande."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      deliveryRequest: 1
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      code:
+        custom: []
+        name: code
+        description: 'Le code de confirmation à 6 chiffres.'
+        required: true
+        example: '482951'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      code: '482951'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

@@ -14,7 +14,7 @@ const router = useRouter()
  */
 function goClient() {
   if (auth.isAuthenticated && auth.isClient) {
-    router.push({ name: 'my-requests' })
+    router.push({ name: 'ai-assistant', params: { slug: auth.driverSlug || 'rayan-express' } })
     return
   }
   router.push({ name: 'driver-public', params: { slug: auth.driverSlug || 'rayan-express' } })

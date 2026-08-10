@@ -69,7 +69,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Autres ressources
     Route::apiResource('ai-request-drafts', AiRequestDraftController::class);
-    Route::post('/ai-request-drafts/analyze', [AiRequestDraftController::class, 'analyze'])->middleware('throttle:10,1');
+    Route::post('/ai-request-drafts/start', [AiRequestDraftController::class, 'start']);
+    Route::post('/ai-request-drafts/{draft}/messages', [AiRequestDraftController::class, 'sendMessage'])->middleware('throttle:10,1');
     Route::apiResource('chat-messages', ChatMessageController::class);
     Route::apiResource('reviews', ReviewController::class);
     Route::apiResource('delivery-proofs', DeliveryProofController::class);

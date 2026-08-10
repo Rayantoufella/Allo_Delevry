@@ -1,0 +1,493 @@
+name: 'Zones & tarifs'
+description: |-
+
+  Gestion des zones de livraison et de leurs tarifs fixes.
+  Chaque zone a un nom, une destination/origine et un prix fixe.
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/delivery-zones
+    metadata:
+      custom: []
+      groupName: 'Zones & tarifs'
+      groupDescription: |-
+
+        Gestion des zones de livraison et de leurs tarifs fixes.
+        Chaque zone a un nom, une destination/origine et un prix fixe.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Lister mes zones de livraison'
+      description: 'Retourne les zones du livreur connecté avec le nombre de livraisons par zone.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/delivery-zones
+    metadata:
+      custom: []
+      groupName: 'Zones & tarifs'
+      groupDescription: |-
+
+        Gestion des zones de livraison et de leurs tarifs fixes.
+        Chaque zone a un nom, une destination/origine et un prix fixe.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Créer une zone de livraison'
+      description: 'Ajoute une nouvelle zone avec son tarif fixe.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      origin_zone:
+        custom: []
+        name: origin_zone
+        description: 'Must not be greater than 255 characters.'
+        required: true
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      destination_zone:
+        custom: []
+        name: destination_zone
+        description: 'Must not be greater than 255 characters.'
+        required: true
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      fixed_price:
+        custom: []
+        name: fixed_price
+        description: 'Prix fixe de la livraison en DH.'
+        required: true
+        example: 20.0
+        type: number
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      origin:
+        custom: []
+        name: origin
+        description: 'Lieu de départ.'
+        required: true
+        example: Centre-ville
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      destination:
+        custom: []
+        name: destination
+        description: "Lieu d'arrivée."
+        required: true
+        example: 'Al Houda'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      origin_zone: b
+      destination_zone: 'n'
+      fixed_price: 20.0
+      is_active: false
+      origin: Centre-ville
+      destination: 'Al Houda'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/delivery-zones/{id}'
+    metadata:
+      custom: []
+      groupName: 'Zones & tarifs'
+      groupDescription: |-
+
+        Gestion des zones de livraison et de leurs tarifs fixes.
+        Chaque zone a un nom, une destination/origine et un prix fixe.
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Détail d'une zone"
+      description: "Retourne les informations d'une zone spécifique."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la zone."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+      - PATCH
+    uri: 'api/delivery-zones/{id}'
+    metadata:
+      custom: []
+      groupName: 'Zones & tarifs'
+      groupDescription: |-
+
+        Gestion des zones de livraison et de leurs tarifs fixes.
+        Chaque zone a un nom, une destination/origine et un prix fixe.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Modifier une zone'
+      description: "Met à jour le nom ou le tarif d'une zone existante."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la zone."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      origin_zone:
+        custom: []
+        name: origin_zone
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      destination_zone:
+        custom: []
+        name: destination_zone
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      fixed_price:
+        custom: []
+        name: fixed_price
+        description: 'Le tarif fixe en DH.'
+        required: false
+        example: 25.0
+        type: number
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      origin:
+        custom: []
+        name: origin
+        description: 'Le lieu de départ.'
+        required: false
+        example: Centre-ville
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      destination:
+        custom: []
+        name: destination
+        description: "Le lieu d'arrivée."
+        required: false
+        example: 'Al Houda'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      origin_zone: b
+      destination_zone: 'n'
+      fixed_price: 25.0
+      is_active: false
+      origin: Centre-ville
+      destination: 'Al Houda'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/delivery-zones/{id}'
+    metadata:
+      custom: []
+      groupName: 'Zones & tarifs'
+      groupDescription: |-
+
+        Gestion des zones de livraison et de leurs tarifs fixes.
+        Chaque zone a un nom, une destination/origine et un prix fixe.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Supprimer une zone'
+      description: 'Supprime définitivement une zone de livraison.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la zone."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/delivery-zones/{deliveryZone}/toggle-active'
+    metadata:
+      custom: []
+      groupName: 'Zones & tarifs'
+      groupDescription: |-
+
+        Gestion des zones de livraison et de leurs tarifs fixes.
+        Chaque zone a un nom, une destination/origine et un prix fixe.
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Activer/Désactiver une zone'
+      description: "Bascule le statut actif/inactif d'une zone de livraison."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      deliveryZone:
+        custom: []
+        name: deliveryZone
+        description: ''
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la zone."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      deliveryZone: 1
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

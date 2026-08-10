@@ -11,11 +11,27 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * @group Authentification
+ *
+ * Endpoints d'inscription, connexion et gestion de session.
+ * Les comptes clients sont créés dans le contexte d'un livreur spécifique (via son slug).
+ */
 class AuthController extends Controller
 {
     /**
-     * Inscription d'un livreur. Le rôle "driver" est forcé côté serveur ;
-     * l'inscription cliente globale n'existe plus sur cette route.
+     * Inscrire un livreur
+     *
+     * Crée un nouveau compte livreur avec rôle "driver" forcé côté serveur.
+     *
+     * @unauthenticated
+     *
+     * @bodyParam name string required Le nom du livreur. Example: Ahmed
+     * @bodyParam email string required L'adresse email. Example: ahmed@example.com
+     * @bodyParam password string required Le mot de passe (min 8 caractères). Example: secret123
+     * @bodyParam phone string Le numéro de téléphone. Example: +212600000000
+     *
+     * @response 201 {"success": true, "message": "Compte livreur créé avec succès", "data": {"user": {"id": 1, "name": "Ahmed", "email": "ahmed@example.com"}, "token": "1|abc..."}}
      */
     public function register(RegisterRequest $request)
     {
@@ -34,9 +50,16 @@ class AuthController extends Controller
     }
 
     /**
-     * Connexion d'un livreur. Le rôle "driver" discrimine déjà ; on n'exige
-     * plus driver_id NULL : un compte livreur créé ou consolidé avec un
-     * driver_id résiduel (données legacy) ne doit pas être bloqué.
+     * Connecter un livreur
+     *
+     * Authentifie un livreur existant par email et mot de passe.
+     *
+     * @unauthenticated
+     *
+     * @bodyParam email string required L'adresse email. Example: ahmed@example.com
+     * @bodyParam password string required Le mot de passe. Example: secret123
+     *
+     * @response 200 {"success": true, "message": "OK", "data": {"user": {"id": 1, "name": "Ahmed", "email": "ahmed@example.com"}, "token": "1|abc..."}}
      */
     public function login(LoginRequest $request)
     {
@@ -55,10 +78,20 @@ class AuthController extends Controller
     }
 
     /**
-     * Inscription d'un client dans le contexte d'un livreur précis
-     * (lien public / QR code du livreur). Le rôle "client" et le
-     * rattachement au livreur sont déduits du slug, jamais du corps de la
-     * requête.
+     * Inscrire un client (contexte livreur)
+     *
+     * Crée un compte client rattaché au livreur identifié par le slug.
+     * Le rôle "client" et le rattachement sont déduits du slug.
+     *
+     * @unauthenticated
+     *
+     * @urlParam slug string required Le slug unique du livreur. Example: rayan-express
+     * @bodyParam name string required Le nom du client. Example: Sara
+     * @bodyParam email string required L'adresse email. Example: sara@example.com
+     * @bodyParam password string required Le mot de passe (min 8 caractères). Example: secret123
+     * @bodyParam phone string Le numéro de téléphone. Example: +212600000000
+     *
+     * @response 201 {"success": true, "message": "Compte client créé avec succès", "data": {"user": {"id": 2, "name": "Sara", "email": "sara@example.com"}, "token": "2|abc..."}}
      */
     public function registerForDriver(string $slug, ClientRegisterRequest $request)
     {
@@ -79,9 +112,18 @@ class AuthController extends Controller
     }
 
     /**
-     * Connexion d'un client rattaché au livreur du slug. Un client du
-     * livreur A ne peut pas se connecter via l'URL du livreur B, même avec
-     * le bon mot de passe.
+     * Connecter un client (contexte livreur)
+     *
+     * Authentifie un client rattaché au livreur du slug.
+     * Un client du livreur A ne peut pas se connecter via l'URL du livreur B.
+     *
+     * @unauthenticated
+     *
+     * @urlParam slug string required Le slug du livreur. Example: rayan-express
+     * @bodyParam email string required L'adresse email. Example: sara@example.com
+     * @bodyParam password string required Le mot de passe. Example: secret123
+     *
+     * @response 200 {"success": true, "message": "OK", "data": {"user": {"id": 2, "name": "Sara", "email": "sara@example.com"}, "token": "2|abc..."}}
      */
     public function loginForDriver(string $slug, LoginRequest $request)
     {
@@ -102,6 +144,14 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Profil utilisateur courant
+     *
+     * Retourne les informations de l'utilisateur connecté et son contexte livreur
+     * (marque, logo) si applicable.
+     *
+     * @authenticated
+     */
     public function me(Request $request)
     {
         $this->authorize('view', $request->user());
@@ -114,6 +164,13 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Déconnexion
+     *
+     * Supprime le token Sanctum courant de l'utilisateur.
+     *
+     * @authenticated
+     */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();

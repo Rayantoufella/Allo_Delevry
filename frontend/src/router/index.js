@@ -69,16 +69,16 @@ const routes = [
     meta: { requiresAuth: true, role: 'client' },
   },
   {
-    path: '/my/requests',
-    name: 'my-requests',
-    component: () => import('../views/MyRequestsView.vue'),
-    meta: { requiresAuth: true, role: 'client' },
-  },
-  {
     path: '/requests/:id',
     name: 'request-detail',
     component: () => import('../views/RequestDetailView.vue'),
     meta: { requiresAuth: true, role: 'client' },
+  },
+
+  // /my/requests a été supprimée : les anciens liens retombent sur le chat IA.
+  {
+    path: '/my/requests',
+    redirect: () => clientHomeRoute(),
   },
 
   // -------- Espace livreur (auth: driver) --------
@@ -159,6 +159,16 @@ function clientLoginRoute(to, auth) {
   return { name: 'login', params: { slug }, query: { redirect: to.fullPath } }
 }
 
+/**
+ * Page d'accueil du client connecté : l'assistant IA de SON livreur.
+ * Sans livreur connu, le client n'a pas d'espace — retour à l'accueil.
+ */
+function clientHomeRoute() {
+  const auth = useAuthStore()
+  if (auth.driverSlug) return { name: 'ai-assistant', params: { slug: auth.driverSlug } }
+  return { name: 'landing' }
+}
+
 /** Guard global : auth + rôle (client/driver). */
 router.beforeEach((to) => {
   const auth = useAuthStore()
@@ -174,7 +184,7 @@ router.beforeEach((to) => {
   if (to.meta.role && auth.isAuthenticated && auth.user?.role !== to.meta.role) {
     // Un driver ne visite pas l'espace client et inversement.
     if (auth.isDriver) return { name: 'driver-dashboard' }
-    return { name: 'my-requests' }
+    return clientHomeRoute()
   }
 
   // Un client rattaché au livreur A ne commande pas chez B. Le backend renvoie
@@ -186,13 +196,13 @@ router.beforeEach((to) => {
     auth.driverSlug &&
     to.params.slug !== auth.driverSlug
   ) {
-    return { name: 'my-requests' }
+    return clientHomeRoute()
   }
 
   // Déjà connecté → ni login ni inscription n'ont de sens.
   const AUTH_ROUTES = ['login', 'login-driver', 'register', 'register-driver']
   if (AUTH_ROUTES.includes(to.name) && auth.isAuthenticated) {
-    return auth.isDriver ? { name: 'driver-dashboard' } : { name: 'my-requests' }
+    return auth.isDriver ? { name: 'driver-dashboard' } : clientHomeRoute()
   }
 
   return true

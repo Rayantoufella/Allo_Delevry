@@ -1,0 +1,232 @@
+name: Notifications
+description: |-
+
+  Gestion des notifications utilisateur. Les notifications sont générées automatiquement
+  lors des événements importants (nouvelle demande, message chat, etc.).
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/notifications
+    metadata:
+      custom: []
+      groupName: Notifications
+      groupDescription: |-
+
+        Gestion des notifications utilisateur. Les notifications sont générées automatiquement
+        lors des événements importants (nouvelle demande, message chat, etc.).
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Lister mes notifications'
+      description: |-
+        Retourne les notifications de l'utilisateur connecté, de la plus récente à l'ancienne.
+        Pagination : 20 éléments par page.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/notifications/{id}'
+    metadata:
+      custom: []
+      groupName: Notifications
+      groupDescription: |-
+
+        Gestion des notifications utilisateur. Les notifications sont générées automatiquement
+        lors des événements importants (nouvelle demande, message chat, etc.).
+      subgroup: ''
+      subgroupDescription: ''
+      title: "Détail d'une notification"
+      description: "Retourne les détails d'une notification spécifique."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la notification."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/notifications/{notification}/read'
+    metadata:
+      custom: []
+      groupName: Notifications
+      groupDescription: |-
+
+        Gestion des notifications utilisateur. Les notifications sont générées automatiquement
+        lors des événements importants (nouvelle demande, message chat, etc.).
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Marquer une notification comme lue'
+      description: 'Marque une notification spécifique comme lue (définit `read_at`).'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      notification:
+        custom: []
+        name: notification
+        description: 'The notification.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: "L'identifiant de la notification."
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      notification: architecto
+      id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: api/notifications/read-all
+    metadata:
+      custom: []
+      groupName: Notifications
+      groupDescription: |-
+
+        Gestion des notifications utilisateur. Les notifications sont générées automatiquement
+        lors des événements importants (nouvelle demande, message chat, etc.).
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Marquer toutes les notifications comme lues'
+      description: "Marque toutes les notifications non lues de l'utilisateur comme lues."
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

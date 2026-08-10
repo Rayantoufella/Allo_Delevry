@@ -27,7 +27,7 @@ const amount = computed(() =>
 )
 /* La ligne porte l'icône de son service, comme dans le prototype : une liste
    de missions toutes marquées « colis » ne se parcourt pas du regard. */
-const icon = computed(() => serviceIcon(props.request.service))
+const icon = computed(() => serviceIcon(props.request.service?.name))
 const routeLine = computed(() => {
   const from = props.request.pickup_address
   const to = props.request.delivery_address
@@ -48,7 +48,7 @@ function go() {
 
     <div class="req-main">
       <div class="req-line">
-        <span class="req-title">{{ request.service || request.recipient_name || 'Mission' }}</span>
+        <span class="req-title">{{ request.service?.name || request.recipient_name || 'Mission' }}</span>
         <StatusBadge :status="request.status" />
       </div>
       <div class="req-sub">
