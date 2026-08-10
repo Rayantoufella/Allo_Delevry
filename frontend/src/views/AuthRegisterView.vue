@@ -67,7 +67,7 @@ async function handleRegister() {
     if (isClient.value) {
       // Le rattachement au livreur vient du slug de l'URL, jamais du formulaire.
       await auth.registerClient(props.slug, payload)
-      router.push({ name: 'my-requests' })
+      router.push({ name: 'ai-assistant', params: { slug: props.slug } })
     } else {
       await auth.registerDriver(payload)
       router.push({ name: 'driver-profile' })

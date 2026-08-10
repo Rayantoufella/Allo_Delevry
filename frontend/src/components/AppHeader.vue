@@ -64,7 +64,7 @@ function openActiveRequest() {
 
 function goHome() {
   if (auth.isDriver) router.push({ name: 'driver-dashboard' })
-  else if (auth.isClient) router.push({ name: 'my-requests' })
+  else if (auth.isClient && auth.driverSlug) router.push({ name: 'ai-assistant', params: { slug: auth.driverSlug } })
   else router.push({ name: 'landing' })
 }
 
@@ -149,8 +149,13 @@ async function onLogout() {
 
         <!-- Client connecté : rattaché à un livreur -->
         <template v-else-if="auth.isClient">
-          <RouterLink class="nav-btn" :class="{ active: isActive('my-requests') }" :to="{ name: 'my-requests' }">
-            Mes demandes
+          <RouterLink
+            v-if="auth.driverSlug"
+            class="nav-btn"
+            :class="{ active: isActive('ai-assistant') }"
+            :to="{ name: 'ai-assistant', params: { slug: auth.driverSlug } }"
+          >
+            Commander
           </RouterLink>
           <button
             v-if="auth.driverSlug"
@@ -158,7 +163,7 @@ async function onLogout() {
             :class="{ active: isActive('driver-public') }"
             @click="goDriverPage"
           >
-            Commander
+            Chez mon livreur
           </button>
         </template>
       </template>

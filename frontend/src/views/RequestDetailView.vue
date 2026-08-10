@@ -185,8 +185,13 @@ async function submitReview() {
   <!-- ERROR -->
   <div v-else-if="errorMsg" class="card" style="text-align: center; padding: 2rem; max-width: 31.25rem; margin: 3rem auto">
     <p class="error-msg">{{ errorMsg }}</p>
-    <router-link class="btn btn-outline" style="margin-top: 1rem" :to="{ name: 'my-requests' }">
-      ← Retour à mes demandes
+    <router-link
+      v-if="auth.driverSlug"
+      class="btn btn-outline"
+      style="margin-top: 1rem"
+      :to="{ name: 'ai-assistant', params: { slug: auth.driverSlug } }"
+    >
+      ← Retour à la commande
     </router-link>
   </div>
 
@@ -339,8 +344,13 @@ async function submitReview() {
         Cette demande est
         <span class="bold">{{ request.status === STATUS.REFUSEE ? 'refusée' : request.status === STATUS.ECHEC ? 'en échec' : 'annulée' }}</span>.
       </p>
-      <router-link class="btn btn-outline" style="margin-top: 1rem" :to="{ name: 'my-requests' }">
-        ← Retour à mes demandes
+      <router-link
+        v-if="auth.driverSlug"
+        class="btn btn-outline"
+        style="margin-top: 1rem"
+        :to="{ name: 'ai-assistant', params: { slug: auth.driverSlug } }"
+      >
+        ← Retour à la commande
       </router-link>
     </div>
 

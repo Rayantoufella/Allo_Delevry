@@ -60,7 +60,7 @@ async function handleLogin() {
     if (redirect) {
       router.push(redirect)
     } else if (isClient.value) {
-      router.push({ name: 'my-requests' })
+      router.push({ name: 'ai-assistant', params: { slug: props.slug } })
     } else {
       router.push({ name: 'driver-dashboard' })
     }
