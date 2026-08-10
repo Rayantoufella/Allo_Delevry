@@ -95,13 +95,26 @@ class AiRequestDraftController extends Controller
 
         $driverProfile = DriverProfile::where('slug', $request->validated()['driver_slug'])->firstOrFail();
 
-        // Ajouter le message utilisateur à l'historique
+        // Ajouter le message utilisateur à l'historique, sans doublon : si le
+        // dernier message est un 'user' identique envoyé il y a moins de 2 min
+        // (renvoi après timeout / échec réseau), on ne l'ajoute pas une 2e fois.
         $history = $draft->chat_history ?? [];
-        $history[] = [
-            'role' => 'user',
-            'content' => $request->validated()['content'],
-            'created_at' => now()->toIso8601String(),
-        ];
+        $lastMessage = $history ? end($history) : null;
+        $content = $request->validated()['content'];
+        $lastTime = $lastMessage['created_at'] ?? null;
+        $isDuplicate = $lastMessage !== null
+            && $lastMessage['role'] === 'user'
+            && $lastMessage['content'] === $content
+            && $lastTime !== null
+            && \Illuminate\Support\Carbon::parse($lastTime)->diffInSeconds(now()) < 120;
+
+        if (! $isDuplicate) {
+            $history[] = [
+                'role' => 'user',
+                'content' => $content,
+                'created_at' => now()->toIso8601String(),
+            ];
+        }
 
         $draft->update([
             'chat_history' => $history,
@@ -109,6 +122,8 @@ class AiRequestDraftController extends Controller
             'error_message' => null,
         ]);
 
+        // Toujours dispatcher : le job est idempotent (si la réponse existe déjà
+        // pour le dernier message, il ne relance que l'extraction des données).
         ProcessAiChatMessageJob::dispatch($draft, $driverProfile->user_id)->afterCommit();
 
         return response()->json(new AiRequestDraftResource($draft->refresh()), 200);

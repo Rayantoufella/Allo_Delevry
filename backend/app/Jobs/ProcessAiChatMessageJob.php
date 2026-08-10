@@ -9,6 +9,7 @@ use App\Services\AiRequestAnalyzer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\TimeoutExceededException;
 use Illuminate\Support\Facades\Log;
 
 class ProcessAiChatMessageJob implements ShouldQueue
@@ -99,11 +100,15 @@ class ProcessAiChatMessageJob implements ShouldQueue
             'error' => $e->getMessage(),
         ]);
 
-        if ($e instanceof AiAnalysisException && $this->draft->exists) {
-            $this->draft->update([
-                'status' => AiRequestDraft::STATUS_FAILED,
-                'error_message' => $e->getMessage(),
-            ]);
+        if ($e instanceof AiAnalysisException || $e instanceof TimeoutExceededException) {
+            if ($this->draft->exists) {
+                $this->draft->update([
+                    'status' => AiRequestDraft::STATUS_FAILED,
+                    'error_message' => $e instanceof TimeoutExceededException
+                        ? "L'IA a mis trop de temps à répondre. Réessaie ou remplis le formulaire manuellement."
+                        : $e->getMessage(),
+                ]);
+            }
         }
     }
 

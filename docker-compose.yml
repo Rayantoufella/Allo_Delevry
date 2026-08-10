@@ -18,7 +18,7 @@ services:
     volumes:
       - ./backend:/var/www/html
     working_dir: /var/www/html
-    command: php artisan queue:work database --tries=3 --sleep=3 --timeout=60
+    command: php artisan queue:work database --tries=3 --sleep=3 --timeout=200
     depends_on:
       - db
     networks:
