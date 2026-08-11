@@ -2,6 +2,7 @@
 
 use App\Jobs\ProcessAiChatMessageJob;
 use App\Models\AiRequestDraft;
+use App\Models\DeliveryZone;
 use App\Models\DriverProfile;
 use App\Models\Service;
 use App\Models\User;
@@ -26,12 +27,12 @@ function chatDriver(): User
 
 function chatTextResponse(string $text): string
 {
-    return json_encode(['choices' => [['message' => ['content' => $text]]]]);
+    return json_encode(['candidates' => [['content' => ['parts' => [['text' => $text]]]]]]);
 }
 
 function chatJsonResponse(array $data): string
 {
-    return json_encode(['choices' => [['message' => ['content' => json_encode($data)]]]]);
+    return json_encode(['candidates' => [['content' => ['parts' => [['text' => json_encode($data)]]]]]]);
 }
 
 it('creates a pending draft with empty chat_history via the start endpoint', function () {
@@ -120,10 +121,10 @@ it('processes a full chat conversation successfully', function () {
         'is_active' => true,
     ]);
 
-    $chatModel = config('services.openrouter.chat_model');
-    $extractModel = config('services.openrouter.extract_model');
+    $chatModel = config('services.gemini.chat_model');
+    $extractModel = config('services.gemini.extract_model');
 
-    Http::fakeSequence('openrouter.ai/*')
+    Http::fakeSequence('generativelanguage.googleapis.com/*')
         ->push(chatTextResponse('Bien sûr ! Quel est le nom du destinataire ?'), 200)
         ->push(chatJsonResponse([
             'recipient_name' => 'Sara',
@@ -162,12 +163,12 @@ it('processes a full chat conversation successfully', function () {
 
     // Vérifie les modèles utilisés
     Http::assertSent(function ($request) use ($chatModel) {
-        return str_contains($request->url(), 'chat/completions')
-            && ($request->data()['model'] ?? '') === $chatModel;
+        return str_contains($request->url(), ':generateContent')
+            && str_contains($request->url(), $chatModel);
     });
     Http::assertSent(function ($request) use ($extractModel) {
-        return str_contains($request->url(), 'chat/completions')
-            && ($request->data()['model'] ?? '') === $extractModel;
+        return str_contains($request->url(), ':generateContent')
+            && str_contains($request->url(), $extractModel);
     });
 });
 
@@ -180,10 +181,10 @@ it('preserves existing generated_data during partial merge', function () {
         'is_active' => true,
     ]);
 
-    $chatModel = config('services.openrouter.chat_model');
-    $extractModel = config('services.openrouter.extract_model');
+    $chatModel = config('services.gemini.chat_model');
+    $extractModel = config('services.gemini.extract_model');
 
-    Http::fakeSequence('openrouter.ai/*')
+    Http::fakeSequence('generativelanguage.googleapis.com/*')
         ->push(chatTextResponse('Merci ! Autre chose ?'), 200)
         ->push(chatJsonResponse([
             'recipient_name' => null,
@@ -227,9 +228,9 @@ it('marks draft as failed when all models fail during chat', function () {
     $client = User::factory()->client()->create();
     $driver = chatDriver();
 
-    config()->set('services.openrouter.fallback_models', 'nvidia/nemotron-3-ultra-550b-a55b:free');
+    config()->set('services.gemini.fallback_models', 'gemini-3-flash-preview');
 
-    Http::fakeSequence('openrouter.ai/*')
+    Http::fakeSequence('generativelanguage.googleapis.com/*')
         ->push('Not Found', 404)
         ->push('Service Unavailable', 503);
 
@@ -251,7 +252,7 @@ it('marks draft as failed when all models fail during chat', function () {
     $draft->refresh();
 
     expect($draft->status)->toBe(AiRequestDraft::STATUS_FAILED);
-    expect($draft->error_message)->toContain('OpenRouter');
+    expect($draft->error_message)->toContain('Google AI');
 });
 
 it('returns null service_id for unknown service (RG11)', function () {
@@ -263,10 +264,10 @@ it('returns null service_id for unknown service (RG11)', function () {
         'is_active' => true,
     ]);
 
-    $chatModel = config('services.openrouter.chat_model');
-    $extractModel = config('services.openrouter.extract_model');
+    $chatModel = config('services.gemini.chat_model');
+    $extractModel = config('services.gemini.extract_model');
 
-    Http::fakeSequence('openrouter.ai/*')
+    Http::fakeSequence('generativelanguage.googleapis.com/*')
         ->push(chatTextResponse('D\'accord.'), 200)
         ->push(chatJsonResponse([
             'recipient_name' => 'Sara',
@@ -298,7 +299,7 @@ it('returns null service_id for unknown service (RG11)', function () {
 });
 
 it('does nothing when draft is not pending', function () {
-    Http::fake(['openrouter.ai/*' => Http::response('should not be called')]);
+    Http::fake(['generativelanguage.googleapis.com/*' => Http::response('should not be called')]);
 
     $client = User::factory()->client()->create();
     $driver = chatDriver();
@@ -314,4 +315,134 @@ it('does nothing when draft is not pending', function () {
     expect($draft->refresh()->status)->toBe(AiRequestDraft::STATUS_DONE);
 
     Http::assertNothingSent();
+});
+
+it('deduces the delivery zone from the delivery address when the extraction omits it', function () {
+    $client = User::factory()->client()->create();
+    $driver = chatDriver();
+    DeliveryZone::factory()->create([
+        'user_id' => $driver->id,
+        'destination_zone' => 'houda-salam-dakhla',
+        'fixed_price' => 14,
+        'is_active' => true,
+    ]);
+
+    Http::fakeSequence('generativelanguage.googleapis.com/*')
+        ->push(chatTextResponse('Parfait !'), 200)
+        ->push(chatJsonResponse([
+            'recipient_name' => 'Sara',
+            'recipient_phone' => '0612345678',
+            'pickup_address' => 'snak 2000',
+            'delivery_address' => 'vers houda quartier',
+            'package_description' => null,
+            'product_amount' => null,
+            'amount_to_collect' => null,
+            'scheduled_at' => null,
+            'service' => null,
+            'delivery_zone' => null,
+        ]), 200);
+
+    $draft = AiRequestDraft::factory()->create([
+        'user_id' => $client->id,
+        'chat_history' => [
+            ['role' => 'user', 'content' => 'livre vers houda', 'created_at' => now()->toIso8601String()],
+        ],
+        'status' => AiRequestDraft::STATUS_PENDING,
+    ]);
+
+    (new ProcessAiChatMessageJob($draft, $driver->id))->handle();
+
+    $draft->refresh();
+
+    expect($draft->status)->toBe(AiRequestDraft::STATUS_DONE);
+    // La zone a été déduite de l'adresse : le client n'a pas à la choisir manuellement.
+    expect($draft->generated_data['delivery_zone'])->toBe('houda-salam-dakhla');
+});
+
+it('prefers the zone extracted by the AI over the address deduction', function () {
+    $client = User::factory()->client()->create();
+    $driver = chatDriver();
+    DeliveryZone::factory()->create([
+        'user_id' => $driver->id,
+        'destination_zone' => 'houda-salam-dakhla',
+        'fixed_price' => 14,
+        'is_active' => true,
+    ]);
+    DeliveryZone::factory()->create([
+        'user_id' => $driver->id,
+        'destination_zone' => 'centre ville',
+        'fixed_price' => 26,
+        'is_active' => true,
+    ]);
+
+    Http::fakeSequence('generativelanguage.googleapis.com/*')
+        ->push(chatTextResponse('C\'est noté !'), 200)
+        ->push(chatJsonResponse([
+            'recipient_name' => 'Sara',
+            'recipient_phone' => '0612345678',
+            'pickup_address' => 'snak 2000',
+            'delivery_address' => 'vers houda quartier',
+            'package_description' => null,
+            'product_amount' => null,
+            'amount_to_collect' => null,
+            'scheduled_at' => null,
+            'service' => null,
+            'delivery_zone' => 'centre ville',
+        ]), 200);
+
+    $draft = AiRequestDraft::factory()->create([
+        'user_id' => $client->id,
+        'chat_history' => [
+            ['role' => 'user', 'content' => 'livre vers houda', 'created_at' => now()->toIso8601String()],
+        ],
+        'status' => AiRequestDraft::STATUS_PENDING,
+    ]);
+
+    (new ProcessAiChatMessageJob($draft, $driver->id))->handle();
+
+    $draft->refresh();
+
+    expect($draft->status)->toBe(AiRequestDraft::STATUS_DONE);
+    expect($draft->generated_data['delivery_zone'])->toBe('centre ville');
+});
+
+it('leaves delivery_zone null when no active zone matches the address', function () {
+    $client = User::factory()->client()->create();
+    $driver = chatDriver();
+    DeliveryZone::factory()->create([
+        'user_id' => $driver->id,
+        'destination_zone' => 'centre ville',
+        'fixed_price' => 26,
+        'is_active' => true,
+    ]);
+
+    Http::fakeSequence('generativelanguage.googleapis.com/*')
+        ->push(chatTextResponse('D\'accord.'), 200)
+        ->push(chatJsonResponse([
+            'recipient_name' => 'Sara',
+            'recipient_phone' => '0612345678',
+            'pickup_address' => 'snak 2000',
+            'delivery_address' => '10 rue inconnue, agadir',
+            'package_description' => null,
+            'product_amount' => null,
+            'amount_to_collect' => null,
+            'scheduled_at' => null,
+            'service' => null,
+            'delivery_zone' => null,
+        ]), 200);
+
+    $draft = AiRequestDraft::factory()->create([
+        'user_id' => $client->id,
+        'chat_history' => [
+            ['role' => 'user', 'content' => 'livre dans une rue inconnue', 'created_at' => now()->toIso8601String()],
+        ],
+        'status' => AiRequestDraft::STATUS_PENDING,
+    ]);
+
+    (new ProcessAiChatMessageJob($draft, $driver->id))->handle();
+
+    $draft->refresh();
+
+    expect($draft->status)->toBe(AiRequestDraft::STATUS_DONE);
+    expect($draft->generated_data)->not->toHaveKey('delivery_zone');
 });

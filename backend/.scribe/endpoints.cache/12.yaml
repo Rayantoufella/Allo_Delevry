@@ -120,7 +120,7 @@ endpoints:
         name: recorded_at
         description: 'Must be a valid date.'
         required: false
-        example: '2026-08-09T21:18:19'
+        example: '2026-08-11T00:00:50'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -130,7 +130,7 @@ endpoints:
       delivery_request_id: 1
       latitude: 30.4278
       longitude: -9.5981
-      recorded_at: '2026-08-09T21:18:19'
+      recorded_at: '2026-08-11T00:00:50'
     fileParameters: []
     responses:
       -
@@ -276,7 +276,7 @@ endpoints:
         name: recorded_at
         description: 'Must be a valid date.'
         required: false
-        example: '2026-08-09T21:18:19'
+        example: '2026-08-11T00:00:50'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -285,7 +285,7 @@ endpoints:
     cleanBodyParameters:
       latitude: 30.428
       longitude: -9.5983
-      recorded_at: '2026-08-09T21:18:19'
+      recorded_at: '2026-08-11T00:00:50'
     fileParameters: []
     responses:
       -

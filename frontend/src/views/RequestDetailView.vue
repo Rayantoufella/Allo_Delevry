@@ -22,8 +22,6 @@ const errorMsg = ref('')
 // Actions
 const cancelling = ref(false)
 const confirming = ref(false)
-const confirmingDelivery = ref(false)
-const deliveryCode = ref('')
 const actionError = ref('')
 
 // Review
@@ -135,26 +133,6 @@ async function confirmPrice() {
   }
 }
 
-async function confirmDelivery() {
-  if (!deliveryCode.value || deliveryCode.value.length !== 6) {
-    actionError.value = 'Le code doit contenir 6 chiffres.'
-    return
-  }
-  confirmingDelivery.value = true
-  actionError.value = ''
-  try {
-    const { data } = await api.post(`/delivery-requests/${id.value}/confirm-delivery`, {
-      code: deliveryCode.value,
-    })
-    request.value = data
-    deliveryCode.value = ''
-  } catch (err) {
-    actionError.value = apiError(err, 'Code incorrect ou expiré.')
-  } finally {
-    confirmingDelivery.value = false
-  }
-}
-
 async function submitReview() {
   reviewError.value = ''
   reviewSubmitting.value = true
@@ -257,32 +235,22 @@ async function submitReview() {
       </div>
     </div>
 
-    <!-- EN LIVRAISON : Code de confirmation -->
+    <!-- EN LIVRAISON : le livreur est en route, il confirme son arrivée de son côté -->
     <div v-if="request.status === STATUS.EN_LIVRAISON" class="action-card">
-      <h4 style="margin-bottom: 1rem"><AppIcon name="lock" :size="18" /> Code de confirmation</h4>
-      <p class="small muted" style="margin-bottom: 1rem">
-        Demandez le code de 6 chiffres à votre livreur et saisissez-le ci-dessous pour confirmer la réception.
+      <h4 style="margin-bottom: 1rem"><AppIcon name="truck" :size="18" /> Le livreur est en route</h4>
+      <p class="small muted" style="margin-bottom: 0.5rem">
+        Restez prêt ! Le livreur confirme lui-même son arrivée et vous remettra la commande.
       </p>
-      <div class="form-field">
-        <label>Code de remise</label>
-        <input
-          v-model="deliveryCode"
-          type="text"
-          class="form-input"
-          maxlength="6"
-          placeholder="000000"
-          style="max-width: 12.5rem; letter-spacing: 0.3em; text-align: center; font-size: 1.3rem"
-        />
-      </div>
-      <button
-        class="action-btn action-btn--green"
-        style="margin-top: 0.5rem"
-        :disabled="confirmingDelivery || deliveryCode.length !== 6"
-        @click="confirmDelivery"
-      >
-        <span v-if="confirmingDelivery" class="spinner spinner-sm"></span>
-        <span v-else><AppIcon name="package" :size="18" /> Confirmer la livraison</span>
-      </button>
+      <p class="small" style="color: var(--green)"><AppIcon name="check" :size="14" /> Aucune action requise de votre côté.</p>
+    </div>
+
+    <!-- LIVREUR ARRIVÉ : remise confirmée par le livreur (RG06) -->
+    <div v-if="request.status === STATUS.LIVREUR_ARRIVE" class="action-card">
+      <h4 style="margin-bottom: 1rem"><AppIcon name="home" :size="18" /> Le livreur vous attend</h4>
+      <p class="small muted" style="margin-bottom: 0.5rem">
+        Votre commande est arrivée ! Le livreur finalise la remise et mettra à jour le statut.
+      </p>
+      <p class="small" style="color: var(--green)"><AppIcon name="check" :size="14" /> Livreur sur place — plus rien à faire de votre côté.</p>
     </div>
 
     <!-- LIVRÉE : Avis -->
@@ -467,9 +435,9 @@ async function submitReview() {
           </div>
         </div>
 
-        <div v-if="request.status === STATUS.LIVREE || request.confirmation_code" class="code-card">
-          <div class="code-label">Code de remise</div>
-          <div class="code-big">{{ request.confirmation_code || '—' }}</div>
+        <div v-if="request.status === STATUS.LIVREE" class="code-card">
+          <div class="code-label">Demande livrée</div>
+          <div class="code-big"><AppIcon name="check" :size="22" /></div>
         </div>
       </div>
     </div>
@@ -736,7 +704,7 @@ async function submitReview() {
   background: var(--border);
 }
 
-/* Code de remise */
+/* Carte de fin de livraison */
 .code-card {
   background: color-mix(in srgb, var(--green) 10%, var(--surface));
   border: 0.0625rem solid color-mix(in srgb, var(--green) 20%, var(--border));

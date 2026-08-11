@@ -26,7 +26,6 @@ class DeliveryRequestFactory extends Factory
             'product_amount' => fake()->optional()->randomFloat(2, 20, 500),
             'amount_to_collect' => fake()->optional()->randomFloat(2, 10, 300),
             'proposed_price' => fake()->optional()->randomFloat(2, 15, 150),
-            'confirmation_code_hash' => fake()->optional()->sha256(),
             'scheduled_at' => fake()->optional()->dateTimeBetween('now', '+7 days'),
             'picked_up_at' => fake()->optional()->dateTimeBetween('-2 days', 'now'),
             'delivered_at' => fake()->optional()->dateTimeBetween('-1 days', 'now'),

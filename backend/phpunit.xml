@@ -32,6 +32,6 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
-        <env name="OPENROUTER_FALLBACK_MODELS" value=""/>
+        <env name="GEMINI_FALLBACK_MODELS" value=""/>
     </php>
 </phpunit>

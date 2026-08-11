@@ -36,13 +36,13 @@ Ce guide regroupe les **éléments hors périmètre principal** ou en attente, p
 | Fichier | Rôle | Points clés |
 |---------|------|-------------|
 | `app/Models/AiRequestDraft.php` | Modèle — table `ai_request_drafts` | Brouillon de demande préparé par l'IA ; statuts `pending/done/failed` remplis par le job |
-| `app/Services/AiRequestAnalyzer.php` | **Service d'appel OpenRouter** | Contrat 9 clés (destinataire, adresses, montants, `service`), `response_format json_object`, RG11 services actifs ; détaillé dans `rapport_f08_prefill_ia.md` |
+| `app/Services/AiRequestAnalyzer.php` | **Service d'appel Google AI (Gemini)** | Contrat 9 clés (destinataire, adresses, montants, `service`), `responseMimeType json`, RG11 services actifs ; détaillé dans `rapport_f08_prefill_ia.md` (historique) et `rapport_migration_gemini.md` (migration OpenRouter → Gemini) |
 | `app/Jobs/AnalyzeAiRequestDraftJob.php` | Job d'analyse asynchrone | Appel réel à l'API, `done`/`failed`, tries 3, timeout 60, RG11 double-gardé |
 | `app/Http/Controllers/Api/AiRequestDraftController.php` | CRUD + `analyze()` | CRUD standard + `AiRequestDraftPolicy` (propriétaire) + endpoint `POST /ai-request-drafts/analyze` (`throttle:10,1`) |
 | `database/migrations/2026_07_22_141316_create_ai_request_drafts_table.php` | Table | contenu JSON/markdown + delivery_request_id nullable |
-| `config/services.php` (bloc `openrouter`) | Configuration du fournisseur IA | `base_url`/`api_key`/`model` depuis env (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free`) — `.env` gitignoré |
-| — | Paquet `laravel/ai` | **NON installé** — IA appelée via **HTTP direct** (Laravel `Http`) vers OpenRouter via `AiRequestAnalyzer` |
-| — | Clé API OpenRouter | Doit être remplie dans `.env` (`OPENROUTER_API_KEY`) — modèle défaut `nvidia/nemotron-3-super-120b-a12b:free` |
+| `config/services.php` (bloc `gemini`) | Configuration du fournisseur IA | `base_url`/`api_key`/`model` depuis env (`GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.6-flash`) — `.env` gitignoré |
+| — | Paquet `laravel/ai` | **NON installé** — IA appelée via **HTTP direct** (Laravel `Http`) vers l'API native Gemini via `AiRequestAnalyzer` |
+| — | Clé API Google AI | Doit être remplie dans `.env` (`GEMINI_API_KEY`) — format `AQ.…` (nouveau format AI Studio) ; modèle défaut `gemini-3.6-flash`, fallback `gemini-3-flash-preview` |
 
 ## Écarts de périmètre (décisions utilisateur)
 

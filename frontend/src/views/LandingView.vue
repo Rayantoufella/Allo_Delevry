@@ -48,7 +48,7 @@ function goDriver() {
 
       <!-- Subtitle -->
       <p class="hero-sub">
-        Demande assistée par IA, acceptation &amp; tarif par le livreur, suivi GPS en direct, chat privé, code de remise sécurisé et preuve de livraison — le workflow complet, sans intermédiaire.
+        Demande assistée par IA, acceptation &amp; tarif par le livreur, suivi GPS en direct, chat privé, remise confirmée en un bouton et preuve de livraison — le workflow complet, sans intermédiaire.
       </p>
 
       <!-- DEUX CARTES CTA -->

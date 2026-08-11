@@ -16,13 +16,13 @@ use App\Http\Controllers\Api\RequestStatusHistoryController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\ServiceController;
 use Illuminate\Support\Facades\Route;
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
 
-Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
 Route::get('/drivers/{slug}', [DriverProfileController::class, 'showPublic'])->middleware('throttle:60,1');
 Route::get('/drivers/{slug}/qr', [DriverProfileController::class, 'qrCode'])->middleware('throttle:60,1');
-Route::post('/drivers/{slug}/register', [AuthController::class, 'registerForDriver'])->middleware('throttle:5,1');
+Route::post('/drivers/{slug}/register', [AuthController::class, 'registerForDriver'])->middleware('throttle:10,1');
 Route::post('/drivers/{slug}/login', [AuthController::class, 'loginForDriver'])->middleware('throttle:5,1');
 
 Route::get('/tracking/{privateToken}', [DeliveryRequestController::class, 'tracking'])->middleware('throttle:60,1');
@@ -59,8 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/delivery-requests/{deliveryRequest}/status', [DeliveryRequestController::class, 'updateStatus']);
     Route::post('/delivery-requests/{deliveryRequest}/confirm-price', [DeliveryRequestController::class, 'confirmPrice']);
     Route::post('/delivery-requests/{deliveryRequest}/cancel', [DeliveryRequestController::class, 'cancel']);
-    Route::post('/delivery-requests/{deliveryRequest}/generate-code', [DeliveryRequestController::class, 'generateCode']);
-    Route::post('/delivery-requests/{deliveryRequest}/confirm-delivery', [DeliveryRequestController::class, 'confirmDelivery']);
+    Route::post('/delivery-requests/{deliveryRequest}/confirm-arrival', [DeliveryRequestController::class, 'confirmArrival']);
+    Route::post('/delivery-requests/{deliveryRequest}/confirm-handover', [DeliveryRequestController::class, 'confirmHandover']);
 
     // Notifications
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'show']);

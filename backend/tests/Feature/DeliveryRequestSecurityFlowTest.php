@@ -48,12 +48,6 @@ it('performs the full RG06 flow with direct driver acceptance (fixed zone tariff
     ])->assertSuccessful()
         ->assertJsonPath('data.status', DeliveryRequest::STATUS_CONFIRMEE);
 
-    // Generate confirmation code.
-    $codeResponse = $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/generate-code")
-        ->assertSuccessful();
-    $code = $codeResponse->json('code');
-    expect($code)->toBeString()->toHaveLength(6);
-
     // Upload pickup photo and pick up parcel.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
@@ -79,11 +73,13 @@ it('performs the full RG06 flow with direct driver acceptance (fixed zone tariff
         'file' => UploadedFile::fake()->image('signature.jpg'),
     ])->assertCreated();
 
-    // Client confirms delivery with code.
-    Sanctum::actingAs($client);
-    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-delivery", [
-        'code' => $code,
-    ])->assertSuccessful()
+    // The driver confirms his arrival, then hands over the parcel (no code).
+    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-arrival")
+        ->assertSuccessful()
+        ->assertJsonPath('data.status', DeliveryRequest::STATUS_LIVREUR_ARRIVE);
+
+    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-handover")
+        ->assertSuccessful()
         ->assertJsonPath('data.status', DeliveryRequest::STATUS_LIVREE);
 
     expect($deliveryRequest->refresh()->delivered_at)->not->toBeNull();
@@ -119,12 +115,6 @@ it('performs the legacy RG06 flow via prix_propose with confirmPrice (backward c
     // Switch back to driver for the rest of the flow.
     Sanctum::actingAs($driver);
 
-    // Generate confirmation code.
-    $codeResponse = $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/generate-code")
-        ->assertSuccessful();
-    $code = $codeResponse->json('code');
-    expect($code)->toBeString()->toHaveLength(6);
-
     // Upload pickup photo and pick up parcel.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
@@ -150,45 +140,16 @@ it('performs the legacy RG06 flow via prix_propose with confirmPrice (backward c
         'file' => UploadedFile::fake()->image('signature.jpg'),
     ])->assertCreated();
 
-    // Client confirms delivery with code.
-    Sanctum::actingAs($client);
-    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-delivery", [
-        'code' => $code,
-    ])->assertSuccessful()
+    // The driver confirms his arrival, then hands over the parcel (no code).
+    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-arrival")
+        ->assertSuccessful()
+        ->assertJsonPath('data.status', DeliveryRequest::STATUS_LIVREUR_ARRIVE);
+
+    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-handover")
+        ->assertSuccessful()
         ->assertJsonPath('data.status', DeliveryRequest::STATUS_LIVREE);
 
     expect($deliveryRequest->refresh()->delivered_at)->not->toBeNull();
-});
-
-it('blocks the driver from confirming the delivery (RG06 is client-side)', function () {
-    $client = flowClient();
-    $driver = flowDriver();
-
-    $deliveryRequest = DeliveryRequest::factory()
-        ->forClient($client)
-        ->forDriver($driver)
-        ->inDelivery()
-        ->create();
-
-    Sanctum::actingAs($driver);
-    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-delivery", [
-        'code' => '123456',
-    ])->assertForbidden();
-});
-
-it('blocks the client from generating the confirmation code', function () {
-    $client = flowClient();
-    $driver = flowDriver();
-
-    $deliveryRequest = DeliveryRequest::factory()
-        ->forClient($client)
-        ->forDriver($driver)
-        ->confirmed()
-        ->create();
-
-    Sanctum::actingAs($client);
-    $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/generate-code")
-        ->assertForbidden();
 });
 
 it('requires proposed_price when moving to prix_propose', function () {

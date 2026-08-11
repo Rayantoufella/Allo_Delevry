@@ -122,7 +122,7 @@ endpoints:
         name: is_read
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -132,7 +132,7 @@ endpoints:
       delivery_request_id: 1
       message_type: 'n'
       content: "Bonjour, j'arrive dans 10 min"
-      is_read: false
+      is_read: true
     fileParameters: []
     responses:
       -

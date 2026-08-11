@@ -83,8 +83,11 @@
                                                                                 <li class="tocify-item level-2" data-unique="assistant-ia-DELETEapi-ai-request-drafts--id-">
                                 <a href="#assistant-ia-DELETEapi-ai-request-drafts--id-">Supprimer un brouillon IA</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="assistant-ia-POSTapi-ai-request-drafts-analyze">
-                                <a href="#assistant-ia-POSTapi-ai-request-drafts-analyze">Analyser un message avec l'IA</a>
+                                                                                <li class="tocify-item level-2" data-unique="assistant-ia-POSTapi-ai-request-drafts-start">
+                                <a href="#assistant-ia-POSTapi-ai-request-drafts-start">Démarrer une conversation IA</a>
+                            </li>
+                                                                                <li class="tocify-item level-2" data-unique="assistant-ia-POSTapi-ai-request-drafts--draft--messages">
+                                <a href="#assistant-ia-POSTapi-ai-request-drafts--draft--messages">Envoyer un message dans une conversation IA</a>
                             </li>
                                                                         </ul>
                             </ul>
@@ -196,11 +199,11 @@
                                                                                 <li class="tocify-item level-2" data-unique="demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--cancel">
                                 <a href="#demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--cancel">Annuler une demande</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--generate-code">
-                                <a href="#demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--generate-code">Générer un code de confirmation</a>
+                                                                                <li class="tocify-item level-2" data-unique="demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--confirm-arrival">
+                                <a href="#demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--confirm-arrival">Confirmer l'arrivée du livreur</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--confirm-delivery">
-                                <a href="#demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--confirm-delivery">Confirmer la livraison</a>
+                                                                                <li class="tocify-item level-2" data-unique="demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--confirm-handover">
+                                <a href="#demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--confirm-handover">Confirmer la remise de la commande</a>
                             </li>
                                                                         </ul>
                             </ul>
@@ -408,7 +411,7 @@
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: August 9, 2026</li>
+        <li>Last updated: August 11, 2026</li>
     </ul>
 </div>
 
@@ -438,8 +441,8 @@ Récupérez votre token via les endpoints `/api/register` ou `/api/login`.
 
         <h1 id="assistant-ia">Assistant IA</h1>
 
-    <p>Brouillons de demandes générés par l'assistant IA. L'analyse transforme un message
-libre en données structurées (destinataire, adresses, service, montant).</p>
+    <p>Brouillons de demandes générés par l'assistant IA. La conversation en mode chat
+transforme un message libre en données structurées (destinataire, adresses, service, montant).</p>
 
                                 <h2 id="assistant-ia-GETapi-ai-request-drafts">Lister mes brouillons IA</h2>
 
@@ -606,7 +609,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"generated_data\": \"[\\\"architecto\\\",\\\"architecto\\\"]\",
     \"status\": \"pending\",
     \"error_message\": \"architecto\",
-    \"validated_at\": \"2026-08-09T21:18:19\"
+    \"validated_at\": \"2026-08-11T00:00:49\"
 }"
 </code></pre></div>
 
@@ -627,7 +630,7 @@ let body = {
     "generated_data": "[\"architecto\",\"architecto\"]",
     "status": "pending",
     "error_message": "architecto",
-    "validated_at": "2026-08-09T21:18:19"
+    "validated_at": "2026-08-11T00:00:49"
 };
 
 fetch(url, {
@@ -807,10 +810,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="validated_at"                data-endpoint="POSTapi-ai-request-drafts"
-               value="2026-08-09T21:18:19"
+               value="2026-08-11T00:00:49"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-09T21:18:19</code></p>
+<p>Must be a valid date. Example: <code>2026-08-11T00:00:49</code></p>
         </div>
         </form>
 
@@ -1124,36 +1127,30 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="assistant-ia-POSTapi-ai-request-drafts-analyze">Analyser un message avec l&#039;IA</h2>
+                    <h2 id="assistant-ia-POSTapi-ai-request-drafts-start">Démarrer une conversation IA</h2>
 
 <p>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>Envoie un message libre à l'IA pour extraction de données structurées.
-Un brouillon est créé et un job d'analyse est dispatché en arrière-plan.
-Anti-doublon : si un brouillon identique existe (&lt; 2 min), il est réutilisé.</p>
+<p>Crée un brouillon vide en mode conversation : le client et l'IA échangent des
+messages pour compléter le formulaire de demande progressivement.</p>
 
-<span id="example-requests-POSTapi-ai-request-drafts-analyze">
+<span id="example-requests-POSTapi-ai-request-drafts-start">
 <blockquote>Example request:</blockquote>
 
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/ai-request-drafts/analyze" \
+    "http://localhost:8000/api/ai-request-drafts/start" \
     --header "Authorization: Bearer {YOUR_BEARER_TOKEN}" \
     --header "Content-Type: application/json" \
-    --header "Accept: application/json" \
-    --data "{
-    \"input_message\": \"Envoie un colis à Sara, 420 DH à récupérer\",
-    \"driver_slug\": \"rayan-express\"
-}"
-</code></pre></div>
+    --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/ai-request-drafts/analyze"
+    "http://localhost:8000/api/ai-request-drafts/start"
 );
 
 const headers = {
@@ -1162,20 +1159,15 @@ const headers = {
     "Accept": "application/json",
 };
 
-let body = {
-    "input_message": "Envoie un colis à Sara, 420 DH à récupérer",
-    "driver_slug": "rayan-express"
-};
 
 fetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify(body),
 }).then(response =&gt; response.json());</code></pre></div>
 
 </span>
 
-<span id="example-responses-POSTapi-ai-request-drafts-analyze">
+<span id="example-responses-POSTapi-ai-request-drafts-start">
             <blockquote>
             <p>Example response (401):</p>
         </blockquote>
@@ -1193,43 +1185,43 @@ access-control-allow-origin: *
 }</code>
  </pre>
     </span>
-<span id="execution-results-POSTapi-ai-request-drafts-analyze" hidden>
+<span id="execution-results-POSTapi-ai-request-drafts-start" hidden>
     <blockquote>Received response<span
-                id="execution-response-status-POSTapi-ai-request-drafts-analyze"></span>:
+                id="execution-response-status-POSTapi-ai-request-drafts-start"></span>:
     </blockquote>
-    <pre class="json"><code id="execution-response-content-POSTapi-ai-request-drafts-analyze"
+    <pre class="json"><code id="execution-response-content-POSTapi-ai-request-drafts-start"
       data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
 </span>
-<span id="execution-error-POSTapi-ai-request-drafts-analyze" hidden>
+<span id="execution-error-POSTapi-ai-request-drafts-start" hidden>
     <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-POSTapi-ai-request-drafts-analyze">
+    <pre><code id="execution-error-message-POSTapi-ai-request-drafts-start">
 
 Tip: Check that you&#039;re properly connected to the network.
 If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
-<form id="form-POSTapi-ai-request-drafts-analyze" data-method="POST"
-      data-path="api/ai-request-drafts/analyze"
+<form id="form-POSTapi-ai-request-drafts-start" data-method="POST"
+      data-path="api/ai-request-drafts/start"
       data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('POSTapi-ai-request-drafts-analyze', this);">
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-ai-request-drafts-start', this);">
     <h3>
         Request&nbsp;&nbsp;&nbsp;
                     <button type="button"
                     style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-POSTapi-ai-request-drafts-analyze"
-                    onclick="tryItOut('POSTapi-ai-request-drafts-analyze');">Try it out ⚡
+                    id="btn-tryout-POSTapi-ai-request-drafts-start"
+                    onclick="tryItOut('POSTapi-ai-request-drafts-start');">Try it out ⚡
             </button>
             <button type="button"
                     style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-POSTapi-ai-request-drafts-analyze"
-                    onclick="cancelTryOut('POSTapi-ai-request-drafts-analyze');" hidden>Cancel 🛑
+                    id="btn-canceltryout-POSTapi-ai-request-drafts-start"
+                    onclick="cancelTryOut('POSTapi-ai-request-drafts-start');" hidden>Cancel 🛑
             </button>&nbsp;&nbsp;
             <button type="submit"
                     style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-POSTapi-ai-request-drafts-analyze"
+                    id="btn-executetryout-POSTapi-ai-request-drafts-start"
                     data-initial-text="Send Request 💥"
                     data-loading-text="⏱ Sending..."
                     hidden>Send Request 💥
@@ -1237,7 +1229,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-black">POST</small>
-            <b><code>api/ai-request-drafts/analyze</code></b>
+            <b><code>api/ai-request-drafts/start</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -1246,7 +1238,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-ai-request-drafts-analyze"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-ai-request-drafts-start"
                value="Bearer {YOUR_BEARER_TOKEN}"
                data-component="header">
     <br>
@@ -1258,7 +1250,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="POSTapi-ai-request-drafts-analyze"
+                              name="Content-Type"                data-endpoint="POSTapi-ai-request-drafts-start"
                value="application/json"
                data-component="header">
     <br>
@@ -1270,24 +1262,191 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="POSTapi-ai-request-drafts-analyze"
+                              name="Accept"                data-endpoint="POSTapi-ai-request-drafts-start"
                value="application/json"
                data-component="header">
     <br>
 <p>Example: <code>application/json</code></p>
             </div>
-                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+                        </form>
+
+                    <h2 id="assistant-ia-POSTapi-ai-request-drafts--draft--messages">Envoyer un message dans une conversation IA</h2>
+
+<p>
+<small class="badge badge-darkred">requires authentication</small>
+</p>
+
+<p>Ajoute le message du client à l'historique et dispatche un job qui génère
+la réponse de l'IA (modèle rapide) puis extrait les données structurées
+(modèle puissant) pour pré-remplir le formulaire de demande.</p>
+
+<span id="example-requests-POSTapi-ai-request-drafts--draft--messages">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/ai-request-drafts/1/messages" \
+    --header "Authorization: Bearer {YOUR_BEARER_TOKEN}" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"content\": \"Je veux envoyer un colis à Sara\",
+    \"driver_slug\": \"rayan-express\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/ai-request-drafts/1/messages"
+);
+
+const headers = {
+    "Authorization": "Bearer {YOUR_BEARER_TOKEN}",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "content": "Je veux envoyer un colis à Sara",
+    "driver_slug": "rayan-express"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-ai-request-drafts--draft--messages">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Unauthenticated.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-ai-request-drafts--draft--messages" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-ai-request-drafts--draft--messages"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-ai-request-drafts--draft--messages"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-ai-request-drafts--draft--messages" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-ai-request-drafts--draft--messages">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-ai-request-drafts--draft--messages" data-method="POST"
+      data-path="api/ai-request-drafts/{draft}/messages"
+      data-authed="1"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-ai-request-drafts--draft--messages', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-ai-request-drafts--draft--messages"
+                    onclick="tryItOut('POSTapi-ai-request-drafts--draft--messages');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-ai-request-drafts--draft--messages"
+                    onclick="cancelTryOut('POSTapi-ai-request-drafts--draft--messages');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-ai-request-drafts--draft--messages"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/ai-request-drafts/{draft}/messages</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Authorization</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-ai-request-drafts--draft--messages"
+               value="Bearer {YOUR_BEARER_TOKEN}"
+               data-component="header">
+    <br>
+<p>Example: <code>Bearer {YOUR_BEARER_TOKEN}</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-ai-request-drafts--draft--messages"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-ai-request-drafts--draft--messages"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>draft</code></b>&nbsp;&nbsp;
+<small>integer</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="draft"                data-endpoint="POSTapi-ai-request-drafts--draft--messages"
+               value="1"
+               data-component="url">
+    <br>
+<p>L'identifiant du brouillon. Example: <code>1</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>input_message</code></b>&nbsp;&nbsp;
+            <b style="line-height: 2;"><code>content</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="input_message"                data-endpoint="POSTapi-ai-request-drafts-analyze"
-               value="Envoie un colis à Sara, 420 DH à récupérer"
+                              name="content"                data-endpoint="POSTapi-ai-request-drafts--draft--messages"
+               value="Je veux envoyer un colis à Sara"
                data-component="body">
     <br>
-<p>Le message à analyser. Example: <code>Envoie un colis à Sara, 420 DH à récupérer</code></p>
+<p>Le message du client. Example: <code>Je veux envoyer un colis à Sara</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>driver_slug</code></b>&nbsp;&nbsp;
@@ -1295,7 +1454,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="driver_slug"                data-endpoint="POSTapi-ai-request-drafts-analyze"
+                              name="driver_slug"                data-endpoint="POSTapi-ai-request-drafts--draft--messages"
                value="rayan-express"
                data-component="body">
     <br>
@@ -1368,8 +1527,8 @@ fetch(url, {
             </summary>
             <pre><code class="language-http">cache-control: no-cache, private
 content-type: application/json
-x-ratelimit-limit: 5
-x-ratelimit-remaining: 4
+x-ratelimit-limit: 10
+x-ratelimit-remaining: 9
 access-control-allow-origin: *
  </code></pre></details>         <pre>
 
@@ -3149,7 +3308,7 @@ Le message est diffusé en temps réel aux participants.</p>
     \"delivery_request_id\": 1,
     \"message_type\": \"n\",
     \"content\": \"Bonjour, j\'arrive dans 10 min\",
-    \"is_read\": false
+    \"is_read\": true
 }"
 </code></pre></div>
 
@@ -3169,7 +3328,7 @@ let body = {
     "delivery_request_id": 1,
     "message_type": "n",
     "content": "Bonjour, j'arrive dans 10 min",
-    "is_read": false
+    "is_read": true
 };
 
 fetch(url, {
@@ -3338,7 +3497,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
@@ -4198,7 +4357,7 @@ Le client doit être rattaché au livreur (inscription via <code>/drivers/{slug}
     \"package_description\": \"Petit carton 2kg\",
     \"product_amount\": 150,
     \"amount_to_collect\": 42.85,
-    \"scheduled_at\": \"2026-08-09T21:18:18\"
+    \"scheduled_at\": \"2026-08-11T00:00:48\"
 }"
 </code></pre></div>
 
@@ -4225,7 +4384,7 @@ let body = {
     "package_description": "Petit carton 2kg",
     "product_amount": 150,
     "amount_to_collect": 42.85,
-    "scheduled_at": "2026-08-09T21:18:18"
+    "scheduled_at": "2026-08-11T00:00:48"
 };
 
 fetch(url, {
@@ -4478,10 +4637,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="scheduled_at"                data-endpoint="POSTapi-drivers--slug--delivery-requests"
-               value="2026-08-09T21:18:18"
+               value="2026-08-11T00:00:48"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-09T21:18:18</code></p>
+<p>Must be a valid date. Example: <code>2026-08-11T00:00:48</code></p>
         </div>
         </form>
 
@@ -4810,7 +4969,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"package_description\": \"architecto\",
     \"product_amount\": 39,
     \"amount_to_collect\": 84,
-    \"scheduled_at\": \"2026-08-09T21:18:18\"
+    \"scheduled_at\": \"2026-08-11T00:00:49\"
 }"
 </code></pre></div>
 
@@ -4834,7 +4993,7 @@ let body = {
     "package_description": "architecto",
     "product_amount": 39,
     "amount_to_collect": 84,
-    "scheduled_at": "2026-08-09T21:18:18"
+    "scheduled_at": "2026-08-11T00:00:49"
 };
 
 fetch(url, {
@@ -5103,10 +5262,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="scheduled_at"                data-endpoint="PUTapi-delivery-requests--id-"
-               value="2026-08-09T21:18:18"
+               value="2026-08-11T00:00:49"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-09T21:18:18</code></p>
+<p>Must be a valid date. Example: <code>2026-08-11T00:00:49</code></p>
         </div>
         </form>
 
@@ -5792,21 +5951,23 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--generate-code">Générer un code de confirmation</h2>
+                    <h2 id="demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--confirm-arrival">Confirmer l&#039;arrivée du livreur</h2>
 
 <p>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>Génère un code à 6 chiffres pour la remise du colis. Le code expire après 30 minutes.</p>
+<p>Le livreur confirme qu'il est arrivé à l'adresse de livraison
+(transition "en_livraison" → "livreur_arrive"). Tous les boutons de
+changement de statut sont côté livreur : le client n'a aucun bouton.</p>
 
-<span id="example-requests-POSTapi-delivery-requests--deliveryRequest--generate-code">
+<span id="example-requests-POSTapi-delivery-requests--deliveryRequest--confirm-arrival">
 <blockquote>Example request:</blockquote>
 
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/delivery-requests/1/generate-code" \
+    "http://localhost:8000/api/delivery-requests/1/confirm-arrival" \
     --header "Authorization: Bearer {YOUR_BEARER_TOKEN}" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
@@ -5814,7 +5975,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/delivery-requests/1/generate-code"
+    "http://localhost:8000/api/delivery-requests/1/confirm-arrival"
 );
 
 const headers = {
@@ -5831,7 +5992,7 @@ fetch(url, {
 
 </span>
 
-<span id="example-responses-POSTapi-delivery-requests--deliveryRequest--generate-code">
+<span id="example-responses-POSTapi-delivery-requests--deliveryRequest--confirm-arrival">
             <blockquote>
             <p>Example response (401):</p>
         </blockquote>
@@ -5849,43 +6010,43 @@ access-control-allow-origin: *
 }</code>
  </pre>
     </span>
-<span id="execution-results-POSTapi-delivery-requests--deliveryRequest--generate-code" hidden>
+<span id="execution-results-POSTapi-delivery-requests--deliveryRequest--confirm-arrival" hidden>
     <blockquote>Received response<span
-                id="execution-response-status-POSTapi-delivery-requests--deliveryRequest--generate-code"></span>:
+                id="execution-response-status-POSTapi-delivery-requests--deliveryRequest--confirm-arrival"></span>:
     </blockquote>
-    <pre class="json"><code id="execution-response-content-POSTapi-delivery-requests--deliveryRequest--generate-code"
+    <pre class="json"><code id="execution-response-content-POSTapi-delivery-requests--deliveryRequest--confirm-arrival"
       data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
 </span>
-<span id="execution-error-POSTapi-delivery-requests--deliveryRequest--generate-code" hidden>
+<span id="execution-error-POSTapi-delivery-requests--deliveryRequest--confirm-arrival" hidden>
     <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-POSTapi-delivery-requests--deliveryRequest--generate-code">
+    <pre><code id="execution-error-message-POSTapi-delivery-requests--deliveryRequest--confirm-arrival">
 
 Tip: Check that you&#039;re properly connected to the network.
 If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
-<form id="form-POSTapi-delivery-requests--deliveryRequest--generate-code" data-method="POST"
-      data-path="api/delivery-requests/{deliveryRequest}/generate-code"
+<form id="form-POSTapi-delivery-requests--deliveryRequest--confirm-arrival" data-method="POST"
+      data-path="api/delivery-requests/{deliveryRequest}/confirm-arrival"
       data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('POSTapi-delivery-requests--deliveryRequest--generate-code', this);">
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-delivery-requests--deliveryRequest--confirm-arrival', this);">
     <h3>
         Request&nbsp;&nbsp;&nbsp;
                     <button type="button"
                     style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-POSTapi-delivery-requests--deliveryRequest--generate-code"
-                    onclick="tryItOut('POSTapi-delivery-requests--deliveryRequest--generate-code');">Try it out ⚡
+                    id="btn-tryout-POSTapi-delivery-requests--deliveryRequest--confirm-arrival"
+                    onclick="tryItOut('POSTapi-delivery-requests--deliveryRequest--confirm-arrival');">Try it out ⚡
             </button>
             <button type="button"
                     style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-POSTapi-delivery-requests--deliveryRequest--generate-code"
-                    onclick="cancelTryOut('POSTapi-delivery-requests--deliveryRequest--generate-code');" hidden>Cancel 🛑
+                    id="btn-canceltryout-POSTapi-delivery-requests--deliveryRequest--confirm-arrival"
+                    onclick="cancelTryOut('POSTapi-delivery-requests--deliveryRequest--confirm-arrival');" hidden>Cancel 🛑
             </button>&nbsp;&nbsp;
             <button type="submit"
                     style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-POSTapi-delivery-requests--deliveryRequest--generate-code"
+                    id="btn-executetryout-POSTapi-delivery-requests--deliveryRequest--confirm-arrival"
                     data-initial-text="Send Request 💥"
                     data-loading-text="⏱ Sending..."
                     hidden>Send Request 💥
@@ -5893,7 +6054,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-black">POST</small>
-            <b><code>api/delivery-requests/{deliveryRequest}/generate-code</code></b>
+            <b><code>api/delivery-requests/{deliveryRequest}/confirm-arrival</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -5902,7 +6063,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-delivery-requests--deliveryRequest--generate-code"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-arrival"
                value="Bearer {YOUR_BEARER_TOKEN}"
                data-component="header">
     <br>
@@ -5914,7 +6075,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--generate-code"
+                              name="Content-Type"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-arrival"
                value="application/json"
                data-component="header">
     <br>
@@ -5926,7 +6087,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--generate-code"
+                              name="Accept"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-arrival"
                value="application/json"
                data-component="header">
     <br>
@@ -5939,7 +6100,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="number" style="display: none"
-               step="any"               name="deliveryRequest"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--generate-code"
+               step="any"               name="deliveryRequest"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-arrival"
                value="1"
                data-component="url">
     <br>
@@ -5951,7 +6112,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="number" style="display: none"
-               step="any"               name="id"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--generate-code"
+               step="any"               name="id"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-arrival"
                value="1"
                data-component="url">
     <br>
@@ -5959,34 +6120,31 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--confirm-delivery">Confirmer la livraison</h2>
+                    <h2 id="demandes-de-livraison-POSTapi-delivery-requests--deliveryRequest--confirm-handover">Confirmer la remise de la commande</h2>
 
 <p>
 <small class="badge badge-darkred">requires authentication</small>
 </p>
 
-<p>Le client confirme la réception en fournissant le code de confirmation.
-Une preuve de livraison (RG06) doit être présente. Max 5 tentatives.</p>
+<p>Le livreur confirme que le client a récupéré la commande (transition
+"livreur_arrive" → "livree"). Le client ne dispose d'aucun bouton de
+clôture : c'est le livreur, présent sur place, qui valide la remise.</p>
 
-<span id="example-requests-POSTapi-delivery-requests--deliveryRequest--confirm-delivery">
+<span id="example-requests-POSTapi-delivery-requests--deliveryRequest--confirm-handover">
 <blockquote>Example request:</blockquote>
 
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/delivery-requests/1/confirm-delivery" \
+    "http://localhost:8000/api/delivery-requests/1/confirm-handover" \
     --header "Authorization: Bearer {YOUR_BEARER_TOKEN}" \
     --header "Content-Type: application/json" \
-    --header "Accept: application/json" \
-    --data "{
-    \"code\": \"482951\"
-}"
-</code></pre></div>
+    --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/delivery-requests/1/confirm-delivery"
+    "http://localhost:8000/api/delivery-requests/1/confirm-handover"
 );
 
 const headers = {
@@ -5995,19 +6153,15 @@ const headers = {
     "Accept": "application/json",
 };
 
-let body = {
-    "code": "482951"
-};
 
 fetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify(body),
 }).then(response =&gt; response.json());</code></pre></div>
 
 </span>
 
-<span id="example-responses-POSTapi-delivery-requests--deliveryRequest--confirm-delivery">
+<span id="example-responses-POSTapi-delivery-requests--deliveryRequest--confirm-handover">
             <blockquote>
             <p>Example response (401):</p>
         </blockquote>
@@ -6025,43 +6179,43 @@ access-control-allow-origin: *
 }</code>
  </pre>
     </span>
-<span id="execution-results-POSTapi-delivery-requests--deliveryRequest--confirm-delivery" hidden>
+<span id="execution-results-POSTapi-delivery-requests--deliveryRequest--confirm-handover" hidden>
     <blockquote>Received response<span
-                id="execution-response-status-POSTapi-delivery-requests--deliveryRequest--confirm-delivery"></span>:
+                id="execution-response-status-POSTapi-delivery-requests--deliveryRequest--confirm-handover"></span>:
     </blockquote>
-    <pre class="json"><code id="execution-response-content-POSTapi-delivery-requests--deliveryRequest--confirm-delivery"
+    <pre class="json"><code id="execution-response-content-POSTapi-delivery-requests--deliveryRequest--confirm-handover"
       data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
 </span>
-<span id="execution-error-POSTapi-delivery-requests--deliveryRequest--confirm-delivery" hidden>
+<span id="execution-error-POSTapi-delivery-requests--deliveryRequest--confirm-handover" hidden>
     <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-POSTapi-delivery-requests--deliveryRequest--confirm-delivery">
+    <pre><code id="execution-error-message-POSTapi-delivery-requests--deliveryRequest--confirm-handover">
 
 Tip: Check that you&#039;re properly connected to the network.
 If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
 You can check the Dev Tools console for debugging information.</code></pre>
 </span>
-<form id="form-POSTapi-delivery-requests--deliveryRequest--confirm-delivery" data-method="POST"
-      data-path="api/delivery-requests/{deliveryRequest}/confirm-delivery"
+<form id="form-POSTapi-delivery-requests--deliveryRequest--confirm-handover" data-method="POST"
+      data-path="api/delivery-requests/{deliveryRequest}/confirm-handover"
       data-authed="1"
       data-hasfiles="0"
       data-isarraybody="0"
       autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('POSTapi-delivery-requests--deliveryRequest--confirm-delivery', this);">
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-delivery-requests--deliveryRequest--confirm-handover', this);">
     <h3>
         Request&nbsp;&nbsp;&nbsp;
                     <button type="button"
                     style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-POSTapi-delivery-requests--deliveryRequest--confirm-delivery"
-                    onclick="tryItOut('POSTapi-delivery-requests--deliveryRequest--confirm-delivery');">Try it out ⚡
+                    id="btn-tryout-POSTapi-delivery-requests--deliveryRequest--confirm-handover"
+                    onclick="tryItOut('POSTapi-delivery-requests--deliveryRequest--confirm-handover');">Try it out ⚡
             </button>
             <button type="button"
                     style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-POSTapi-delivery-requests--deliveryRequest--confirm-delivery"
-                    onclick="cancelTryOut('POSTapi-delivery-requests--deliveryRequest--confirm-delivery');" hidden>Cancel 🛑
+                    id="btn-canceltryout-POSTapi-delivery-requests--deliveryRequest--confirm-handover"
+                    onclick="cancelTryOut('POSTapi-delivery-requests--deliveryRequest--confirm-handover');" hidden>Cancel 🛑
             </button>&nbsp;&nbsp;
             <button type="submit"
                     style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-POSTapi-delivery-requests--deliveryRequest--confirm-delivery"
+                    id="btn-executetryout-POSTapi-delivery-requests--deliveryRequest--confirm-handover"
                     data-initial-text="Send Request 💥"
                     data-loading-text="⏱ Sending..."
                     hidden>Send Request 💥
@@ -6069,7 +6223,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </h3>
             <p>
             <small class="badge badge-black">POST</small>
-            <b><code>api/delivery-requests/{deliveryRequest}/confirm-delivery</code></b>
+            <b><code>api/delivery-requests/{deliveryRequest}/confirm-handover</code></b>
         </p>
                 <h4 class="fancy-heading-panel"><b>Headers</b></h4>
                                 <div style="padding-left: 28px; clear: unset;">
@@ -6078,7 +6232,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-delivery"
+                              name="Authorization" class="auth-value"               data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-handover"
                value="Bearer {YOUR_BEARER_TOKEN}"
                data-component="header">
     <br>
@@ -6090,7 +6244,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-delivery"
+                              name="Content-Type"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-handover"
                value="application/json"
                data-component="header">
     <br>
@@ -6102,7 +6256,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-delivery"
+                              name="Accept"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-handover"
                value="application/json"
                data-component="header">
     <br>
@@ -6115,7 +6269,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="number" style="display: none"
-               step="any"               name="deliveryRequest"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-delivery"
+               step="any"               name="deliveryRequest"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-handover"
                value="1"
                data-component="url">
     <br>
@@ -6127,26 +6281,13 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
  &nbsp;
                 <input type="number" style="display: none"
-               step="any"               name="id"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-delivery"
+               step="any"               name="id"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-handover"
                value="1"
                data-component="url">
     <br>
 <p>L'identifiant de la demande. Example: <code>1</code></p>
             </div>
-                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
-        <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>code</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="code"                data-endpoint="POSTapi-delivery-requests--deliveryRequest--confirm-delivery"
-               value="482951"
-               data-component="body">
-    <br>
-<p>Le code de confirmation à 6 chiffres. Example: <code>482951</code></p>
-        </div>
-        </form>
+                    </form>
 
                 <h1 id="gps">GPS</h1>
 
@@ -6318,7 +6459,7 @@ La date d'enregistrement est définie automatiquement si non fournie.</p>
     \"delivery_request_id\": 1,
     \"latitude\": 30.4278,
     \"longitude\": -9.5981,
-    \"recorded_at\": \"2026-08-09T21:18:19\"
+    \"recorded_at\": \"2026-08-11T00:00:50\"
 }"
 </code></pre></div>
 
@@ -6338,7 +6479,7 @@ let body = {
     "delivery_request_id": 1,
     "latitude": 30.4278,
     "longitude": -9.5981,
-    "recorded_at": "2026-08-09T21:18:19"
+    "recorded_at": "2026-08-11T00:00:50"
 };
 
 fetch(url, {
@@ -6494,10 +6635,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="recorded_at"                data-endpoint="POSTapi-gps-locations"
-               value="2026-08-09T21:18:19"
+               value="2026-08-11T00:00:50"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-09T21:18:19</code></p>
+<p>Must be a valid date. Example: <code>2026-08-11T00:00:50</code></p>
         </div>
         </form>
 
@@ -6677,7 +6818,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --data "{
     \"latitude\": 30.428,
     \"longitude\": -9.5983,
-    \"recorded_at\": \"2026-08-09T21:18:19\"
+    \"recorded_at\": \"2026-08-11T00:00:50\"
 }"
 </code></pre></div>
 
@@ -6696,7 +6837,7 @@ const headers = {
 let body = {
     "latitude": 30.428,
     "longitude": -9.5983,
-    "recorded_at": "2026-08-09T21:18:19"
+    "recorded_at": "2026-08-11T00:00:50"
 };
 
 fetch(url, {
@@ -6857,10 +6998,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="recorded_at"                data-endpoint="PUTapi-gps-locations--id-"
-               value="2026-08-09T21:18:19"
+               value="2026-08-11T00:00:50"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-08-09T21:18:19</code></p>
+<p>Must be a valid date. Example: <code>2026-08-11T00:00:50</code></p>
         </div>
         </form>
 
@@ -9965,7 +10106,7 @@ Le fichier est stocké sur le disque <code>public</code>.</p>
     --form "delivery_request_id=1"\
     --form "proof_type=pickup_photo"\
     --form "receiver_name=n"\
-    --form "file=@/tmp/php4lcsc1gsa7bs2W9qcY9" </code></pre></div>
+    --form "file=@/tmp/phpjidq2lu7534kb20ILCY" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -10129,7 +10270,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Le fichier de preuve (image/jpeg, image/png). Example: <code>/tmp/php4lcsc1gsa7bs2W9qcY9</code></p>
+<p>Le fichier de preuve (image/jpeg, image/png). Example: <code>/tmp/phpjidq2lu7534kb20ILCY</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>receiver_name</code></b>&nbsp;&nbsp;
@@ -10320,7 +10461,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --form "proof_type=photo"\
     --form "receiver_name=n"\
-    --form "file=@/tmp/phpq0detul89hpgbFFLuJ8" </code></pre></div>
+    --form "file=@/tmp/phphe2tqdec1d3kfss5RUy" </code></pre></div>
 
 
 <div class="javascript-example">
@@ -10488,7 +10629,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
                value=""
                data-component="body">
     <br>
-<p>Le nouveau fichier. Example: <code>/tmp/phpq0detul89hpgbFFLuJ8</code></p>
+<p>Le nouveau fichier. Example: <code>/tmp/phphe2tqdec1d3kfss5RUy</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>receiver_name</code></b>&nbsp;&nbsp;
@@ -12209,7 +12350,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"name\": \"Envoi de colis\",
     \"description\": \"Envoi rapide de colis dans la ville\",
     \"base_price\": 15,
-    \"is_active\": false
+    \"is_active\": true
 }"
 </code></pre></div>
 
@@ -12229,7 +12370,7 @@ let body = {
     "name": "Envoi de colis",
     "description": "Envoi rapide de colis dans la ville",
     "base_price": 15,
-    "is_active": false
+    "is_active": true
 };
 
 fetch(url, {
@@ -12398,7 +12539,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
@@ -12579,7 +12720,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"name\": \"Envoi de colis express\",
     \"description\": \"Eius et animi quos velit et.\",
     \"base_price\": 20,
-    \"is_active\": true
+    \"is_active\": false
 }"
 </code></pre></div>
 
@@ -12599,7 +12740,7 @@ let body = {
     "name": "Envoi de colis express",
     "description": "Eius et animi quos velit et.",
     "base_price": 20,
-    "is_active": true
+    "is_active": false
 };
 
 fetch(url, {
@@ -12785,7 +12926,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 

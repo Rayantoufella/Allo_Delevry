@@ -52,5 +52,5 @@ La sécurité repose sur 4 piliers : (1) **Sanctum** pour l'authentification par
 - **Deux pièces sont indispensables** : `AuthorizesRequests` sur le contrôleur de base et `HasApiTokens` sur `User`. Sans elles, politiques et tokens renvoient 500 (correctives #6/#7).
 - **Toute policy sans méthode = deny by default** : les policies sont confidentielles, une méthode oubliée bloque la route.
 - **Le rôle est figé à l'inscription** — aucune route ne permet de changer de rôle (guide 01).
-- **Gère la diffusion du code de confirmation** : `confirmation_code_hash` (hash, jamais en clair) + `ExpireConfirmationCodeJob` avec `->delay(30 min)` (pas de cron dans le projet, décision utilisateur).
+- **RG06 / remise confirmée** : la preuve de livraison (hors pickup) est exigée par `confirmHandover()` ; la génération de code de confirmation (`confirmation_code_*` + `ExpireConfirmationCodeJob`) a été **supprimée** — les boutons de statut sont tous côté livreur.
 - **Rate limiting vérifié empiriquement** : la 61e requête/min sur /tracking renvoie 429.

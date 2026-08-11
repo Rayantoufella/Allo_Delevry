@@ -20,7 +20,8 @@ import ImageLightbox from '../components/ImageLightbox.vue'
  *   prix_propose → refusee (le client confirme ou annule de son côté)
  *   confirmee → colis_recupere (photo de récupération obligatoire)
  *   colis_recupere → en_livraison
- *   en_livraison → echec (+ code de confirmation générable)
+ *   en_livraison → livreur_arrive (le livreur confirme son arrivée) | echec
+ *   livreur_arrive → livree (remise confirmée par le livreur, RG06)
  */
 const route = useRoute()
 const router = useRouter()
@@ -76,6 +77,11 @@ const hasPickupPhoto = computed(() =>
   proofs.value.some((p) => p.proof_type === 'pickup_photo'),
 )
 
+// RG06 : une preuve de remise (hors pickup) est obligatoire pour clôturer (livree).
+const hasDeliveryProof = computed(() =>
+  proofs.value.some((p) => !['pickup_photo', 'pickup_id_card'].includes(p.proof_type)),
+)
+
 // ---- Actions de statut ----
 const actionError = ref('')
 const actionLoading = ref(false)
@@ -89,6 +95,38 @@ async function changeStatus(status, extra = {}) {
   actionError.value = ''
   try {
     await api.patch(`/delivery-requests/${id.value}/status`, { status, ...extra })
+    await refresh()
+  } catch (err) {
+    setActionError(err)
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+// ---- Confirmer la remise (livreur_arrive -> livree) ----
+// Le livreur, présent sur place, valide que le client a récupéré la commande.
+// RG06 : une preuve de livraison doit avoir été enregistrée avant.
+async function confirmHandover() {
+  actionLoading.value = true
+  actionError.value = ''
+  try {
+    await api.post(`/delivery-requests/${id.value}/confirm-handover`)
+    await refresh()
+  } catch (err) {
+    setActionError(err)
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+// ---- Confirmer l'arrivée (en_livraison -> livreur_arrive) ----
+// Tous les boutons de statut sont côté livreur : c'est lui qui confirme
+// qu'il est arrivé à l'adresse, puis qu'il a remis la commande.
+async function confirmArrival() {
+  actionLoading.value = true
+  actionError.value = ''
+  try {
+    await api.post(`/delivery-requests/${id.value}/confirm-arrival`)
     await refresh()
   } catch (err) {
     setActionError(err)
@@ -242,50 +280,6 @@ async function deleteProof(p) {
   }
 }
 
-// ---- Code de confirmation ----
-const code = ref('')
-const codeExpiresAt = ref(null)
-const codeLoading = ref(false)
-const codeError = ref('')
-const now = ref(Date.now())
-let countdownTimer = null
-
-const codeRemaining = computed(() => {
-  if (!codeExpiresAt.value) return 0
-  return Math.max(0, Math.floor((codeExpiresAt.value - now.value) / 1000))
-})
-
-const codeExpired = computed(() => codeRemaining.value === 0)
-
-const codeRemainingLabel = computed(() => {
-  const total = codeRemaining.value
-  const mm = String(Math.floor(total / 60)).padStart(2, '0')
-  const ss = String(total % 60).padStart(2, '0')
-  return `${mm}:${ss}`
-})
-
-async function generateCode() {
-  codeLoading.value = true
-  codeError.value = ''
-  try {
-    // Réponse brute : { "code": "123456" } (pas de wrapper).
-    const res = await api.post(`/delivery-requests/${id.value}/generate-code`)
-    code.value = String(res.data.code ?? '')
-    codeExpiresAt.value = Date.now() + 30 * 60 * 1000
-  } catch (err) {
-    codeError.value = apiError(err, 'Impossible de générer le code.')
-  } finally {
-    codeLoading.value = false
-  }
-}
-
-watch(codeRemaining, (remaining) => {
-  if (remaining === 0 && codeExpiresAt.value) {
-    code.value = ''
-    codeExpiresAt.value = null
-  }
-})
-
 // ---- Signaler un échec (avec commentaire) ----
 const showFailForm = ref(false)
 const failComment = ref('')
@@ -345,8 +339,6 @@ function setupForRequest() {
   history.value = []
   proofs.value = []
   proofsLoading.value = true
-  code.value = ''
-  codeExpiresAt.value = null
   showRefuseForm.value = false
   showFailForm.value = false
   showIncidentForm.value = false
@@ -369,14 +361,10 @@ watch(id, () => {
 
 onMounted(() => {
   setupForRequest()
-  countdownTimer = setInterval(() => {
-    now.value = Date.now()
-  }, 1000)
 })
 
 onBeforeUnmount(() => {
   stop()
-  if (countdownTimer) clearInterval(countdownTimer)
   if (toastTimer) clearTimeout(toastTimer)
 })
 </script>
@@ -563,34 +551,63 @@ onBeforeUnmount(() => {
               <!-- colis_recupere : départ en livraison -->
               <div v-else-if="request.status === STATUS.COLIS_RECUPERE">
                 <h3 class="mb-8">Colis récupéré</h3>
-                <p class="small muted">Confirmez votre départ pour lancer la livraison et pouvoir générer le code de confirmation.</p>
+                <p class="small muted">Confirmez votre départ pour lancer la livraison.</p>
                 <button class="btn btn-primary mt-16" :disabled="actionLoading" @click="changeStatus(STATUS.EN_LIVRAISON)">
                   {{ actionLoading ? '…' : 'Départ en livraison' }}
                 </button>
               </div>
 
-              <!-- en_livraison : code de confirmation + échec -->
+              <!-- en_livraison : le livreur confirme son arrivée puis remet -->
               <div v-else-if="request.status === STATUS.EN_LIVRAISON">
-                <h3 class="mb-8 flex"><AppIcon name="lock" :size="18" /> Code de confirmation</h3>
-                <p class="small muted">Générez un code à 6 chiffres à communiquer au client : il le saisira pour confirmer la réception du colis.</p>
+                <h3 class="mb-8">En livraison</h3>
+                <p class="small muted">
+                  Une fois sur place, confirmez votre arrivée : le statut passera à « Livreur arrivé ».
+                  La remise se clôturera ensuite avec le bouton « La commande est récupérée ».
+                </p>
+
+                <button class="btn btn-primary mt-16" :disabled="actionLoading" @click="confirmArrival()">
+                  {{ actionLoading ? '…' : 'Le livreur est arrivé' }}
+                </button>
+
+                <div class="divider"></div>
+
+                <div v-if="!showFailForm">
+                  <button class="btn btn-danger" @click="showFailForm = true"><AppIcon name="warning" :size="16" /> Signaler un échec</button>
+                  <p class="faint small mt-8">L'échec met fin à la mission (une preuve reste facultative).</p>
+                </div>
+                <div v-else class="refuse-box">
+                  <label class="field">
+                    <span>Motif de l'échec (optionnel)</span>
+                    <textarea v-model="failComment" class="input" placeholder="Ex : destinataire injoignable"></textarea>
+                  </label>
+                  <div class="flex">
+                    <button
+                      class="btn btn-danger"
+                      :disabled="actionLoading"
+                      @click="changeStatus(STATUS.ECHEC, failComment.trim() ? { comment: failComment.trim() } : {})"
+                    >
+                      {{ actionLoading ? '…' : "Confirmer l'échec" }}
+                    </button>
+                    <button class="btn btn-ghost" :disabled="actionLoading" @click="showFailForm = false">Annuler</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- livreur_arrive : remise de la commande -->
+              <div v-else-if="request.status === STATUS.LIVREUR_ARRIVE">
+                <h3 class="mb-8 flex"><AppIcon name="home" :size="18" /> Livreur arrivé</h3>
+                <p class="small muted">Vous avez confirmé votre arrivée. Remettez la commande au client, puis confirmez la remise : le statut passera à « Livrée ».</p>
 
                 <button
-                  v-if="!code"
                   class="btn btn-primary mt-16"
-                  :disabled="codeLoading"
-                  @click="generateCode()"
+                  :disabled="actionLoading || !hasDeliveryProof"
+                  @click="confirmHandover()"
                 >
-                  {{ codeLoading ? '…' : 'Générer le code de confirmation' }}
+                  {{ actionLoading ? '…' : 'La commande est récupérée' }}
                 </button>
-                <span v-if="codeError" class="error-msg block mt-8">{{ codeError }}</span>
-
-                <div v-else class="code-box mt-16">
-                  <p class="small muted">Code de confirmation — à communiquer au client :</p>
-                  <div class="code">{{ code }}</div>
-                  <p class="small amber"><AppIcon name="clock" :size="18" /> Valide 30 minutes — communiquez ce code au client pour la remise.</p>
-                  <p class="faint small mt-8">Le client saisira ce code pour confirmer la livraison. Ne le partagez qu'avec lui.</p>
-                  <button class="btn btn-ghost mt-8" :disabled="codeLoading" @click="generateCode()">Régénérer un code</button>
-                </div>
+                <p v-if="!hasDeliveryProof" class="faint small mt-8">
+                  Le bouton s'active dès qu'une preuve de livraison est enregistrée (RG06).
+                </p>
 
                 <div class="divider"></div>
 
@@ -663,8 +680,8 @@ onBeforeUnmount(() => {
               </div>
               <p v-else class="muted small">Aucune preuve pour le moment.</p>
 
-              <!-- Upload preuve de livraison -->
-              <template v-if="request.status === STATUS.EN_LIVRAISON">
+              <!-- Upload preuve de livraison (remise) — requis RG06 avant "livree" -->
+              <template v-if="request.status === STATUS.EN_LIVRAISON || request.status === STATUS.LIVREUR_ARRIVE">
                 <div class="divider"></div>
                 <h4 class="mb-8">Ajouter une preuve de livraison</h4>
                 <label class="field">
@@ -860,21 +877,6 @@ onBeforeUnmount(() => {
   margin-top: 0.375rem;
 }
 
-.code-box {
-  background: var(--surface-2);
-  border: 0.0625rem dashed var(--border-2);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  text-align: center;
-}
-.code {
-  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
-  font-size: 3rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  color: var(--green);
-  margin: 0.5rem 0;
-}
 .amber { color: var(--amber); }
 .block { display: block; }
 

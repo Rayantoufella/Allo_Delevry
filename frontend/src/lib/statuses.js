@@ -8,6 +8,7 @@ export const STATUS = {
   CONFIRMEE: 'confirmee',
   COLIS_RECUPERE: 'colis_recupere',
   EN_LIVRAISON: 'en_livraison',
+  LIVREUR_ARRIVE: 'livreur_arrive',
   LIVREE: 'livree',
   REFUSEE: 'refusee',
   ECHEC: 'echec',
@@ -34,6 +35,7 @@ export const STATUS_LABELS = {
   [STATUS.CONFIRMEE]: { label: 'Confirmée', color: 'badge-blue', icon: 'check' },
   [STATUS.COLIS_RECUPERE]: { label: 'Colis récupéré', color: 'badge-violet', icon: 'box' },
   [STATUS.EN_LIVRAISON]: { label: 'En livraison', color: 'badge-green', icon: 'truck' },
+  [STATUS.LIVREUR_ARRIVE]: { label: 'Livreur arrivé', color: 'badge-green', icon: 'home' },
   [STATUS.LIVREE]: { label: 'Livrée', color: 'badge-green', icon: 'flag' },
   [STATUS.REFUSEE]: { label: 'Refusée', color: 'badge-red', icon: 'ban' },
   [STATUS.ECHEC]: { label: 'Échec', color: 'badge-red', icon: 'warning' },
@@ -52,7 +54,8 @@ export const STATUS_STEP = {
   [STATUS.CONFIRMEE]: 2,
   [STATUS.COLIS_RECUPERE]: 3,
   [STATUS.EN_LIVRAISON]: 4,
-  [STATUS.LIVREE]: 5,
+  [STATUS.LIVREUR_ARRIVE]: 5,
+  [STATUS.LIVREE]: 6,
   [STATUS.REFUSEE]: -1,
   [STATUS.ECHEC]: -1,
   [STATUS.ANNULEE]: -1,
@@ -65,6 +68,7 @@ export const STATUS_ORDER = [
   STATUS.CONFIRMEE,
   STATUS.COLIS_RECUPERE,
   STATUS.EN_LIVRAISON,
+  STATUS.LIVREUR_ARRIVE,
   STATUS.LIVREE,
 ]
 

@@ -22,6 +22,8 @@ class DeliveryRequest extends Model
 
     const STATUS_EN_LIVRAISON = 'en_livraison';
 
+    const STATUS_LIVREUR_ARRIVE = 'livreur_arrive';
+
     const STATUS_LIVREE = 'livree';
 
     const STATUS_REFUSEE = 'refusee';
@@ -38,7 +40,8 @@ class DeliveryRequest extends Model
         self::STATUS_PRIX_PROPOSE => [self::STATUS_REFUSEE],
         self::STATUS_CONFIRMEE => [self::STATUS_COLIS_RECUPERE],
         self::STATUS_COLIS_RECUPERE => [self::STATUS_EN_LIVRAISON],
-        self::STATUS_EN_LIVRAISON => [self::STATUS_ECHEC],
+        self::STATUS_EN_LIVRAISON => [self::STATUS_LIVREUR_ARRIVE, self::STATUS_ECHEC],
+        self::STATUS_LIVREUR_ARRIVE => [self::STATUS_LIVREE, self::STATUS_ECHEC],
     ];
 
     private const CANCELLABLE_STATUSES = [
@@ -50,6 +53,7 @@ class DeliveryRequest extends Model
     private const IMMUTABLE_STATUSES = [
         self::STATUS_COLIS_RECUPERE,
         self::STATUS_EN_LIVRAISON,
+        self::STATUS_LIVREUR_ARRIVE,
         self::STATUS_LIVREE,
         self::STATUS_ECHEC,
     ];
@@ -61,12 +65,6 @@ class DeliveryRequest extends Model
         self::STATUS_ANNULEE,
     ];
 
-    private const CODABLE_STATUSES = [
-        self::STATUS_CONFIRMEE,
-        self::STATUS_COLIS_RECUPERE,
-        self::STATUS_EN_LIVRAISON,
-    ];
-
     /** Tous les statuts possibles. */
     public static function statuses(): array
     {
@@ -76,6 +74,7 @@ class DeliveryRequest extends Model
             self::STATUS_CONFIRMEE,
             self::STATUS_COLIS_RECUPERE,
             self::STATUS_EN_LIVRAISON,
+            self::STATUS_LIVREUR_ARRIVE,
             self::STATUS_LIVREE,
             self::STATUS_REFUSEE,
             self::STATUS_ECHEC,
@@ -101,11 +100,6 @@ class DeliveryRequest extends Model
     public function isTerminal(): bool
     {
         return in_array($this->status, self::TERMINAL_STATUSES, true);
-    }
-
-    public function canGenerateCode(): bool
-    {
-        return in_array($this->status, self::CODABLE_STATUSES, true);
     }
 
     /**
@@ -164,9 +158,6 @@ class DeliveryRequest extends Model
         'product_amount',
         'amount_to_collect',
         'proposed_price',
-        'confirmation_code_hash',
-        'confirmation_code_expires_at',
-        'confirmation_code_attempts',
         'scheduled_at',
         'picked_up_at',
         'delivered_at',
@@ -174,7 +165,6 @@ class DeliveryRequest extends Model
     ];
 
     protected $hidden = [
-        'confirmation_code_hash',
         'private_token',
     ];
 
@@ -187,8 +177,6 @@ class DeliveryRequest extends Model
             'scheduled_at' => 'datetime',
             'picked_up_at' => 'datetime',
             'delivered_at' => 'datetime',
-            'confirmation_code_expires_at' => 'datetime',
-            'confirmation_code_attempts' => 'integer',
         ];
     }
 

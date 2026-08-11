@@ -33,27 +33,28 @@ class AiRequestAnalyzer
      *
      * @param  array<int, array{role: string, content: string, created_at?: string}>  $history  Historique de la conversation
      * @param  array<int, string>  $activeServiceNames  Noms des services actifs du livreur
+     * @param  array<int, array{name: string, price: float|null}>  $activeZones  Zones de livraison actives du livreur
      * @return string  Texte de la réponse de l'assistant
      *
      * @throws AiAnalysisException
      */
-    public function chatReply(array $history, array $activeServiceNames): string
+    public function chatReply(array $history, array $activeServiceNames, array $activeZones = []): string
     {
         $this->ensureApiKeyIsConfigured();
 
         $models = $this->getChatModels();
         $lastException = null;
 
-        $messages = [
-            ['role' => 'system', 'content' => $this->chatSystemPrompt()],
-            ...$this->stripCreatedAt($history),
-        ];
+        $contents = $this->toGeminiContents($this->stripCreatedAt($history));
 
         $payload = [
             'model' => $models[0],
-            'messages' => $messages,
-            'temperature' => 0.7,
-            'max_completion_tokens' => 500,
+            'contents' => $contents,
+            'systemInstruction' => ['parts' => [['text' => $this->chatSystemPrompt($activeZones)]]],
+            'generationConfig' => [
+                'temperature' => 0.7,
+                'maxOutputTokens' => 1024,
+            ],
         ];
 
         foreach ($models as $index => $model) {
@@ -67,7 +68,7 @@ class AiRequestAnalyzer
                     "Chat modèle {$model} échoué (exception: {$e->getMessage()})"
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
-                $lastException = new AiAnalysisException('Erreur lors de l\'appel API OpenRouter : '.$e->getMessage(), $e);
+                $lastException = new AiAnalysisException('Erreur lors de l\'appel API Google AI : '.$e->getMessage(), $e);
                 continue;
             }
 
@@ -78,11 +79,11 @@ class AiRequestAnalyzer
                     "Chat modèle {$model} échoué ({$reason})"
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
-                $lastException = new AiAnalysisException('Erreur API OpenRouter (HTTP '.$response->status().').');
+                $lastException = new AiAnalysisException('Erreur API Google AI (HTTP '.$response->status().').');
                 continue;
             }
 
-            $content = $response->json('choices.0.message.content');
+            $content = $response->json('candidates.0.content.parts.0.text');
 
             if (empty($content) || ! is_string($content)) {
                 $reason = 'réponse vide ou non string';
@@ -110,11 +111,12 @@ class AiRequestAnalyzer
      *
      * @param  array<int, array{role: string, content: string, created_at?: string}>  $history  Historique complet de la conversation
      * @param  array<int, string>  $activeServiceNames  Noms des services actifs autorisés pour le livreur
-     * @return array{recipient_name: string|null, recipient_phone: string|null, pickup_address: string|null, delivery_address: string|null, package_description: string|null, product_amount: float|null, amount_to_collect: float|null, scheduled_at: string|null, service: string|null}
+     * @param  array<int, array{name: string, price: float|null}>  $activeZones  Zones de livraison actives du livreur
+     * @return array{recipient_name: string|null, recipient_phone: string|null, pickup_address: string|null, delivery_address: string|null, package_description: string|null, product_amount: float|null, amount_to_collect: float|null, scheduled_at: string|null, service: string|null, delivery_zone: string|null}
      *
      * @throws AiAnalysisException
      */
-    public function extractFromConversation(array $history, array $activeServiceNames): array
+    public function extractFromConversation(array $history, array $activeServiceNames, array $activeZones = []): array
     {
         $this->ensureApiKeyIsConfigured();
 
@@ -125,13 +127,15 @@ class AiRequestAnalyzer
 
         $payload = [
             'model' => $models[0],
-            'messages' => [
-                ['role' => 'system', 'content' => $this->systemPrompt()],
-                ['role' => 'user', 'content' => $conversationText],
+            'contents' => [
+                ['role' => 'user', 'parts' => [['text' => $conversationText]]],
             ],
-            'temperature' => 0.1,
-            'max_completion_tokens' => 800,
-            'response_format' => ['type' => 'json_object'],
+            'systemInstruction' => ['parts' => [['text' => $this->systemPrompt($activeZones)]]],
+            'generationConfig' => [
+                'temperature' => 0.1,
+                'maxOutputTokens' => 2048,
+                'responseMimeType' => 'application/json',
+            ],
         ];
 
         foreach ($models as $index => $model) {
@@ -145,7 +149,7 @@ class AiRequestAnalyzer
                     "Extract modèle {$model} échoué (exception: {$e->getMessage()})"
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
-                $lastException = new AiAnalysisException('Erreur lors de l\'appel API OpenRouter : '.$e->getMessage(), $e);
+                $lastException = new AiAnalysisException('Erreur lors de l\'appel API Google AI : '.$e->getMessage(), $e);
                 continue;
             }
 
@@ -156,11 +160,11 @@ class AiRequestAnalyzer
                     "Extract modèle {$model} échoué ({$reason})"
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
-                $lastException = new AiAnalysisException('Erreur API OpenRouter (HTTP '.$response->status().').');
+                $lastException = new AiAnalysisException('Erreur API Google AI (HTTP '.$response->status().').');
                 continue;
             }
 
-            $content = $response->json('choices.0.message.content');
+            $content = $response->json('candidates.0.content.parts.0.text');
 
             if (empty($content) || ! is_string($content)) {
                 $reason = 'réponse vide ou non string';
@@ -185,7 +189,7 @@ class AiRequestAnalyzer
                 continue;
             }
 
-            return $this->normalizeResult($decoded, $activeServiceNames);
+            return $this->normalizeResult($decoded, $activeServiceNames, $activeZones);
         }
 
         Log::channel('jobs')->error('Tous les modèles extract IA ont échoué.', [
@@ -196,34 +200,35 @@ class AiRequestAnalyzer
     }
 
     /**
-     * Vérifie que la clé API OpenRouter est configurée.
+     * Vérifie que la clé API Google AI (Gemini) est configurée.
      *
      * @throws AiAnalysisException
      */
     private function ensureApiKeyIsConfigured(): void
     {
-        if (empty(config('services.openrouter.api_key'))) {
-            Log::channel('jobs')->error('Clé API OpenRouter non configurée (OPENROUTER_API_KEY).');
+        if (empty(config('services.gemini.api_key'))) {
+            Log::channel('jobs')->error('Clé API Google AI non configurée (GEMINI_API_KEY).');
 
-            throw new AiAnalysisException('Clé API OpenRouter non configurée (OPENROUTER_API_KEY).');
+            throw new AiAnalysisException('Clé API Google AI non configurée (GEMINI_API_KEY).');
         }
     }
 
     /**
-     * Envoie une requête HTTP vers OpenRouter.
+     * Envoie une requête HTTP vers l'API native Google AI (Gemini).
      *
      * @param  array<string, mixed>  $payload
      */
     private function sendRequest(array $payload): \Illuminate\Http\Client\Response
     {
-        return Http::withToken(config('services.openrouter.api_key'))
+        $model = $payload['model'];
+        unset($payload['model']);
+
+        return Http::withHeaders([
+            'x-goog-api-key' => config('services.gemini.api_key'),
+        ])
             ->acceptJson()
-            ->withHeaders([
-                'HTTP-Referer' => config('app.url', 'http://localhost'),
-                'X-Title' => 'Allo Delivery',
-            ])
             ->timeout(60)
-            ->post(config('services.openrouter.base_url').'/chat/completions', $payload);
+            ->post(config('services.gemini.base_url').'/models/'.$model.':generateContent', $payload);
     }
 
     /**
@@ -233,12 +238,12 @@ class AiRequestAnalyzer
      */
     private function getModels(): array
     {
-        $fallbackModels = config('services.openrouter.fallback_models', '');
+        $fallbackModels = config('services.gemini.fallback_models', '');
 
         $fallbacks = array_filter(array_map('trim', explode(',', (string) $fallbackModels)));
 
         return array_merge(
-            [config('services.openrouter.model')],
+            [config('services.gemini.model')],
             $fallbacks
         );
     }
@@ -250,12 +255,12 @@ class AiRequestAnalyzer
      */
     private function getChatModels(): array
     {
-        $fallbackModels = config('services.openrouter.fallback_models', '');
+        $fallbackModels = config('services.gemini.fallback_models', '');
 
         $fallbacks = array_filter(array_map('trim', explode(',', (string) $fallbackModels)));
 
         return array_merge(
-            [config('services.openrouter.chat_model')],
+            [config('services.gemini.chat_model')],
             $fallbacks
         );
     }
@@ -267,12 +272,12 @@ class AiRequestAnalyzer
      */
     private function getExtractModels(): array
     {
-        $fallbackModels = config('services.openrouter.fallback_models', '');
+        $fallbackModels = config('services.gemini.fallback_models', '');
 
         $fallbacks = array_filter(array_map('trim', explode(',', (string) $fallbackModels)));
 
         return array_merge(
-            [config('services.openrouter.extract_model')],
+            [config('services.gemini.extract_model')],
             $fallbacks
         );
     }
@@ -300,7 +305,7 @@ class AiRequestAnalyzer
                     "Modèle {$model} échoué (exception: {$e->getMessage()})"
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
-                $lastException = new AiAnalysisException('Erreur lors de l\'appel API OpenRouter : '.$e->getMessage(), $e);
+                $lastException = new AiAnalysisException('Erreur lors de l\'appel API Google AI : '.$e->getMessage(), $e);
                 continue;
             }
 
@@ -311,11 +316,11 @@ class AiRequestAnalyzer
                     "Modèle {$model} échoué ({$reason})"
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
-                $lastException = new AiAnalysisException('Erreur API OpenRouter (HTTP '.$response->status().').');
+                $lastException = new AiAnalysisException('Erreur API Google AI (HTTP '.$response->status().').');
                 continue;
             }
 
-            $content = $response->json('choices.0.message.content');
+            $content = $response->json('candidates.0.content.parts.0.text');
 
             if (empty($content) || ! is_string($content)) {
                 $reason = 'réponse vide ou non string';
@@ -352,7 +357,7 @@ class AiRequestAnalyzer
     }
 
     /**
-     * Construit la requête Chat Completions (messages + paramètres de génération) pour l'extraction directe.
+     * Construit la requête Gemini (contents + systemInstruction + generationConfig) pour l'extraction directe.
      *
      * @param  array<int, string>  $activeServiceNames
      * @return array<string, mixed>
@@ -360,44 +365,87 @@ class AiRequestAnalyzer
     private function buildPayload(string $freeText, array $activeServiceNames, ?string $model = null): array
     {
         return [
-            'model' => $model ?? config('services.openrouter.model'),
-            'messages' => [
-                ['role' => 'system', 'content' => $this->systemPrompt()],
-                ['role' => 'user', 'content' => $this->buildUserMessage($freeText, $activeServiceNames)],
+            'model' => $model ?? config('services.gemini.model'),
+            'contents' => [
+                ['role' => 'user', 'parts' => [['text' => $this->buildUserMessage($freeText, $activeServiceNames)]]],
             ],
-            'temperature' => 0.1,
-            'max_completion_tokens' => 800,
-            'response_format' => ['type' => 'json_object'],
+            'systemInstruction' => ['parts' => [['text' => $this->systemPrompt()]]],
+            'generationConfig' => [
+                'temperature' => 0.1,
+                'maxOutputTokens' => 2048,
+                'responseMimeType' => 'application/json',
+            ],
         ];
     }
 
     /**
      * Prompt système : règles d'extraction des champs de la demande.
+     *
+     * @param  array<int, array{name: string, price: float|null}>  $activeZones
      */
-    private function systemPrompt(): string
+    private function systemPrompt(array $activeZones = []): string
     {
-        return <<<'PROMPT'
-Tu es l'assistant de création de demande de livraison Allo Delivery. À partir du message libre du client, tu remplis le formulaire de demande : destinataire, téléphone, adresses de retrait et de livraison, description du colis, montant à encaisser, date souhaitée, et le service demandé. Tu ne calcules jamais de prix. Tu ne choisis le service QUE parmi la liste fournie.
+        $zoneBlock = '';
+        if (! empty($activeZones)) {
+            $zoneLines = array_map(
+                fn (array $z): string => sprintf(
+                    '"%s"%s',
+                    $z['name'],
+                    $z['price'] !== null ? ' ('.$z['price'].' DH)' : '',
+                ),
+                $activeZones,
+            );
+            $zoneBlock = "\n\nZones disponibles : ".implode(', ', $zoneLines).'.';
+        }
+
+        return <<<PROMPT
+Tu es l'assistant de création de demande de livraison Allo Delivery. À partir du message libre du client, tu remplis le formulaire de demande : destinataire, téléphone, adresses de retrait et de livraison, description du colis, montant à encaisser, date souhaitée, le service demandé, et la zone de livraison. Tu ne calcules jamais de prix. Tu ne choisis le service QUE parmi la liste fournie.
 
 Réponds UNIQUEMENT avec un objet JSON valide, sans texte ni balise, au format suivant :
-{"recipient_name": "prénom ou nom complet", "recipient_phone": "numéro de téléphone", "pickup_address": "adresse de retrait", "delivery_address": "adresse de livraison", "package_description": "description du colis", "product_amount": null, "amount_to_collect": null, "scheduled_at": null, "service": null}
+{"recipient_name": "prénom ou nom complet", "recipient_phone": "numéro de téléphone", "pickup_address": "adresse de retrait", "delivery_address": "adresse de livraison", "package_description": "description du colis", "product_amount": null, "amount_to_collect": null, "scheduled_at": null, "service": null, "delivery_zone": null}
 
 Règles :
 - product_amount = montant de la valeur du produit en dirhams (number), ou null si non mentionné.
 - amount_to_collect = montant à encaisser auprès du destinataire en dirhams (number), ou null si non mentionné.
 - scheduled_at = date/heure souhaitée au format ISO 8601 (ex: "2026-08-10T14:00:00"), ou null si immédiat.
 - service = exactement un des noms de services dans la liste fournie, ou null si non mentionné ou non reconnu.
-- Si une information n'est pas disponible dans le texte, mets null.
+- delivery_zone = nom EXACT d'une zone de la liste fournie. DÉDUIS-LA AUTOMATIQUEMENT de l'adresse de livraison (quartier, nom de zone mentionné) : si l'adresse correspond clairement à une zone, remplis-la sans attendre qu'on te la donne. Ne laisse CE champ null que si aucune correspondance crédible dans la liste.
+- Si une information n'est pas disponible dans le texte, mets null.{$zoneBlock}
 PROMPT;
     }
 
     /**
      * Prompt système pour le chat conversationnel (persona livreur).
+     *
+     * @param  array<int, array{name: string, price: float|null}>  $activeZones
      */
-    private function chatSystemPrompt(): string
+    private function chatSystemPrompt(array $activeZones = []): string
     {
-        return <<<'PROMPT'
-Tu es un livreur d'Allo Delivery qui discute avec le client pour compléter sa demande de livraison. Tu poses une question à la fois sur les informations manquantes (nom du destinataire, téléphone, adresse de retrait, adresse de livraison, description du colis, montant à encaisser, service souhaité). Tu ne calcules JAMAIS de prix (tarif fixé par zone par le livreur). Tu ne confirmes jamais la création de la demande. Tu réponds en français, court et naturel.
+        $zoneBlock = '';
+        if (! empty($activeZones)) {
+            $zoneLines = array_map(
+                fn (array $z): string => sprintf(
+                    '"%s"%s',
+                    $z['name'],
+                    $z['price'] !== null ? ' ('.$z['price'].' DH)' : '',
+                ),
+                $activeZones,
+            );
+            $zoneBlock = "\n\nZones de livraison disponibles : ".implode(', ', $zoneLines)."\n"
+                ."— Si le quartier de l'adresse de livraison donné par le client correspond à une des zones, annonce la zone retenue et ne pose AUCUNE question (ex. « vers houda quartier » → zone \"houda-salam-dakhla\" (14 DH))."
+                ."\n— Ne demande la zone au client QUE si aucune correspondance claire n'est possible."
+                ."\n— Tu ne calcules JAMAIS de prix, le tarif est fixé par zone.";
+        }
+
+        return <<<PROMPT
+Tu es un livreur d'Allo Delivery qui discute avec le client pour compléter sa demande de livraison. Tu poses UNE question à la fois sur les informations manquantes, en parcourant TOUS les champs requis : nom du destinataire, téléphone du destinataire, adresse de retrait, adresse de livraison{$zoneBlock}, description du colis, montant à encaisser (facultatif), service souhaité.
+
+Règles strictes :
+- Tu ne calcules JAMAIS de prix (tarif fixé par zone par le livreur).
+- Tu ne dis JAMAIS au client de remplir le formulaire manuellement.
+- Tu ne déclares JAMAIS la demande terminée tant que les informations essentielles ne sont pas toutes collectées.
+- Si une adresse de livraison est donnée, déduis toi-même la zone de livraison correspondante dans la liste fournie et annonce-la au client (ne lui laisse jamais le choix manuel quand la correspondance est claire).
+- Réponds en français, court et naturel.
 PROMPT;
     }
 
@@ -454,6 +502,21 @@ PROMPT;
     }
 
     /**
+     * Convertit les messages (roles system/user/assistant) en contents Gemini (roles user/model).
+     * L'assistant devient "model", le system est exclu (géré via systemInstruction).
+     *
+     * @param  array<int, array{role: string, content: string}>  $messages
+     * @return array<int, array{role: string, parts: array<int, array{text: string}>}>
+     */
+    private function toGeminiContents(array $messages): array
+    {
+        return array_map(fn (array $message): array => [
+            'role' => $message['role'] === 'assistant' ? 'model' : 'user',
+            'parts' => [['text' => $message['content']]],
+        ], $messages);
+    }
+
+    /**
      * Décode le contenu JSON renvoyé par l'IA (défensif, le JSON est déjà validé dans la boucle).
      *
      * @return array<string, mixed>
@@ -478,9 +541,10 @@ PROMPT;
      *
      * @param  array<string, mixed>  $decoded
      * @param  array<int, string>  $activeServiceNames
-     * @return array{recipient_name: string|null, recipient_phone: string|null, pickup_address: string|null, delivery_address: string|null, package_description: string|null, product_amount: float|null, amount_to_collect: float|null, scheduled_at: string|null, service: string|null}
+     * @param  array<int, array{name: string, price: float|null}>  $activeZones
+     * @return array{recipient_name: string|null, recipient_phone: string|null, pickup_address: string|null, delivery_address: string|null, package_description: string|null, product_amount: float|null, amount_to_collect: float|null, scheduled_at: string|null, service: string|null, delivery_zone: string|null}
      */
-    private function normalizeResult(array $decoded, array $activeServiceNames): array
+    private function normalizeResult(array $decoded, array $activeServiceNames, array $activeZones = []): array
     {
         $allowedServicesLower = array_map('strtolower', $activeServiceNames);
 
@@ -493,6 +557,21 @@ PROMPT;
             $service = null;
         }
 
+        // --- Delivery zone normalisation ---
+        $deliveryZone = $decoded['delivery_zone'] ?? null;
+        $normalizedZone = null;
+
+        if (is_string($deliveryZone) && ! empty($activeZones)) {
+            $trimmedInput = trim($deliveryZone);
+            foreach ($activeZones as $zone) {
+                if (mb_strtolower($zone['name']) === mb_strtolower($trimmedInput)) {
+                    $normalizedZone = $zone['name'];
+
+                    break;
+                }
+            }
+        }
+
         return [
             'recipient_name' => $decoded['recipient_name'] ?? null,
             'recipient_phone' => $decoded['recipient_phone'] ?? null,
@@ -503,6 +582,7 @@ PROMPT;
             'amount_to_collect' => isset($decoded['amount_to_collect']) && is_numeric($decoded['amount_to_collect']) ? (float) $decoded['amount_to_collect'] : null,
             'scheduled_at' => $decoded['scheduled_at'] ?? null,
             'service' => $service,
+            'delivery_zone' => $normalizedZone,
         ];
     }
 }

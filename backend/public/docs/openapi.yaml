@@ -7,7 +7,7 @@ servers:
   - url: 'http://localhost:8000'
 tags:
   - name: 'Assistant IA'
-    description: "\nBrouillons de demandes générés par l'assistant IA. L'analyse transforme un message\nlibre en données structurées (destinataire, adresses, service, montant)."
+    description: "\nBrouillons de demandes générés par l'assistant IA. La conversation en mode chat\ntransforme un message libre en données structurées (destinataire, adresses, service, montant)."
   - name: Authentification
     description: "\nEndpoints d'inscription, connexion et gestion de session.\nLes comptes clients sont créés dans le contexte d'un livreur spécifique (via son slug)."
   - name: Avis
@@ -121,7 +121,7 @@ paths:
                 validated_at:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-09T21:18:19'
+                  example: '2026-08-11T00:00:49'
                   nullable: true
               required:
                 - input_message
@@ -175,11 +175,32 @@ paths:
         required: true
         schema:
           type: integer
-  /api/ai-request-drafts/analyze:
+  /api/ai-request-drafts/start:
     post:
-      summary: "Analyser un message avec l'IA"
-      operationId: analyserUnMessageAvecLIA
-      description: "Envoie un message libre à l'IA pour extraction de données structurées.\nUn brouillon est créé et un job d'analyse est dispatché en arrière-plan.\nAnti-doublon : si un brouillon identique existe (< 2 min), il est réutilisé."
+      summary: 'Démarrer une conversation IA'
+      operationId: dmarrerUneConversationIA
+      description: "Crée un brouillon vide en mode conversation : le client et l'IA échangent des\nmessages pour compléter le formulaire de demande progressivement."
+      parameters: []
+      responses:
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - 'Assistant IA'
+  '/api/ai-request-drafts/{draft}/messages':
+    post:
+      summary: 'Envoyer un message dans une conversation IA'
+      operationId: envoyerUnMessageDansUneConversationIA
+      description: "Ajoute le message du client à l'historique et dispatche un job qui génère\nla réponse de l'IA (modèle rapide) puis extrait les données structurées\n(modèle puissant) pour pré-remplir le formulaire de demande."
       parameters: []
       responses:
         401:
@@ -203,17 +224,26 @@ paths:
             schema:
               type: object
               properties:
-                input_message:
+                content:
                   type: string
-                  description: 'Le message à analyser.'
-                  example: 'Envoie un colis à Sara, 420 DH à récupérer'
+                  description: 'Le message du client.'
+                  example: 'Je veux envoyer un colis à Sara'
                 driver_slug:
                   type: string
                   description: 'Le slug du livreur.'
                   example: rayan-express
               required:
-                - input_message
+                - content
                 - driver_slug
+    parameters:
+      -
+        in: path
+        name: draft
+        description: "L'identifiant du brouillon."
+        example: 1
+        required: true
+        schema:
+          type: integer
   /api/register:
     post:
       summary: 'Inscrire un livreur'
@@ -639,7 +669,7 @@ paths:
                 is_read:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
               required:
                 - delivery_request_id
                 - content
@@ -862,7 +892,7 @@ paths:
                 scheduled_at:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-09T21:18:18'
+                  example: '2026-08-11T00:00:48'
                   nullable: true
               required:
                 - recipient_name
@@ -995,7 +1025,7 @@ paths:
                 scheduled_at:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-09T21:18:18'
+                  example: '2026-08-11T00:00:49'
                   nullable: true
     delete:
       summary: 'Supprimer une demande'
@@ -1147,11 +1177,11 @@ paths:
         required: true
         schema:
           type: integer
-  '/api/delivery-requests/{deliveryRequest}/generate-code':
+  '/api/delivery-requests/{deliveryRequest}/confirm-arrival':
     post:
-      summary: 'Générer un code de confirmation'
-      operationId: gnrerUnCodeDeConfirmation
-      description: 'Génère un code à 6 chiffres pour la remise du colis. Le code expire après 30 minutes.'
+      summary: "Confirmer l'arrivée du livreur"
+      operationId: confirmerLarriveDuLivreur
+      description: "Le livreur confirme qu'il est arrivé à l'adresse de livraison\n(transition \"en_livraison\" → \"livreur_arrive\"). Tous les boutons de\nchangement de statut sont côté livreur : le client n'a aucun bouton."
       parameters: []
       responses:
         401:
@@ -1185,11 +1215,11 @@ paths:
         required: true
         schema:
           type: integer
-  '/api/delivery-requests/{deliveryRequest}/confirm-delivery':
+  '/api/delivery-requests/{deliveryRequest}/confirm-handover':
     post:
-      summary: 'Confirmer la livraison'
-      operationId: confirmerLaLivraison
-      description: "Le client confirme la réception en fournissant le code de confirmation.\nUne preuve de livraison (RG06) doit être présente. Max 5 tentatives."
+      summary: 'Confirmer la remise de la commande'
+      operationId: confirmerLaRemiseDeLaCommande
+      description: "Le livreur confirme que le client a récupéré la commande (transition\n\"livreur_arrive\" → \"livree\"). Le client ne dispose d'aucun bouton de\nclôture : c'est le livreur, présent sur place, qui valide la remise."
       parameters: []
       responses:
         401:
@@ -1206,19 +1236,6 @@ paths:
                     example: Unauthenticated.
       tags:
         - 'Demandes de livraison'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                code:
-                  type: string
-                  description: 'Le code de confirmation à 6 chiffres.'
-                  example: '482951'
-              required:
-                - code
     parameters:
       -
         in: path
@@ -1299,7 +1316,7 @@ paths:
                 recorded_at:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-09T21:18:19'
+                  example: '2026-08-11T00:00:50'
                   nullable: true
               required:
                 - delivery_request_id
@@ -1364,7 +1381,7 @@ paths:
                 recorded_at:
                   type: string
                   description: 'Must be a valid date.'
-                  example: '2026-08-09T21:18:19'
+                  example: '2026-08-11T00:00:50'
                   nullable: true
     delete:
       summary: 'Supprimer une position GPS'
@@ -2586,7 +2603,7 @@ paths:
                 is_active:
                   type: boolean
                   description: ''
-                  example: false
+                  example: true
               required:
                 - name
   '/api/services/{id}':
@@ -2654,7 +2671,7 @@ paths:
                 is_active:
                   type: boolean
                   description: ''
-                  example: true
+                  example: false
     delete:
       summary: 'Supprimer un service'
       operationId: supprimerUnService

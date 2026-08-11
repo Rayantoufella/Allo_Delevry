@@ -26,16 +26,15 @@ const props = defineProps({
   },
 })
 
-/* Les cinq jalons montrés au client. `approach` (« Arrivée imminente ») n'est
-   pas un statut du backend : c'est la seconde moitié de `en_livraison`, que le
-   prototype matérialise pour rendre l'attente lisible. Faute de progression GPS
-   ici, il se coche à la livraison. */
+/* Les jalons montrés au client. « Livreur arrivé » et « Colis livré » sont
+   confirmés par le livreur lui-même (tous les boutons de statut sont côté
+   livreur ; la remise respecte RG06). */
 const STEPS = [
   { key: STATUS.CONFIRMEE, label: 'Demande confirmée', step: 2 },
   { key: STATUS.COLIS_RECUPERE, label: 'Colis récupéré', step: 3 },
   { key: STATUS.EN_LIVRAISON, label: 'En route vers vous', step: 4 },
-  { key: 'approach', label: 'Arrivée imminente', step: 5 },
-  { key: STATUS.LIVREE, label: 'Colis livré', step: 5 },
+  { key: STATUS.LIVREUR_ARRIVE, label: 'Livreur arrivé', step: 5 },
+  { key: STATUS.LIVREE, label: 'Colis livré', step: 6 },
 ]
 
 function formatTime(value) {

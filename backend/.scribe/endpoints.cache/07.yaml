@@ -3,8 +3,8 @@
 name: 'Assistant IA'
 description: |-
 
-  Brouillons de demandes générés par l'assistant IA. L'analyse transforme un message
-  libre en données structurées (destinataire, adresses, service, montant).
+  Brouillons de demandes générés par l'assistant IA. La conversation en mode chat
+  transforme un message libre en données structurées (destinataire, adresses, service, montant).
 endpoints:
   -
     custom: []
@@ -16,8 +16,8 @@ endpoints:
       groupName: 'Assistant IA'
       groupDescription: |-
 
-        Brouillons de demandes générés par l'assistant IA. L'analyse transforme un message
-        libre en données structurées (destinataire, adresses, service, montant).
+        Brouillons de demandes générés par l'assistant IA. La conversation en mode chat
+        transforme un message libre en données structurées (destinataire, adresses, service, montant).
       subgroup: ''
       subgroupDescription: ''
       title: 'Lister mes brouillons IA'
@@ -63,8 +63,8 @@ endpoints:
       groupName: 'Assistant IA'
       groupDescription: |-
 
-        Brouillons de demandes générés par l'assistant IA. L'analyse transforme un message
-        libre en données structurées (destinataire, adresses, service, montant).
+        Brouillons de demandes générés par l'assistant IA. La conversation en mode chat
+        transforme un message libre en données structurées (destinataire, adresses, service, montant).
       subgroup: ''
       subgroupDescription: ''
       title: 'Créer un brouillon IA'
@@ -140,7 +140,7 @@ endpoints:
         name: validated_at
         description: 'Must be a valid date.'
         required: false
-        example: '2026-08-09T21:18:19'
+        example: '2026-08-11T00:00:49'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -151,7 +151,7 @@ endpoints:
       generated_data: '["architecto","architecto"]'
       status: pending
       error_message: architecto
-      validated_at: '2026-08-09T21:18:19'
+      validated_at: '2026-08-11T00:00:49'
     fileParameters: []
     responses:
       -
@@ -181,8 +181,8 @@ endpoints:
       groupName: 'Assistant IA'
       groupDescription: |-
 
-        Brouillons de demandes générés par l'assistant IA. L'analyse transforme un message
-        libre en données structurées (destinataire, adresses, service, montant).
+        Brouillons de demandes générés par l'assistant IA. La conversation en mode chat
+        transforme un message libre en données structurées (destinataire, adresses, service, montant).
       subgroup: ''
       subgroupDescription: ''
       title: "Détail d'un brouillon IA"
@@ -240,8 +240,8 @@ endpoints:
       groupName: 'Assistant IA'
       groupDescription: |-
 
-        Brouillons de demandes générés par l'assistant IA. L'analyse transforme un message
-        libre en données structurées (destinataire, adresses, service, montant).
+        Brouillons de demandes générés par l'assistant IA. La conversation en mode chat
+        transforme un message libre en données structurées (destinataire, adresses, service, montant).
       subgroup: ''
       subgroupDescription: ''
       title: 'Supprimer un brouillon IA'
@@ -293,21 +293,20 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/ai-request-drafts/analyze
+    uri: api/ai-request-drafts/start
     metadata:
       custom: []
       groupName: 'Assistant IA'
       groupDescription: |-
 
-        Brouillons de demandes générés par l'assistant IA. L'analyse transforme un message
-        libre en données structurées (destinataire, adresses, service, montant).
+        Brouillons de demandes générés par l'assistant IA. La conversation en mode chat
+        transforme un message libre en données structurées (destinataire, adresses, service, montant).
       subgroup: ''
       subgroupDescription: ''
-      title: "Analyser un message avec l'IA"
+      title: 'Démarrer une conversation IA'
       description: |-
-        Envoie un message libre à l'IA pour extraction de données structurées.
-        Un brouillon est créé et un job d'analyse est dispatché en arrière-plan.
-        Anti-doublon : si un brouillon identique existe (< 2 min), il est réutilisé.
+        Crée un brouillon vide en mode conversation : le client et l'IA échangent des
+        messages pour compléter le formulaire de demande progressivement.
       authenticated: true
       deprecated: false
     headers:
@@ -318,13 +317,75 @@ endpoints:
     cleanUrlParameters: []
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters:
-      input_message:
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
         custom: []
-        name: input_message
-        description: 'Le message à analyser.'
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/ai-request-drafts/{draft}/messages'
+    metadata:
+      custom: []
+      groupName: 'Assistant IA'
+      groupDescription: |-
+
+        Brouillons de demandes générés par l'assistant IA. La conversation en mode chat
+        transforme un message libre en données structurées (destinataire, adresses, service, montant).
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Envoyer un message dans une conversation IA'
+      description: |-
+        Ajoute le message du client à l'historique et dispatche un job qui génère
+        la réponse de l'IA (modèle rapide) puis extrait les données structurées
+        (modèle puissant) pour pré-remplir le formulaire de demande.
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_BEARER_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      draft:
+        custom: []
+        name: draft
+        description: "L'identifiant du brouillon."
         required: true
-        example: 'Envoie un colis à Sara, 420 DH à récupérer'
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      draft: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      content:
+        custom: []
+        name: content
+        description: 'Le message du client.'
+        required: true
+        example: 'Je veux envoyer un colis à Sara'
         type: string
         enumValues: []
         exampleWasSpecified: true
@@ -342,7 +403,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanBodyParameters:
-      input_message: 'Envoie un colis à Sara, 420 DH à récupérer'
+      content: 'Je veux envoyer un colis à Sara'
       driver_slug: rayan-express
     fileParameters: []
     responses:

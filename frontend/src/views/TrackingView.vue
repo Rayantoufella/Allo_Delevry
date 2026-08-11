@@ -257,10 +257,10 @@ const proofTypeLabel = (type) => {
           </div>
         </div>
 
-        <!-- Code de remise -->
-        <div class="code-card" v-if="tracking.confirmation_code || tracking.status === STATUS.LIVREE">
-          <div class="code-label">Code de remise</div>
-          <div class="code-big">{{ tracking.confirmation_code || '—' }}</div>
+        <!-- Livrée : confirmation visuelle -->
+        <div class="code-card" v-if="tracking.status === STATUS.LIVREE">
+          <div class="code-label">Demande livrée</div>
+          <div class="code-big"><AppIcon name="check" :size="22" /></div>
         </div>
       </div>
     </div>
@@ -408,7 +408,7 @@ const proofTypeLabel = (type) => {
   margin: 0.25rem 0;
 }
 
-/* Code de remise */
+/* Carte de fin de livraison */
 .code-card {
   background: color-mix(in srgb, var(--green) 10%, var(--surface));
   border: 0.0625rem solid color-mix(in srgb, var(--green) 20%, var(--border));
