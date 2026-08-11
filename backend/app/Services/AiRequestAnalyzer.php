@@ -50,7 +50,7 @@ class AiRequestAnalyzer
         $payload = [
             'model' => $models[0],
             'contents' => $contents,
-            'systemInstruction' => ['parts' => [['text' => $this->chatSystemPrompt($activeZones)]]],
+            'systemInstruction' => ['parts' => [['text' => $this->chatSystemPrompt($activeServiceNames, $activeZones)]]],
             'generationConfig' => [
                 'temperature' => 0.7,
                 'maxOutputTokens' => 1024,
@@ -419,7 +419,7 @@ PROMPT;
      *
      * @param  array<int, array{name: string, price: float|null}>  $activeZones
      */
-    private function chatSystemPrompt(array $activeZones = []): string
+    private function chatSystemPrompt(array $activeServiceNames = [], array $activeZones = []): string
     {
         $zoneBlock = '';
         if (! empty($activeZones)) {
@@ -437,8 +437,15 @@ PROMPT;
                 ."\n— Tu ne calcules JAMAIS de prix, le tarif est fixé par zone.";
         }
 
+        $serviceBlock = '';
+        if (! empty($activeServiceNames)) {
+            $serviceBlock = "\n\nServices proposés par ce livreur : ".implode(', ', $activeServiceNames)."."
+                ."\n— Quand le client mentionne ou décrit ce qu'il veut transporter, propose le service correspondant parmi cette liste."
+                ."\n— Tu ne proposes JAMAIS de services qui ne figurent pas dans cette liste.";
+        }
+
         return <<<PROMPT
-Tu es un livreur d'Allo Delivery qui discute avec le client pour compléter sa demande de livraison. Tu poses UNE question à la fois sur les informations manquantes, en parcourant TOUS les champs requis : nom du destinataire, téléphone du destinataire, adresse de retrait, adresse de livraison{$zoneBlock}, description du colis, montant à encaisser (facultatif), service souhaité.
+Tu es un livreur d'Allo Delivery qui discute avec le client pour compléter sa demande de livraison. Tu poses UNE question à la fois sur les informations manquantes, en parcourant TOUS les champs requis : nom du destinataire, téléphone du destinataire, adresse de retrait, adresse de livraison{$zoneBlock}{$serviceBlock}, description du colis, montant à encaisser (facultatif).
 
 Règles strictes :
 - Tu ne calcules JAMAIS de prix (tarif fixé par zone par le livreur).

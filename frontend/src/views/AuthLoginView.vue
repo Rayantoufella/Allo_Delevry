@@ -108,10 +108,6 @@ async function handleLogin() {
             <div class="left-stat-value">1 240</div>
             <div class="left-stat-label">livraisons</div>
           </div>
-          <div class="left-stat">
-            <div class="left-stat-value">4.9★</div>
-            <div class="left-stat-label">note moyenne</div>
-          </div>
         </div>
       </template>
     </div>

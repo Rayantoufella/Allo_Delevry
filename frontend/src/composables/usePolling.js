@@ -1,12 +1,9 @@
 import { onBeforeUnmount, ref } from 'vue'
 
 /**
- * Polling — remplace le temps réel WebSocket (l'auth broadcasting
- * du backend est en middleware web : un token Bearer SPA est refusé
- * sur /broadcasting/auth, et le backend ne doit pas être modifié).
- *
- * La vraie diffusion Reverb existe côté serveur ; le frontend rafraîchit
- * par polling les endpoints classiques (chat, statuts, notifications).
+ * Polling — rafraîchissement périodique des données (chat, statuts,
+ * notifications). Le temps réel WebSocket (Reverb) a été retiré du
+ * projet : le frontend interroge les endpoints classiques par polling.
  *
  * @param {Function} fetcher fonction async qui renvoie les données
  * @param {number} intervalMs délai entre deux appels (défaut 4000)

@@ -13,19 +13,18 @@ use App\Http\Controllers\Api\IncidentController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaymentTransactionController;
 use App\Http\Controllers\Api\RequestStatusHistoryController;
-use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\ServiceController;
 use Illuminate\Support\Facades\Route;
-Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+Route::post('/register', [AuthController::class, 'register']);
 
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/login', [AuthController::class, 'login']);
 
-Route::get('/drivers/{slug}', [DriverProfileController::class, 'showPublic'])->middleware('throttle:60,1');
-Route::get('/drivers/{slug}/qr', [DriverProfileController::class, 'qrCode'])->middleware('throttle:60,1');
-Route::post('/drivers/{slug}/register', [AuthController::class, 'registerForDriver'])->middleware('throttle:10,1');
-Route::post('/drivers/{slug}/login', [AuthController::class, 'loginForDriver'])->middleware('throttle:5,1');
+Route::get('/drivers/{slug}', [DriverProfileController::class, 'showPublic']);
+Route::get('/drivers/{slug}/qr', [DriverProfileController::class, 'qrCode']);
+Route::post('/drivers/{slug}/register', [AuthController::class, 'registerForDriver']);
+Route::post('/drivers/{slug}/login', [AuthController::class, 'loginForDriver']);
 
-Route::get('/tracking/{privateToken}', [DeliveryRequestController::class, 'tracking'])->middleware('throttle:60,1');
+Route::get('/tracking/{privateToken}', [DeliveryRequestController::class, 'tracking']);
 
 /*
 |--------------------------------------------------------------------------
@@ -70,9 +69,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Autres ressources
     Route::apiResource('ai-request-drafts', AiRequestDraftController::class);
     Route::post('/ai-request-drafts/start', [AiRequestDraftController::class, 'start']);
-    Route::post('/ai-request-drafts/{draft}/messages', [AiRequestDraftController::class, 'sendMessage'])->middleware('throttle:10,1');
+    Route::post('/ai-request-drafts/{draft}/messages', [AiRequestDraftController::class, 'sendMessage']);
     Route::apiResource('chat-messages', ChatMessageController::class);
-    Route::apiResource('reviews', ReviewController::class);
     Route::apiResource('delivery-proofs', DeliveryProofController::class);
     Route::apiResource('incidents', IncidentController::class);
     Route::apiResource('gps-locations', GpsLocationController::class);

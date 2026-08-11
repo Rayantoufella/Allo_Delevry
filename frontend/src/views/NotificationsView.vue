@@ -30,7 +30,6 @@ const TYPE_META = {
   delivery_request_created: { icon: 'package', label: 'Nouvelle demande' },
   status_changed: { icon: 'refresh', label: 'Statut mis à jour' },
   chat_message: { icon: 'chat', label: 'Nouveau message' },
-  review: { icon: 'star', label: 'Nouvel avis' },
 }
 
 function typeMeta(type) {

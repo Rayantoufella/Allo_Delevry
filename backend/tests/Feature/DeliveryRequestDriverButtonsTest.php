@@ -171,7 +171,7 @@ it('rejects confirm-handover when the request is not livreur_arrive', function (
     expect($deliveryRequest->refresh()->status)->toBe(DeliveryRequest::STATUS_EN_LIVRAISON);
 });
 
-it('rejects confirm-handover when no delivery proof has been uploaded (RG06)', function () {
+it('allows confirm-handover without delivery proof', function () {
     Queue::fake();
     Storage::fake('public');
 
@@ -200,12 +200,11 @@ it('rejects confirm-handover when no delivery proof has been uploaded (RG06)', f
     $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-arrival")
         ->assertSuccessful();
 
-    // Le livreur tente la remise sans preuve de livraison (RG06).
+    // La remise fonctionne sans preuve de livraison.
     $this->postJson("/api/delivery-requests/{$deliveryRequest->id}/confirm-handover")
-        ->assertStatus(422)
-        ->assertJsonValidationErrors('proof');
+        ->assertSuccessful();
 
-    expect($deliveryRequest->refresh()->status)->toBe(DeliveryRequest::STATUS_LIVREUR_ARRIVE);
+    expect($deliveryRequest->refresh()->status)->toBe(DeliveryRequest::STATUS_LIVREE);
 });
 
 it('forbids the client from confirming the arrival (all buttons are driver-side)', function () {

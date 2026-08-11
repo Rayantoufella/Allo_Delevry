@@ -66,19 +66,6 @@ const profileForm = ref({
 
 const currentProfile = computed(() => profiles.value[0] || null)
 
-/** Note moyenne depuis le dashboard (fire-and-forget). */
-const averageRating = ref(null)
-
-async function loadRating() {
-  try {
-    const res = await api.get('/dashboard')
-    const body = res.data
-    averageRating.value = body?.data?.average_rating ?? null
-  } catch {
-    averageRating.value = null
-  }
-}
-
 async function loadProfiles() {
   profileLoading.value = true
   try {
@@ -151,6 +138,30 @@ async function saveProfile() {
   }
 }
 
+async function deleteProfile() {
+  if (!currentProfile.value) return
+  if (!window.confirm('Supprimer votre profil public ? Vos services et zones seront masqués de votre page publique. Vous pourrez en recréer un plus tard.')) return
+  profileSaving.value = true
+  try {
+    await api.delete(`/driver-profiles/${currentProfile.value.id}`)
+    showToast('Profil public supprimé')
+    profiles.value = []
+    profileForm.value = {
+      brand_name: '',
+      slug: '',
+      logo_path: '',
+      city: '',
+      phone: auth.user?.phone ?? '',
+      description: '',
+      is_available: true,
+    }
+  } catch (err) {
+    showToast(apiError(err, 'Impossible de supprimer le profil.'))
+  } finally {
+    profileSaving.value = false
+  }
+}
+
 async function copyLink() {
   const message = await copyPublicLink(slug.value)
   if (message) showToast(message)
@@ -217,7 +228,7 @@ async function saveService() {
       base_price: serviceForm.value.base_price === '' ? null : Number(serviceForm.value.base_price),
       is_active: !!serviceForm.value.is_active,
     }
-    if (editingService.value) {
+    if (editingService.value?.id) {
       await api.put(`/services/${editingService.value.id}`, payload)
       showToast('Service mis à jour')
     } else {
@@ -262,7 +273,6 @@ async function deleteService(s) {
 onMounted(() => {
   loadProfiles()
   loadServices()
-  loadRating()
 })
 </script>
 
@@ -296,6 +306,9 @@ onMounted(() => {
               </div>
               <div class="flex wrap">
                 <button class="btn btn-outline" @click="goPublicPage()">Voir ma page publique ↗</button>
+                <button class="btn btn-ghost danger" :disabled="profileSaving" @click="deleteProfile()">
+                  Supprimer
+                </button>
               </div>
             </div>
 
@@ -329,12 +342,6 @@ onMounted(() => {
                 <span>Téléphone</span>
                 <input v-model="profileForm.phone" class="input" :class="{ 'input-error': profileErrors.phone }" placeholder="Ex : 06 12 34 56 78" />
                 <span v-if="profileErrors.phone" class="error-msg">{{ profileErrors.phone[0] }}</span>
-              </label>
-
-              <!-- Note affichée (lecture seule) -->
-              <label class="field">
-                <span>Note affichée</span>
-                <input class="input input-readonly" :value="averageRating != null ? `${averageRating} ★` : '— ★'" disabled />
               </label>
 
               <!-- Description -->

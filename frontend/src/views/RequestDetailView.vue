@@ -24,14 +24,6 @@ const cancelling = ref(false)
 const confirming = ref(false)
 const actionError = ref('')
 
-// Review
-const showReview = ref(false)
-const reviewRating = ref(5)
-const reviewComment = ref('')
-const reviewSubmitting = ref(false)
-const reviewError = ref('')
-const hasReview = ref(false)
-
 // Proofs
 const proofs = ref([])
 const lightbox = ref('')
@@ -41,7 +33,6 @@ let pollTimer = null
 onMounted(() => {
   loadRequest()
   loadProofs()
-  checkReview()
 })
 
 onBeforeUnmount(() => {
@@ -72,16 +63,6 @@ async function loadProofs() {
       params: { delivery_request_id: id.value },
     })
     proofs.value = data.data || data || []
-  } catch {
-    // silent
-  }
-}
-
-async function checkReview() {
-  try {
-    const { data } = await api.get('/reviews')
-    const reviews = data.data || data || []
-    hasReview.value = reviews.some(r => r.delivery_request_id === Number(id.value))
   } catch {
     // silent
   }
@@ -130,24 +111,6 @@ async function confirmPrice() {
     actionError.value = apiError(err, "Erreur lors de l'acceptation du prix.")
   } finally {
     confirming.value = false
-  }
-}
-
-async function submitReview() {
-  reviewError.value = ''
-  reviewSubmitting.value = true
-  try {
-    await api.post('/reviews', {
-      delivery_request_id: Number(id.value),
-      rating: reviewRating.value,
-      comment: reviewComment.value.trim() || undefined,
-    })
-    hasReview.value = true
-    showReview.value = false
-  } catch (err) {
-    reviewError.value = apiError(err, "Erreur lors de l'envoi de l'avis.")
-  } finally {
-    reviewSubmitting.value = false
   }
 }
 </script>
@@ -253,54 +216,10 @@ async function submitReview() {
       <p class="small" style="color: var(--green)"><AppIcon name="check" :size="14" /> Livreur sur place — plus rien à faire de votre côté.</p>
     </div>
 
-    <!-- LIVRÉE : Avis -->
+    <!-- LIVRÉE -->
     <div v-if="request.status === STATUS.LIVREE" class="action-card">
       <h4 style="margin-bottom: 1rem">Demande livrée !</h4>
       <p class="small muted">Votre colis a bien été livré le {{ formatDateTime(request.delivered_at) }}.</p>
-
-      <div v-if="hasReview" style="margin-top: 0.5rem">
-        <p class="small" style="color: var(--green)"><AppIcon name="check" :size="14" /> Vous avez déjà laissé un avis pour cette demande.</p>
-      </div>
-
-      <div v-else-if="!showReview" style="margin-top: 1rem">
-        <button class="action-btn action-btn--green" @click="showReview = true">
-          <AppIcon name="star" :size="18" /> Donner mon avis
-        </button>
-      </div>
-
-      <div v-else class="review-form">
-        <h4 style="margin-bottom: 0.5rem">Votre avis</h4>
-        <div class="rating-select">
-          <button
-            v-for="n in 5"
-            :key="n"
-            class="star-btn"
-            :class="{ active: reviewRating >= n }"
-            @click="reviewRating = n"
-          >
-            ★
-          </button>
-        </div>
-        <div class="form-field" style="margin-top: 0.5rem">
-          <label>Commentaire <span class="faint-label">(optionnel)</span></label>
-          <textarea
-            v-model="reviewComment"
-            class="form-textarea"
-            rows="3"
-            placeholder="Partagez votre expérience…"
-          ></textarea>
-        </div>
-        <p v-if="reviewError" class="error-msg">{{ reviewError }}</p>
-        <button
-          class="action-btn action-btn--green"
-          style="margin-top: 0.5rem"
-          :disabled="reviewSubmitting"
-          @click="submitReview"
-        >
-          <span v-if="reviewSubmitting" class="spinner spinner-sm"></span>
-          <span v-else>Envoyer l'avis</span>
-        </button>
-      </div>
     </div>
 
     <!-- STATUTS TERMINAUX NÉGATIFS -->
@@ -579,37 +498,6 @@ async function submitReview() {
 
 .action-btn--danger:hover:not(:disabled) {
   border-color: var(--red);
-}
-
-/* Rating */
-.rating-select {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.star-btn {
-  background: none;
-  border: none;
-  font-size: 1.8rem;
-  cursor: pointer;
-  color: var(--fg-3);
-  transition: color 0.15s;
-  padding: 0.125rem;
-}
-
-.star-btn.active {
-  color: var(--amber);
-}
-
-.star-btn:hover {
-  color: var(--amber);
-}
-
-/* Review form */
-.review-form {
-  border-top: 0.0625rem solid var(--border);
-  padding-top: 1rem;
-  margin-top: 0.75rem;
 }
 
 /* Form elements */

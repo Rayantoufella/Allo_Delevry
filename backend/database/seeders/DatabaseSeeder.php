@@ -25,7 +25,6 @@ class DatabaseSeeder extends Seeder
             ChatMessagesSeeder::class,
             DeliveryProofsSeeder::class,
             IncidentsSeeder::class,
-            ReviewsSeeder::class,
             NotificationSeeder::class,
             GpsLocationsSeeder::class,
             PaymentTransactionsSeeder::class,

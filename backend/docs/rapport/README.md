@@ -10,7 +10,7 @@ Rapport de chaque tâche réalisée sur le projet, pour la révision complète d
 | AR-01 | Initialisation du projet (Laravel API + Vue.js + Docker, MLD, CRUD) | [rapport_ar01_initialisation.md](rapport_ar01_initialisation.md) | Terminé |
 | AR-02 | Authentification et permissions (Sanctum, rôles) | [rapport_ar02_authentification.md](rapport_ar02_authentification.md) | Terminé |
 | AR-03 | Réponses API uniformes (trait ApiResponse, Pint, CI) | [rapport_ar03_api_response.md](rapport_ar03_api_response.md) | Terminé |
-| AR-04 | Configuration Reverb + **diffusion temps réel F12** (canaux, événements, tests) | [rapport_ar04_reverb_config.md](rapport_ar04_reverb_config.md) | Terminé |
+| AR-04 | Configuration Reverb + **diffusion temps réel F12** (canaux, événements, tests) — **retiré le 11/08/2026** | [rapport_ar04_reverb_config.md](rapport_ar04_reverb_config.md) | Retiré |
 | AR-05 | Correction de sécurité (16 corrections B1–B11, RG06) | [rapport_correction_delivery.md](rapport_correction_delivery.md) | Terminé |
 | AR-30 | Jobs queue asynchrones + uploads des preuves | [rapport_ar30_queues_uploads.md](rapport_ar30_queues_uploads.md) | Terminé |
 | AR-37 | Récupération, ticket (preuve) et **tracking privé (F11)** | [rapport_ar37_recuperation_tracking.md](rapport_ar37_recuperation_tracking.md) | Terminé |
@@ -28,6 +28,7 @@ Rapport de chaque tâche réalisée sur le projet, pour la révision complète d
 | ChatIAZone | Chat IA : l'assistant complète la **zone de livraison** au fil de la conversation (prompts enrichis des zones actives, clé `delivery_zone`, mapping frontend, bandeau conversationnel) | [rapport_chat_ia_zone_livraison.md](rapport_chat_ia_zone_livraison.md) | Terminé |
 | BtnStatut | Boutons de statut **tous côté livreur** : « Le livreur est arrivé » → `livreur_arrive`, « La commande est récupérée » → `livree` (RG06, `hasDeliveryProof`) ; code 6 chiffres retiré de l'UI **et** legacy `confirm-delivery` + colonnes `confirmation_code_*` supprimés | [rapport_boutons_statut_client.md](rapport_boutons_statut_client.md) | Terminé (non commité) |
 | Gemini | Migration IA : OpenRouter → **Google AI Studio (Gemini native API)**, clé format `AQ.`, modèles `gemini-3.6-flash` / fallback `gemini-3-flash-preview` | [rapport_migration_gemini.md](rapport_migration_gemini.md) | Terminé (non commité) |
+| ReverbRetrait | **Suppression complète de Reverb/WebSocket** : paquets `laravel/reverb` + `laravel-echo`/`pusher-js`, événements, `routes/channels.php`, env, service docker — chat/statuts en polling | [rapport_suppression_reverb.md](rapport_suppression_reverb.md) | Terminé (non commité) |
 
 ## Guide du code par feature (`docs/guide/`)
 
@@ -39,12 +40,12 @@ Pour comprendre le projet à 100 % : **un fichier par feature**, avec **le rôle
 | [01_authentification_roles.md](../guide/01_authentification_roles.md) | F01 — Sanctum, rôles, register/login/me/logout, EnsureUserHasRole |
 | [02_demandes_livraison.md](../guide/02_demandes_livraison.md) | Demandes, machine à états (transitionTo), zones, services, avis, incidents, IA |
 | [03_suivi_tracking.md](../guide/03_suivi_tracking.md) | F11 — tracking public/privé, PublicTrackingResource, historique, preuves |
-| [04_chat_temps_reel.md](../guide/04_chat_temps_reel.md) | F12 — chat temps réel Reverb, canaux privés, événements |
+| [04_chat_temps_reel.md](../guide/04_chat_temps_reel.md) | Chat client/livreur en **polling** (Reverb retiré) + notification interne |
 | [05_notifications_jobs.md](../guide/05_notifications_jobs.md) | Notifications internes, 5 jobs queue, canal log jobs, worker |
 | [06_dashboard_livreur.md](../guide/06_dashboard_livreur.md) | AR-39 — GET /api/dashboard, indicateurs, missions, CA |
 | [07_securite_permissions.md](../guide/07_securite_permissions.md) | Toutes les Policies, corrections AR-05 (B1-B11), rate limiting |
 | [08_uploads_preuves.md](../guide/08_uploads_preuves.md) | F14 — preuves RG06 (livraison + récupération), uploads multipart, types verrouillés |
-| [09_bonus_ecarts.md](../guide/09_bonus_ecarts.md) | GPS (bonus), paiements (P2), IA OpenRouter, e-mail différé, écarts |
+| [09_bonus_ecarts.md](../guide/09_bonus_ecarts.md) | GPS (bonus), paiements (P2), IA Gemini, e-mail différé, écarts |
 
 ## Tâches déjà présentes sur `main` / branches (couvertes, marquées Terminé dans Jira)
 

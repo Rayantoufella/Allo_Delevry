@@ -92,15 +92,6 @@ const feedItems = computed(() => {
       at: m.created_at,
     })
   }
-  if (dash.value.average_rating != null) {
-    items.push({
-      key: 'rating',
-      icon: 'star',
-      title: 'Nouvel avis client',
-      body: `Note moyenne : ${dash.value.average_rating}/5`,
-      at: null,
-    })
-  }
   return items.slice(0, 5)
 })
 
@@ -166,7 +157,6 @@ onMounted(() => {
           <StatCard label="Livraisons" :value="dash.delivered_missions ?? '—'" icon="truck" />
           <StatCard label="Revenus" :value="formatPrice(dash.collected_revenue)" icon="cash" />
           <StatCard label="Missions actives" :value="dash.active_missions ?? '—'" icon="bolt" sub="temps réel" />
-          <StatCard label="Note" :value="dash.average_rating != null ? `${dash.average_rating}/5` : '—'" icon="star" />
         </div>
 
       <!-- Graphique sobre : pas de série quotidienne côté backend -->

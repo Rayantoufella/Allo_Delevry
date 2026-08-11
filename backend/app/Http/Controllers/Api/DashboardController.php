@@ -7,7 +7,6 @@ use App\Http\Resources\DashboardResource;
 use App\Models\ChatMessage;
 use App\Models\DeliveryRequest;
 use App\Models\Notification;
-use App\Models\Review;
 use Illuminate\Http\Request;
 
 /**
@@ -66,13 +65,6 @@ class DashboardController extends Controller
             ->where('status', DeliveryRequest::STATUS_LIVREE)
             ->sum('proposed_price');
 
-        // ---- Avis ----------------------------------------------------------
-        // Note moyenne des avis reçus sur les demandes du livreur.
-        $averageRating = Review::whereHas(
-            'deliveryRequest',
-            fn ($query) => $query->where('driver_id', $driverId)
-        )->avg('rating');
-
         // ---- Notifications -------------------------------------------------
         $unreadNotifications = Notification::where('user_id', $driverId)
             ->whereNull('read_at')
@@ -107,7 +99,6 @@ class DashboardController extends Controller
             'delivered_missions' => $deliveredMissions,
             'estimated_revenue' => number_format($estimatedRevenue, 2, '.', ''),
             'collected_revenue' => number_format($collectedRevenue, 2, '.', ''),
-            'average_rating' => $averageRating === null ? null : round($averageRating, 1),
             'unread_notifications' => $unreadNotifications,
             'recent_requests' => $recentRequests,
             'recent_messages' => $recentMessages,

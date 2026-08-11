@@ -274,44 +274,6 @@ it('only allows deleting requests in a terminal status', function () {
         ->assertSuccessful();
 });
 
-it('accepts reviews only on delivered requests, once, by the client', function () {
-    $client = flowClient();
-    $driver = flowDriver();
-
-    $pending = DeliveryRequest::factory()
-        ->forClient($client)
-        ->forDriver($driver)
-        ->create(['status' => DeliveryRequest::STATUS_EN_ATTENTE]);
-
-    Sanctum::actingAs($client);
-    $this->postJson('/api/reviews', [
-        'delivery_request_id' => $pending->id,
-        'rating' => 5,
-    ])->assertStatus(422);
-
-    $delivered = DeliveryRequest::factory()
-        ->forClient($client)
-        ->forDriver($driver)
-        ->delivered()
-        ->create();
-
-    $this->postJson('/api/reviews', [
-        'delivery_request_id' => $delivered->id,
-        'rating' => 5,
-    ])->assertCreated();
-
-    $this->postJson('/api/reviews', [
-        'delivery_request_id' => $delivered->id,
-        'rating' => 3,
-    ])->assertStatus(422);
-
-    Sanctum::actingAs($driver);
-    $this->postJson('/api/reviews', [
-        'delivery_request_id' => $delivered->id,
-        'rating' => 4,
-    ])->assertForbidden();
-});
-
 it('does not expose sensitive driver data on the public profile', function () {
     $driver = flowDriver();
 

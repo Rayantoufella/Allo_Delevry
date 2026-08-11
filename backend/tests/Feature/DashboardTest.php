@@ -4,7 +4,6 @@ use App\Models\ChatMessage;
 use App\Models\DeliveryRequest;
 use App\Models\DriverProfile;
 use App\Models\Notification;
-use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -59,13 +58,6 @@ it('returns the driver dashboard indicators', function () {
         'read_at' => now(),
     ]);
 
-    // 1 avis 4/5 sur une livraison terminée.
-    Review::factory()->create([
-        'delivery_request_id' => $delivered->id,
-        'user_id' => $driver->id,
-        'rating' => 4,
-    ]);
-
     // 1 message sur une mission du livreur.
     ChatMessage::factory()->create([
         'delivery_request_id' => $confirmed->id,
@@ -83,7 +75,6 @@ it('returns the driver dashboard indicators', function () {
         ->assertJsonPath('data.delivered_missions', 2)
         ->assertJsonPath('data.estimated_revenue', '200.00')
         ->assertJsonPath('data.collected_revenue', '150.00')
-        ->assertJsonPath('data.average_rating', 4)
         ->assertJsonPath('data.unread_notifications', 2)
         ->assertJsonCount(5, 'data.recent_requests')
         ->assertJsonPath('data.recent_messages.0.content', 'Bonjour');

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Events\ChatMessageReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreChatMessageRequest;
 use App\Http\Requests\UpdateChatMessageRequest;
@@ -16,7 +15,7 @@ use Illuminate\Http\Request;
  * @group Chat
  *
  * Messages de chat entre clients et livreurs pour une demande de livraison.
- * Les messages sont diffusés en temps réel via WebSocket (Reverb).
+ * Les messages sont persistés et consultés par polling (pas de temps réel).
  *
  * @authenticated
  */
@@ -45,14 +44,15 @@ class ChatMessageController extends Controller
             });
         }
 
-        return ChatMessageResource::collection($query->latest()->paginate(20));
+        return ChatMessageResource::collection($query->oldest()->paginate(20));
     }
 
     /**
      * Envoyer un message
      *
      * Envoie un message dans le chat d'une demande de livraison.
-     * Le message est diffusé en temps réel aux participants.
+     * Le destinataire est notifié (notification interne) et récupère
+     * le message par polling.
      *
      * @bodyParam delivery_request_id int required L'ID de la demande. Example: 1
      * @bodyParam content string required Le contenu du message. Example: Bonjour, j'arrive dans 10 min
@@ -68,9 +68,6 @@ class ChatMessageController extends Controller
         $message = ChatMessage::create($data);
 
         CreateChatMessageNotificationJob::dispatch($message)->afterCommit();
-
-        // Temps réel (F12) : diffusion du message sur le canal privé de la conversation.
-        broadcast(new ChatMessageReceived($message));
 
         return response()->json(new ChatMessageResource($message), 201);
     }

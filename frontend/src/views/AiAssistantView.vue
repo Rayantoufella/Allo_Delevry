@@ -211,42 +211,15 @@ function resetForm() {
   pendingDeliveryZone.value = null
 }
 
-// Au montage : reprendre la conversation en cours plutôt que d'en
-// créer une nouvelle à chaque visite (la page se recharge et le chat repartait
-// de zéro). On mémorise d'abord le DERNIER draft actif dans localStorage
-// (reprise exacte, même s'il est encore vide : « Nouvelle demande » puis
-// refresh doit rester sur le nouveau chat, pas revenir à l'ancien) ; à défaut
-// on cherche le dernier draft NON VIDE de la liste (une conversation a au moins
-// un message). Les drafts vides créés par de simples visites sont ignorés.
-// « Nouvelle demande » appelle start() pour repartir de zéro.
-const STORAGE_KEY = 'allo:last-ai-draft-id'
-
-function saveActiveDraft(id) {
-  try {
-    localStorage.setItem(STORAGE_KEY, String(id))
-  } catch {
-    /* stockage indisponible : la reprise reste fonctionnelle via la liste */
-  }
-}
-
-function loadSavedDraftId() {
-  try {
-    return Number(localStorage.getItem(STORAGE_KEY)) || null
-  } catch {
-    return null
-  }
-}
-
-// Rattache la vue à un draft existant (reprise au montage ou clic dans
-// « Conversations précédentes »). Si le draft est en cours de traitement on
-// relance le polling : sans ça, la réponse de l'IA n'apparaîtrait jamais après
-// un refresh (conversation semblant « annulée »).
+// Rattache la vue à un draft existant (clic dans « Conversations précédentes »).
+// Si le draft est en cours de traitement on relance le polling : sans ça, la
+// réponse de l'IA n'apparaîtrait jamais après un refresh (conversation
+// semblant « annulée »).
 function attachDraft(draft) {
   draftId.value = draft.id
   draftData.value = draft
   draftStatus.value = draft.status
   draftError.value = ''
-  saveActiveDraft(draft.id)
   if (draft.status === 'done' && draft.generated_data) {
     applyDraft(draft)
   }
@@ -261,31 +234,7 @@ function attachDraft(draft) {
   }
 }
 
-async function resumeOrStart() {
-  const savedId = loadSavedDraftId()
-  if (savedId) {
-    try {
-      const { data } = await api.get(`/ai-request-drafts/${savedId}`)
-      attachDraft(data)
-      return
-    } catch {
-      // Draft supprimé ou inaccessible : on retombe sur la reprise classique.
-    }
-  }
-  try {
-    const { data } = await api.get('/ai-request-drafts?per_page=50')
-    const last = (data.data || []).find((d) => d.chat_history?.length > 0)
-    if (last) {
-      attachDraft(last)
-      return
-    }
-  } catch {
-    // Pas de liste disponible : on retombe sur une nouvelle conversation.
-  }
-  start()
-}
-
-// Crée la session de chat (appelée par « Nouvelle demande »).
+// Crée la session de chat (appelée au montage et par « Nouvelle demande »).
 async function start() {
   clearPolling()
   draftId.value = null
@@ -303,7 +252,6 @@ async function start() {
   try {
     const { data } = await api.post('/ai-request-drafts/start')
     draftId.value = data.id
-    saveActiveDraft(data.id)
   } catch (err) {
     systemBubbles.value.push({
       type: 'network',
@@ -322,7 +270,6 @@ async function send(text) {
     try {
       const { data } = await api.post('/ai-request-drafts/start')
       draftId.value = data.id
-      saveActiveDraft(data.id)
     } catch (err) {
       systemBubbles.value.push({
         type: 'network',
@@ -545,7 +492,7 @@ watch(sending, (v) => {
 })
 
 loadDriver()
-resumeOrStart()
+start()
 loadPastConversations()
 </script>
 

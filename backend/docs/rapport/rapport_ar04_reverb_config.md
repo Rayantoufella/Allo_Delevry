@@ -1,9 +1,16 @@
 # Rapport — AR-04 : Configuration Reverb et temps réel (F12)
 
-**Date :** 25 juillet 2026 — mise à jour le 6 août 2026 (diffusion F12)
+**Date :** 25 juillet 2026 — mise à jour le 6 août 2026 (diffusion F12) — **retiré le 11 août 2026**
 **Périmètre :** `D:\AlloDelevry\backend`
 **Référence :** Cahier des charges — F12 (chat et temps réel, P1), Laravel Reverb
-**Statut :** Terminé — configuration (AR-04) + diffusion câblée sur la branche `feature/Reverb`
+**Statut :** **RETIRÉ** — configuration (AR-04) + diffusion câblée, puis **suppression complète le 11/08/2026** (non utilisée — voir `rapport_suppression_reverb.md`)
+
+---
+
+## ⚠️ Retrait (11/08/2026)
+
+La fonctionnalité Reverb/websocket a été **entièrement supprimée** du projet :
+`composer remove laravel/reverb`, événements `ChatMessageReceived`/`DeliveryRequestStatusUpdated` supprimés, `routes/channels.php` et `config/reverb.php` supprimés, appels `broadcast()` retirés, variables `REVERB_*`/`VITE_REVERB_*` nettoyées, service docker `reverb` retiré, `laravel-echo`/`pusher-js` désinstallés. Le chat et le suivi des statuts fonctionnent par **polling**. Détail complet : `rapport_suppression_reverb.md`.
 
 ---
 

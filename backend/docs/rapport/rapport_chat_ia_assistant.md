@@ -60,6 +60,8 @@ L'utilisateur veut transformer l'assistant IA (textarea → formulaire pré-remp
 
 ## Réactivation Reverb (futur)
 
-1. `.env` : `BROADCAST_CONNECTION=reverb` + décommenter `REVERB_*`/`VITE_REVERB_*`.
-2. Démarrer le serveur : `php artisan reverb:start --host=0.0.0.0 --port=8080 --no-interaction` (ou service docker).
-3. Les événements `ChatMessageReceived` / `DeliveryRequestStatusUpdated` et `routes/channels.php` sont intacts.
+> **⚠️ Annulé le 11/08/2026 : Reverb a été supprimé du projet** (paquet composer retiré, événements et canaux supprimés, variables `REVERB_*` nettoyées). La réactivation ci-dessous n'est plus applicable — voir `rapport_suppression_reverb.md`.
+
+1. ~~`.env` : `BROADCAST_CONNECTION=reverb` + décommenter `REVERB_*`/`VITE_REVERB_*`.~~
+2. ~~Démarrer le serveur : `php artisan reverb:start --host=0.0.0.0 --port=8080 --no-interaction` (ou service docker).~~
+3. ~~Les événements `ChatMessageReceived` / `DeliveryRequestStatusUpdated` et `routes/channels.php` sont intacts.~~

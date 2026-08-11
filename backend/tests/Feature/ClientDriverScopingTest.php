@@ -6,7 +6,6 @@ use App\Models\DeliveryProof;
 use App\Models\DeliveryRequest;
 use App\Models\DriverProfile;
 use App\Models\Incident;
-use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -278,25 +277,6 @@ it('prevents a client from viewing chat messages of another driver\'s delivery r
 
     $this->getJson("/api/chat-messages?delivery_request_id={$requestB->id}")
         ->assertForbidden();
-});
-
-it('prevents a client from reviewing a delivery request of another driver', function () {
-    $driverA = scopingDriver('driver-a-review');
-    $driverB = scopingDriver('driver-b-review');
-
-    $clientA = User::factory()->clientOf($driverA)->create();
-    $clientB = User::factory()->clientOf($driverB)->create();
-
-    $requestB = DeliveryRequest::factory()->forClient($clientB)->forDriver($driverB)->delivered()->create();
-
-    Sanctum::actingAs($clientA);
-
-    $this->postJson('/api/reviews', [
-        'delivery_request_id' => $requestB->id,
-        'rating' => 5,
-    ])->assertForbidden();
-
-    expect(Review::count())->toBe(0);
 });
 
 it('prevents a client from referencing an AI draft owned by a client of another driver', function () {

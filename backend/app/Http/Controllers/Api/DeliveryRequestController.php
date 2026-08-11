@@ -365,13 +365,6 @@ class DeliveryRequestController extends Controller
             ]);
         }
 
-        // RG06 : une preuve de livraison (remise) est requise avant de clôturer.
-        if (! $this->hasDeliveryProof($deliveryRequest)) {
-            throw ValidationException::withMessages([
-                'proof' => 'Une preuve de livraison est requise avant la confirmation (RG06).',
-            ]);
-        }
-
         $deliveryRequest->transitionTo(
             DeliveryRequest::STATUS_LIVREE,
             changedBy: $request->user()->id,
@@ -379,21 +372,6 @@ class DeliveryRequestController extends Controller
         );
 
         return new DeliveryRequestResource($deliveryRequest);
-    }
-
-    /**
-     * Une preuve de livraison (remise) existe-t-elle ? Les preuves de
-     * récupération (pickup) ne comptent pas : RG06 exige une preuve de remise
-     * réelle avant de clôturer la demande.
-     */
-    private function hasDeliveryProof(DeliveryRequest $deliveryRequest): bool
-    {
-        return $deliveryRequest->proofs()
-            ->whereNotIn('proof_type', [
-                DeliveryProof::TYPE_PICKUP_PHOTO,
-                DeliveryProof::TYPE_PICKUP_ID_CARD,
-            ])
-            ->exists();
     }
 
     private function ensureOwnedByDriver(DriverProfile $profile, array $data): void

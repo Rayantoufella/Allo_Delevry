@@ -77,11 +77,6 @@ const hasPickupPhoto = computed(() =>
   proofs.value.some((p) => p.proof_type === 'pickup_photo'),
 )
 
-// RG06 : une preuve de remise (hors pickup) est obligatoire pour clôturer (livree).
-const hasDeliveryProof = computed(() =>
-  proofs.value.some((p) => !['pickup_photo', 'pickup_id_card'].includes(p.proof_type)),
-)
-
 // ---- Actions de statut ----
 const actionError = ref('')
 const actionLoading = ref(false)
@@ -562,7 +557,7 @@ onBeforeUnmount(() => {
                 <h3 class="mb-8">En livraison</h3>
                 <p class="small muted">
                   Une fois sur place, confirmez votre arrivée : le statut passera à « Livreur arrivé ».
-                  La remise se clôturera ensuite avec le bouton « La commande est récupérée ».
+                  La remise se clôturera ensuite avec le bouton « Le colis est livré ».
                 </p>
 
                 <button class="btn btn-primary mt-16" :disabled="actionLoading" @click="confirmArrival()">
@@ -596,18 +591,15 @@ onBeforeUnmount(() => {
               <!-- livreur_arrive : remise de la commande -->
               <div v-else-if="request.status === STATUS.LIVREUR_ARRIVE">
                 <h3 class="mb-8 flex"><AppIcon name="home" :size="18" /> Livreur arrivé</h3>
-                <p class="small muted">Vous avez confirmé votre arrivée. Remettez la commande au client, puis confirmez la remise : le statut passera à « Livrée ».</p>
+                <p class="small muted">Vous avez confirmé votre arrivée. Remettez la commande au client, puis cliquez sur « Le colis est livré » : le statut passera à « Livrée ».</p>
 
                 <button
                   class="btn btn-primary mt-16"
-                  :disabled="actionLoading || !hasDeliveryProof"
+                  :disabled="actionLoading"
                   @click="confirmHandover()"
                 >
-                  {{ actionLoading ? '…' : 'La commande est récupérée' }}
+                  {{ actionLoading ? '…' : 'Le colis est livré' }}
                 </button>
-                <p v-if="!hasDeliveryProof" class="faint small mt-8">
-                  Le bouton s'active dès qu'une preuve de livraison est enregistrée (RG06).
-                </p>
 
                 <div class="divider"></div>
 

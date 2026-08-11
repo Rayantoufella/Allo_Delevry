@@ -5,9 +5,9 @@
 
 ## Vue d'ensemble
 
-API REST Laravel 13 (PHP 8.4) pour une application de **livraison à la demande** : un **client** crée une demande, un **livreur** la prend en charge et la livre, avec suivi en temps réel (chat Reverb), notifications internes, preuves de livraison et tableau de bord livreur. Le frontend est une SPA **Vue.js séparée** (dossier `frontend/`) qui consomme uniquement l'API — aucun template Blade côté backend (décision utilisateur : l'initiative « ticket PDF » a été annulée).
+API REST Laravel 13 (PHP 8.4) pour une application de **livraison à la demande** : un **client** crée une demande, un **livreur** la prend en charge et la livre, avec chat client/livreur (rafraîchi par polling — le temps réel Reverb a été retiré), notifications internes, preuves de livraison et tableau de bord livreur. Le frontend est une SPA **Vue.js séparée** (dossier `frontend/`) qui consomme uniquement l'API — aucun template Blade côté backend (décision utilisateur : l'initiative « ticket PDF » a été annulée).
 
-**Empilement technique :** Laravel 13 · PHP 8.4 · Sanctum (tokens API) · Pest (tests) · MySQL 8 (Docker) · Reverb (WebSockets) · Queue `database` · Redis absent (non requis).
+**Empilement technique :** Laravel 13 · PHP 8.4 · Sanctum (tokens API) · Pest (tests) · MySQL 8 (Docker) · Queue `database` · Redis absent (non requis) · WebSocket Reverb **retiré** (polling à la place, voir `rapport_suppression_reverb.md`).
 
 ## Schéma des couches (flux d'une requête)
 
@@ -19,7 +19,6 @@ Requête HTTP
         → app/Http/Requests/* (validation, parfois authorize())
           → app/Models/* (Eloquent : relations, scopes, machine à états)
             → app/Jobs/* (traitement asynchrone, après commit)
-            → app/Events/* (diffusion temps réel Reverb)
               → app/Http/Resources/* (formatage de la réponse JSON)
                 → Réponse JSON uniforme {success, message, data|errors} (app/Traits/ApiResponse.php)
 ```
@@ -30,13 +29,12 @@ Requête HTTP
 |---------|-----------|------|------|
 | `app` | `allo_backend` | PHP-FPM : le backend (monté sur `./backend`) | — |
 | `queue` | `allo_queue` | Worker `php artisan queue:work database --tries=3 --sleep=3 --timeout=60` | — |
-| `reverb` | `allo_reverb` | Serveur WebSocket `php artisan reverb:start --host=0.0.0.0 --port=8080` (F12) | 8080 |
 | `nginx` | `allo_nginx` | Reverse proxy HTTP → app | 8000 |
 | `db` | `allo_db` | MySQL 8 (base `allo_delivery`, user `allo`) | 3306 |
 | `phpmyadmin` | `allo_phpmyadmin` | Interface web de la base (PMA_HOST=db) | 8081 |
 | `frontend` | `allo_frontend` | SPA Vue.js (npm run dev) | 5173 |
 
-**Commandes utiles :** `docker exec allo_backend php artisan test --compact` · `docker exec allo_backend vendor/bin/pint --dirty` · `docker-compose -f D:\AlloDelevry\docker-compose.yml up -d reverb` · **`docker compose` (plugin) n'existe pas sur cette machine — toujours `docker-compose`**.
+**Commandes utiles :** `docker exec allo_backend php artisan test --compact` · `docker exec allo_backend vendor/bin/pint --dirty` · **`docker compose` (plugin) n'existe pas sur cette machine — toujours `docker-compose`**.
 
 ## Fichiers et rôles (exhaustif)
 
@@ -45,7 +43,6 @@ Requête HTTP
 | Fichier | Rôle | Points clés |
 |---------|------|-------------|
 | `routes/api.php` | **Toutes les routes API** (voir le détail par feature dans les guides 01-06) | Routes publiques : register/login (`throttle:5,1`), profil public livreur + QR (`throttle:60,1`), tracking (`throttle:60,1`) ; groupe `auth:sanctum` : me/logout, delivery-requests + actions (status/confirm-price/cancel/generate-code/confirm-delivery), notifications, chat, preuves, incidents, GPS, paiements, historique ; groupe `role:driver` : dashboard, services, zones, profils livreur |
-| `routes/channels.php` | Canal privé Reverb `conversation.{id}` | Participants client/livreur uniquement, garde `sanctum` — détail guide 04 |
 | `routes/console.php` | Commandes artisan custom | Vide par défaut (pas de scheduler : décision utilisateur — pas de cron) |
 | `routes/web.php` | Route web par défaut | Non utilisée (API pure) |
 | `bootstrap/app.php` | Noyau : alias middleware `role`, JSON pour `api/*`, 401 propre pour les invités | `redirectGuestsTo(fn () => abort(401))` + `shouldRenderJsonWhen(api/*)` |
@@ -63,12 +60,11 @@ Requête HTTP
 
 | Fichier | Rôle | Points clés |
 |---------|------|-------------|
-| `.env` | Variables d'environnement | `BROADCAST_CONNECTION=reverb`, `QUEUE_CONNECTION=database`, `FRONTEND_URL`, variables `REVERB_*`, `VITE_REVERB_*` (noms exposés au frontend) |
+| `.env` | Variables d'environnement | `BROADCAST_CONNECTION=null` (temps réel désactivé), `QUEUE_CONNECTION=database`, `FRONTEND_URL` ; variables `GEMINI_*` pour l'IA |
 | `phpunit.xml` | Config de test | `BROADCAST_CONNECTION=null` (aucune diffusion réelle), `QUEUE_CONNECTION=sync`, **DB sqlite :memory:** |
 | `config/auth.php` | Guards/providers | Guard `web` par défaut ; l'API passe par le guard Sanctum (bearer token) |
 | `config/sanctum.php` | Tokens Sanctum | `expiration => null` : **tokens sans expiration** (révocation via logout) — point à surveiller en prod |
-| `config/broadcasting.php` | Driver broadcast | Default piloté par `BROADCAST_CONNECTION` ; connexion reverb via `REVERB_*` |
-| `config/reverb.php` | Serveur Reverb | Host 0.0.0.0, port 8080 (`REVERB_SERVER_PORT`) |
+| `config/broadcasting.php` | Driver broadcast | Fichier standard Laravel ; défaut `null` (`BROADCAST_CONNECTION`) — aucun driver actif |
 | `config/queue.php` | Files d'attente | Default `database` (table `jobs`) |
 | `config/logging.php` | Canaux de log | Canal `jobs` ajouté (daily, `storage/logs/jobs.log`) pour les échecs de jobs |
 | `config/filesystems.php` | Stockage | Disque `public` (root `storage/app/public`) pour les preuves — `php artisan storage:link` exécuté |
@@ -111,7 +107,7 @@ Requête HTTP
 ## Actions passées (rapports liés)
 
 - **AR-01** Initialisation (Laravel + Docker + MLD + CRUD) — `docs/rapport/rapport_ar01_initialisation.md`
-- **AR-02** Auth/permissions, **AR-03** réponses uniformes, **AR-04** Reverb config, **AR-05** correction sécurité, **AR-30** queues/uploads, **AR-37** tracking privé, **AR-39** dashboard — voir `docs/rapport/README.md`
+- **AR-02** Auth/permissions, **AR-03** réponses uniformes, **AR-04** Reverb config (**retiré**, voir `rapport_suppression_reverb.md`), **AR-05** correction sécurité, **AR-30** queues/uploads, **AR-37** tracking privé, **AR-39** dashboard — voir `docs/rapport/README.md`
 
 ## Pièges et points d'attention
 

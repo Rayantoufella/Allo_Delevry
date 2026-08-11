@@ -136,9 +136,9 @@ const initials = computed(() => {
               <template v-if="driver.city">{{ driver.city }}</template>
             </div>
             <div class="profile-stats">
-              <span v-if="driver.rating">★ {{ driver.rating }}</span>
-              <span v-if="driver.total_deliveries">· {{ driver.total_deliveries }} livraisons</span>
-              <span v-if="driver.city">· {{ driver.city }}</span>
+              <span v-if="driver.total_deliveries">{{ driver.total_deliveries }} livraisons</span>
+              <template v-if="driver.total_deliveries && driver.city"> · </template>
+              <span v-if="driver.city">{{ driver.city }}</span>
             </div>
           </div>
 
