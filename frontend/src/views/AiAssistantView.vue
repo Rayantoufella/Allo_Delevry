@@ -112,6 +112,34 @@ const activeZones = computed(() =>
   (driver.value?.delivery_zones || []).filter((z) => z.is_active),
 )
 
+// Zone extraite par l'IA (nom brut, ex. « Al Houda »). loadDriver est async :
+// au moment du applyDraft le driver peut ne pas encore être chargé. On garde
+// donc le nom brut ici, et un watch(activeZones) re-joue le mapping dès que
+// les zones arrivent — l'info n'est jamais perdue.
+const pendingDeliveryZone = ref(null)
+
+function zoneDisplayName(z) {
+  return (z.destination_zone || z.origin_zone || '').trim()
+}
+
+function applyZoneMapping() {
+  const name = (pendingDeliveryZone.value || '').trim()
+  if (!name || !activeZones.value.length || form.value.delivery_zone_id) return
+  const match = activeZones.value.find(
+    (z) => zoneDisplayName(z).toLowerCase() === name.toLowerCase(),
+  )
+  if (match) {
+    form.value.delivery_zone_id = Number(match.id)
+    pendingDeliveryZone.value = null
+  }
+}
+
+// Le driver se charge au montage, potentiellement APRÈS la reprise d'un draft
+// done : on re-joue le mapping de la zone tant qu'elle n'est pas trouvée.
+watch(activeZones, () => {
+  if (!form.value.delivery_zone_id) applyZoneMapping()
+})
+
 const selectedZone = computed(() => {
   if (!form.value.delivery_zone_id || !activeZones.value.length) return null
   return (
@@ -180,24 +208,75 @@ function resetForm() {
     service_id: null,
     delivery_zone_id: null,
   }
+  pendingDeliveryZone.value = null
 }
 
-// Au montage : reprendre la dernière conversation en cours plutôt que d'en
+// Au montage : reprendre la conversation en cours plutôt que d'en
 // créer une nouvelle à chaque visite (la page se recharge et le chat repartait
-// de zéro). On cherche le dernier draft NON VIDE (une conversation a au moins
-// un message) : les drafts vides créés par de simples visites sont ignorés.
+// de zéro). On mémorise d'abord le DERNIER draft actif dans localStorage
+// (reprise exacte, même s'il est encore vide : « Nouvelle demande » puis
+// refresh doit rester sur le nouveau chat, pas revenir à l'ancien) ; à défaut
+// on cherche le dernier draft NON VIDE de la liste (une conversation a au moins
+// un message). Les drafts vides créés par de simples visites sont ignorés.
 // « Nouvelle demande » appelle start() pour repartir de zéro.
-async function resumeOrStart() {
+const STORAGE_KEY = 'allo:last-ai-draft-id'
+
+function saveActiveDraft(id) {
   try {
-    const { data } = await api.get('/ai-request-drafts?per_page=10')
+    localStorage.setItem(STORAGE_KEY, String(id))
+  } catch {
+    /* stockage indisponible : la reprise reste fonctionnelle via la liste */
+  }
+}
+
+function loadSavedDraftId() {
+  try {
+    return Number(localStorage.getItem(STORAGE_KEY)) || null
+  } catch {
+    return null
+  }
+}
+
+// Rattache la vue à un draft existant (reprise au montage ou clic dans
+// « Conversations précédentes »). Si le draft est en cours de traitement on
+// relance le polling : sans ça, la réponse de l'IA n'apparaîtrait jamais après
+// un refresh (conversation semblant « annulée »).
+function attachDraft(draft) {
+  draftId.value = draft.id
+  draftData.value = draft
+  draftStatus.value = draft.status
+  draftError.value = ''
+  saveActiveDraft(draft.id)
+  if (draft.status === 'done' && draft.generated_data) {
+    applyDraft(draft)
+  }
+  if (draft.status === 'pending') {
+    pollDraft(draft.id)
+  }
+  if (draft.status === 'failed') {
+    systemBubbles.value.push({
+      type: 'failed',
+      content: draft.error_message || "L'analyse a échoué.",
+    })
+  }
+}
+
+async function resumeOrStart() {
+  const savedId = loadSavedDraftId()
+  if (savedId) {
+    try {
+      const { data } = await api.get(`/ai-request-drafts/${savedId}`)
+      attachDraft(data)
+      return
+    } catch {
+      // Draft supprimé ou inaccessible : on retombe sur la reprise classique.
+    }
+  }
+  try {
+    const { data } = await api.get('/ai-request-drafts?per_page=50')
     const last = (data.data || []).find((d) => d.chat_history?.length > 0)
     if (last) {
-      draftId.value = last.id
-      draftData.value = last
-      draftStatus.value = last.status
-      if (last.status === 'done' && last.generated_data) {
-        applyDraft(last)
-      }
+      attachDraft(last)
       return
     }
   } catch {
@@ -224,6 +303,7 @@ async function start() {
   try {
     const { data } = await api.post('/ai-request-drafts/start')
     draftId.value = data.id
+    saveActiveDraft(data.id)
   } catch (err) {
     systemBubbles.value.push({
       type: 'network',
@@ -242,6 +322,7 @@ async function send(text) {
     try {
       const { data } = await api.post('/ai-request-drafts/start')
       draftId.value = data.id
+      saveActiveDraft(data.id)
     } catch (err) {
       systemBubbles.value.push({
         type: 'network',
@@ -351,6 +432,10 @@ function finishFailed(data) {
 function applyDraft(data) {
   draftData.value = data
   const gd = data.generated_data || {}
+  // Le backend peut envoyer generated_data.delivery_zone (nom de zone) ; on le
+  // conserve brut et on tente le mapping immédiatement (ou plus tard via le
+  // watch(activeZones) si le driver n'est pas encore chargé).
+  pendingDeliveryZone.value = gd.delivery_zone || null
   form.value = {
     recipient_name: gd.recipient_name || '',
     recipient_phone: gd.recipient_phone || '',
@@ -363,6 +448,7 @@ function applyDraft(data) {
     service_id: data.service_id || gd.service_id || null,
     delivery_zone_id: null,
   }
+  applyZoneMapping()
   focusFirstMissingField()
 }
 
@@ -403,6 +489,49 @@ function goToTracking() {
   }
 }
 
+// ---- Conversations précédentes ----
+// Le client peut finir une commande, annuler, se reconnecter ou vouloir
+// retrouver un ancien échange : toutes les conversations (drafts non vides)
+// restent en base et sont accessibles ici pour les revoir ou les reprendre.
+const pastConversations = ref([])
+const showPast = ref(false)
+
+async function loadPastConversations() {
+  try {
+    const { data } = await api.get('/ai-request-drafts?per_page=50')
+    pastConversations.value = (data.data || []).filter((d) => d.chat_history?.length > 0)
+  } catch {
+    pastConversations.value = []
+  }
+}
+
+function conversationLabel(d) {
+  const firstUser = (d.chat_history || []).find((m) => m.role === 'user')
+  const text = firstUser?.content || 'Conversation sans message'
+  return text.length > 44 ? `${text.slice(0, 44)}…` : text
+}
+
+function conversationMeta(d) {
+  const date = new Date(d.created_at)
+  const day = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+  const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  const statusLabel = d.status === 'done' ? 'prête' : d.status === 'failed' ? 'échec' : 'en cours'
+  return `${day} ${time} · ${statusLabel}`
+}
+
+function openConversation(d) {
+  showPast.value = false
+  clearPolling()
+  optimistic.value = null
+  systemBubbles.value = []
+  localAiBubbles.value = []
+  lastFailedText.value = ''
+  sending.value = false
+  createdRequest.value = null
+  createError.value = ''
+  attachDraft(d)
+}
+
 // Auto-scroll vers le bas à chaque nouveau message.
 const chatBody = ref(null)
 function scrollToBottom() {
@@ -417,6 +546,7 @@ watch(sending, (v) => {
 
 loadDriver()
 resumeOrStart()
+loadPastConversations()
 </script>
 
 <template>
@@ -435,6 +565,33 @@ resumeOrStart()
     <p class="ai-subtitle">
       L'IA joue le livreur : réponds à ses questions, elle remplit le formulaire de demande au fil de la conversation.
     </p>
+
+    <!-- Conversations précédentes : reprise / consultation d'un ancien échange -->
+    <div v-if="pastConversations.length" class="ai-history">
+      <button
+        type="button"
+        class="btn btn-ghost ai-history-toggle"
+        :aria-expanded="showPast"
+        @click="showPast = !showPast"
+      >
+        <AppIcon name="clock" :size="16" />
+        Conversations précédentes ({{ pastConversations.length }})
+      </button>
+      <div v-if="showPast" class="ai-history-list" role="menu">
+        <button
+          v-for="c in pastConversations"
+          :key="c.id"
+          type="button"
+          role="menuitem"
+          class="ai-history-item"
+          :class="{ 'ai-history-active': c.id === draftId }"
+          @click="openConversation(c)"
+        >
+          <span class="ai-history-label">{{ conversationLabel(c) }}</span>
+          <span class="ai-history-meta">{{ conversationMeta(c) }}</span>
+        </button>
+      </div>
+    </div>
 
     <router-link
       :to="{ name: 'request-form', params: { slug } }"
@@ -529,8 +686,9 @@ resumeOrStart()
       <div v-else class="ai-status-banner ai-status-warn" role="status">
         <AppIcon name="warning" :size="16" />
         <span>
-          Complète ces champs pour envoyer la demande :
-          <strong>{{ missingRequiredFields.map((f) => f.label).join(', ') }}</strong>
+          Encore quelques informations :
+          <strong>{{ missingRequiredFields.map((f) => f.label).join(', ') }}</strong>.
+          Écris-les dans la conversation, l'assistant les complète automatiquement.
         </span>
       </div>
 
@@ -1065,6 +1223,57 @@ resumeOrStart()
   padding: 0.9375rem;
   font-size: 0.9688rem;
 }
+
+/* Conversations précédentes */
+.ai-history {
+  margin: 0.25rem 0 1rem;
+}
+.ai-history-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.4375rem 0.8125rem;
+  font-size: 0.8125rem;
+}
+.ai-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+  margin-top: 0.5rem;
+  max-height: 13rem;
+  overflow-y: auto;
+}
+.ai-history-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.ai-history-item:hover {
+  border-color: var(--green);
+}
+.ai-history-active {
+  border-color: var(--green);
+  background: color-mix(in srgb, var(--green) 8%, transparent);
+}
+.ai-history-label {
+  font-size: 0.8438rem;
+  color: var(--fg);
+}
+.ai-history-meta {
+  font-size: 0.7188rem;
+  color: var(--fg-2);
+  white-space: nowrap;
+}
+
 /* Grid 2 */
 .grid-2 {
   display: grid;

@@ -87,14 +87,7 @@ it('runs the full delivery lifecycle end to end from creation by the client', fu
     ])->assertSuccessful()
         ->assertJsonPath('data.status', DeliveryRequest::STATUS_CONFIRMEE);
 
-    // 3. Driver generates the confirmation code.
-    $codeResponse = $this->postJson("/api/delivery-requests/{$requestId}/generate-code")
-        ->assertSuccessful();
-    $code = $codeResponse->json('code');
-    expect($code)->toBeString()->toHaveLength(6);
-    expect(Hash::check($code, $deliveryRequest->refresh()->confirmation_code_hash))->toBeTrue();
-
-    // 4. Driver uploads the pickup photo, then picks up the parcel.
+    // 3. Driver uploads the pickup photo, then picks up the parcel.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $requestId,
         'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
@@ -105,26 +98,29 @@ it('runs the full delivery lifecycle end to end from creation by the client', fu
         'status' => DeliveryRequest::STATUS_COLIS_RECUPERE,
     ])->assertSuccessful();
 
-    // 5. Driver is on the way.
+    // 4. Driver is on the way.
     $this->patchJson("/api/delivery-requests/{$requestId}/status", [
         'status' => DeliveryRequest::STATUS_EN_LIVRAISON,
     ])->assertSuccessful();
 
-    // 6. Driver uploads a proof of delivery.
+    // 5. Driver uploads a proof of delivery.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $requestId,
         'proof_type' => 'photo',
         'file' => UploadedFile::fake()->image('proof.jpg'),
     ])->assertCreated();
 
-    // 7. Client confirms the delivery with the code.
-    Sanctum::actingAs($client);
-    $this->postJson("/api/delivery-requests/{$requestId}/confirm-delivery", [
-        'code' => $code,
-    ])->assertSuccessful()
+    // 6. The driver confirms his arrival, then closes the delivery via the
+    //    handover button. Every status button lives driver-side (no code).
+    $this->postJson("/api/delivery-requests/{$requestId}/confirm-arrival")
+        ->assertSuccessful()
+        ->assertJsonPath('data.status', DeliveryRequest::STATUS_LIVREUR_ARRIVE);
+
+    $this->postJson("/api/delivery-requests/{$requestId}/confirm-handover")
+        ->assertSuccessful()
         ->assertJsonPath('data.status', DeliveryRequest::STATUS_LIVREE);
 
-    // 8. Timestamps and history are recorded.
+    // 7. Timestamps and history are recorded.
     $deliveryRequest->refresh();
     expect($deliveryRequest->status)->toBe(DeliveryRequest::STATUS_LIVREE);
     expect($deliveryRequest->picked_up_at)->not->toBeNull();
@@ -140,6 +136,7 @@ it('runs the full delivery lifecycle end to end from creation by the client', fu
         DeliveryRequest::STATUS_CONFIRMEE,
         DeliveryRequest::STATUS_COLIS_RECUPERE,
         DeliveryRequest::STATUS_EN_LIVRAISON,
+        DeliveryRequest::STATUS_LIVREUR_ARRIVE,
         DeliveryRequest::STATUS_LIVREE,
     ]);
 

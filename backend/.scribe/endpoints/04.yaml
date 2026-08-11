@@ -116,7 +116,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -126,7 +126,7 @@ endpoints:
       name: 'Envoi de colis'
       description: 'Envoi rapide de colis dans la ville'
       base_price: 15.0
-      is_active: false
+      is_active: true
     fileParameters: []
     responses:
       -
@@ -283,7 +283,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -293,7 +293,7 @@ endpoints:
       name: 'Envoi de colis express'
       description: 'Eius et animi quos velit et.'
       base_price: 20.0
-      is_active: true
+      is_active: false
     fileParameters: []
     responses:
       -

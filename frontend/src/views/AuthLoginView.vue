@@ -88,7 +88,7 @@ async function handleLogin() {
         <div class="left-features">
           <div class="left-feature">Suivi GPS live</div>
           <div class="left-feature">Chat privé</div>
-          <div class="left-feature">Code de remise</div>
+          <div class="left-feature">Remise confirmée</div>
         </div>
         <!-- Decorative circle -->
         <div class="left-circle"></div>

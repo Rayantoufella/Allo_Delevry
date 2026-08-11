@@ -37,14 +37,14 @@ class DeliveryRequestPolicy
         return $deliveryRequest->driver_id === $user->id;
     }
 
-    public function generateCode(User $user, DeliveryRequest $deliveryRequest): bool
+    public function confirmArrival(User $user, DeliveryRequest $deliveryRequest): bool
     {
         return $deliveryRequest->driver_id === $user->id;
     }
 
-    public function confirmDelivery(User $user, DeliveryRequest $deliveryRequest): bool
+    public function confirmHandover(User $user, DeliveryRequest $deliveryRequest): bool
     {
-        return $deliveryRequest->client_id === $user->id;
+        return $deliveryRequest->driver_id === $user->id;
     }
 
     public function confirmPrice(User $user, DeliveryRequest $deliveryRequest): bool

@@ -225,7 +225,7 @@ endpoints:
         name: scheduled_at
         description: 'Must be a valid date.'
         required: false
-        example: '2026-08-09T21:18:18'
+        example: '2026-08-11T00:00:48'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -242,7 +242,7 @@ endpoints:
       package_description: 'Petit carton 2kg'
       product_amount: 150.0
       amount_to_collect: 42.85
-      scheduled_at: '2026-08-09T21:18:18'
+      scheduled_at: '2026-08-11T00:00:48'
     fileParameters: []
     responses:
       -
@@ -538,7 +538,7 @@ endpoints:
         name: scheduled_at
         description: 'Must be a valid date.'
         required: false
-        example: '2026-08-09T21:18:18'
+        example: '2026-08-11T00:00:49'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -552,7 +552,7 @@ endpoints:
       package_description: architecto
       product_amount: 39
       amount_to_collect: 84
-      scheduled_at: '2026-08-09T21:18:18'
+      scheduled_at: '2026-08-11T00:00:49'
     fileParameters: []
     responses:
       -
@@ -862,7 +862,7 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: 'api/delivery-requests/{deliveryRequest}/generate-code'
+    uri: 'api/delivery-requests/{deliveryRequest}/confirm-arrival'
     metadata:
       custom: []
       groupName: 'Demandes de livraison'
@@ -872,8 +872,11 @@ endpoints:
         génération de code de confirmation, preuves et validation finale.
       subgroup: ''
       subgroupDescription: ''
-      title: 'Générer un code de confirmation'
-      description: 'Génère un code à 6 chiffres pour la remise du colis. Le code expire après 30 minutes.'
+      title: "Confirmer l'arrivée du livreur"
+      description: |-
+        Le livreur confirme qu'il est arrivé à l'adresse de livraison
+        (transition "en_livraison" → "livreur_arrive"). Tous les boutons de
+        changement de statut sont côté livreur : le client n'a aucun bouton.
       authenticated: true
       deprecated: false
     headers:
@@ -933,7 +936,7 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: 'api/delivery-requests/{deliveryRequest}/confirm-delivery'
+    uri: 'api/delivery-requests/{deliveryRequest}/confirm-handover'
     metadata:
       custom: []
       groupName: 'Demandes de livraison'
@@ -943,10 +946,11 @@ endpoints:
         génération de code de confirmation, preuves et validation finale.
       subgroup: ''
       subgroupDescription: ''
-      title: 'Confirmer la livraison'
+      title: 'Confirmer la remise de la commande'
       description: |-
-        Le client confirme la réception en fournissant le code de confirmation.
-        Une preuve de livraison (RG06) doit être présente. Max 5 tentatives.
+        Le livreur confirme que le client a récupéré la commande (transition
+        "livreur_arrive" → "livree"). Le client ne dispose d'aucun bouton de
+        clôture : c'est le livreur, présent sur place, qui valide la remise.
       authenticated: true
       deprecated: false
     headers:
@@ -981,20 +985,8 @@ endpoints:
       id: 1
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters:
-      code:
-        custom: []
-        name: code
-        description: 'Le code de confirmation à 6 chiffres.'
-        required: true
-        example: '482951'
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      code: '482951'
+    bodyParameters: []
+    cleanBodyParameters: []
     fileParameters: []
     responses:
       -

@@ -128,8 +128,8 @@ const STATUS_FAILED  = 'failed';
 ## 6. DeliveryRequest *(MODÈLE CENTRAL)*
 
 - **Table** : `delivery_requests`
-- **fillable** : `tracking_number`, `private_token`, `client_id`, `driver_id`, `service_id`, `delivery_zone_id`, `ai_request_draft_id`, `recipient_name`, `recipient_phone`, `pickup_address`, `delivery_address`, `package_description`, `product_amount`, `amount_to_collect`, `proposed_price`, `confirmation_code_hash`, `scheduled_at`, `picked_up_at`, `delivered_at`, `status`
-- **hidden** : `confirmation_code_hash`, `private_token`
+- **fillable** : `tracking_number`, `private_token`, `client_id`, `driver_id`, `service_id`, `delivery_zone_id`, `ai_request_draft_id`, `recipient_name`, `recipient_phone`, `pickup_address`, `delivery_address`, `package_description`, `product_amount`, `amount_to_collect`, `proposed_price`, `scheduled_at`, `picked_up_at`, `delivered_at`, `status`
+- **hidden** : `private_token`
 - **casts** : `product_amount` → decimal:2, `amount_to_collect` → decimal:2, `proposed_price` → decimal:2, `scheduled_at` → datetime, `picked_up_at` → datetime, `delivered_at` → datetime
 
 **Constantes de statut** :
@@ -283,4 +283,4 @@ php artisan migrate:fresh --seed
 - Les relations doivent être déclarées **des deux côtés** (belongsTo + hasMany/hasOne).
 - Les clés étrangères qui ne suivent pas la convention (`client_id`, `driver_id`, `sender_id`, `changed_by`, etc.) doivent préciser le **nom de la colonne** en 2e argument de la relation.
 - `Review` utilise `hasOne` côté `DeliveryRequest` (un seul avis par demande — RG17).
-- Ne jamais exposer `confirmation_code_hash` ni `private_token` (les mettre dans `$hidden`).
+- Ne jamais exposer `private_token` (le mettre dans `$hidden`). Les colonnes `confirmation_code_*` ont été **supprimées** (la génération de code a été retirée, les boutons de statut sont côté livreur).

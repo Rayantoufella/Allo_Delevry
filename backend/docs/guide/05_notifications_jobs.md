@@ -54,14 +54,13 @@ Deux jobs de maintenance complètent :
 | `app/Models/DeliveryRequest.php` (`transitionTo()`) | Point de dispatch du job changement de statut | `CreateStatusChangedNotificationJob::dispatch($this, $newStatus, $changedBy)->afterCommit()` — voir guide 02 pour le détail complet |
 | `app/Http/Controllers/Api/ChatMessageController.php` (`store()`) | Point de dispatch du job notification chat | `CreateChatMessageNotificationJob::dispatch($message)->afterCommit()` — voir guide 04 |
 
-### Jobs asynchrones (6 jobs)
+### Jobs asynchrones (5 jobs)
 
 | Fichier | Rôle dans la feature | Points clés |
 |---------|----------------------|-------------|
 | `app/Jobs/CreateDeliveryRequestNotificationJob.php` | Notification : nouvelle demande créée | `tries = 3`, `timeout = 30`, `backoff = [10, 60]` ; crée une notif pour le livreur (`driver_id`) ; type : `delivery_request_created` ; titre : "Nouvelle demande de livraison" ; corps inclut le tracking_number |
 | `app/Jobs/CreateStatusChangedNotificationJob.php` | Notification : changement de statut | `tries = 3`, `timeout = 30`, `backoff = [10, 60]` ; reçoit `$newStatus` + `$changedBy` ; notifie l'autre partie (inversé : driver→notif→client, client→notif→driver) ; ignorié si `changedBy === null` ; mapping FR des 9 statuts : en_attente, prix_propose, confirmee, colis_recupere, en_livraison, livree, refusee, echec, annulee ; type : `status_changed` |
 | `app/Jobs/CreateChatMessageNotificationJob.php` | Notification : nouveau message chat | `tries = 3`, `timeout = 30`, `backoff = [10, 60]` ; identifie le destinataire (l'autre partie) ; corps : contenu tronqué à 120 caractères (`Str::limit`) ; type : `chat_message` ; titre : "Nouveau message" |
-| `app/Jobs/ExpireConfirmationCodeJob.php` | Expiration du code de confirmation | `tries = 3`, `timeout = 30`, `backoff = [10, 60]` ; dispatché avec `delay(now()->addMinutes(30))` depuis `generateCode()` ; met à jour `confirmation_code_expires_at = now()` si le code est encore valide ; ignoré si pas de hash ou déjà expiré |
 | `app/Jobs/PruneGpsLocationsJob.php` | Purge des positions GPS ancennes | `tries = 3`, `timeout = 30`, `backoff = [10, 60]` ; constante `DAYS = 7` ; supprime les `GpsLocation` où `created_at < now()->subDays(7)` ; non dispatché automatiquement (GPS hors périmètre actuel) |
 | `app/Jobs/AnalyzeAiRequestDraftJob.php` | **Préremplissage IA F08** : analyse du message libre par OpenRouter/Nemotron | `tries = 3`, `timeout = 60`, `backoff = [10, 60]` ; `__construct(AiRequestDraft $draft, int $driverUserId)` ; no-op si statut ≠ `pending` ; lit les **services actifs** du livreur (RG11, double garde avec le service) ; appel `AiRequestAnalyzer` (HTTP OpenRouter, `response_format json_object`) ; résout `service_id` (fallback `LOWER(name)`) ; écrit `done`/`failed` + `error_message` FR contrôlé (corps brut loggé canal `jobs`, CA05) ; dispatché par `AiRequestDraftController::analyze()` avec `->afterCommit()` ; en test : `Http::fake()` / `Queue::fake()` (QUEUE_CONNECTION=sync exécute en ligne !) |
 

@@ -10,14 +10,14 @@
     ],
     "info": {
         "name": "Allo Delivery API",
-        "_postman_id": "ee4d99fc-a6f2-43b6-96d9-ea9de19eef42",
+        "_postman_id": "94c8125f-4ee9-46e1-863f-b2fb9d407383",
         "description": "API de la plateforme Allo Delivery \u2014 gestion des livraisons, profils de livreurs, suivi en temps r\u00e9el, chat et paiements.",
         "schema": "https:\/\/schema.getpostman.com\/json\/collection\/v2.1.0\/collection.json"
     },
     "item": [
         {
             "name": "Assistant IA",
-            "description": "\nBrouillons de demandes g\u00e9n\u00e9r\u00e9s par l'assistant IA. L'analyse transforme un message\nlibre en donn\u00e9es structur\u00e9es (destinataire, adresses, service, montant).",
+            "description": "\nBrouillons de demandes g\u00e9n\u00e9r\u00e9s par l'assistant IA. La conversation en mode chat\ntransforme un message libre en donn\u00e9es structur\u00e9es (destinataire, adresses, service, montant).",
             "item": [
                 {
                     "name": "Lister mes brouillons IA",
@@ -86,7 +86,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"input_message\":\"Envoie un colis \u00e0 Sara\",\"generated_data\":\"[\\\"architecto\\\",\\\"architecto\\\"]\",\"status\":\"pending\",\"error_message\":\"architecto\",\"validated_at\":\"2026-08-09T21:18:19\"}"
+                            "raw": "{\"input_message\":\"Envoie un colis \u00e0 Sara\",\"generated_data\":\"[\\\"architecto\\\",\\\"architecto\\\"]\",\"status\":\"pending\",\"error_message\":\"architecto\",\"validated_at\":\"2026-08-11T00:00:49\"}"
                         },
                         "description": "Cr\u00e9e manuellement un brouillon de demande (sans analyse IA)."
                     },
@@ -219,13 +219,66 @@
                     ]
                 },
                 {
-                    "name": "Analyser un message avec l'IA",
+                    "name": "D\u00e9marrer une conversation IA",
                     "request": {
                         "url": {
                             "host": "{{baseUrl}}",
-                            "path": "api\/ai-request-drafts\/analyze",
+                            "path": "api\/ai-request-drafts\/start",
                             "query": [],
-                            "raw": "{{baseUrl}}\/api\/ai-request-drafts\/analyze"
+                            "raw": "{{baseUrl}}\/api\/ai-request-drafts\/start"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application\/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application\/json"
+                            }
+                        ],
+                        "body": null,
+                        "description": "Cr\u00e9e un brouillon vide en mode conversation : le client et l'IA \u00e9changent des\nmessages pour compl\u00e9ter le formulaire de demande progressivement."
+                    },
+                    "response": [
+                        {
+                            "header": [
+                                {
+                                    "key": "cache-control",
+                                    "value": "no-cache, private"
+                                },
+                                {
+                                    "key": "content-type",
+                                    "value": "application\/json"
+                                },
+                                {
+                                    "key": "access-control-allow-origin",
+                                    "value": "*"
+                                }
+                            ],
+                            "code": 401,
+                            "body": "{\"message\":\"Unauthenticated.\"}",
+                            "name": ""
+                        }
+                    ]
+                },
+                {
+                    "name": "Envoyer un message dans une conversation IA",
+                    "request": {
+                        "url": {
+                            "host": "{{baseUrl}}",
+                            "path": "api\/ai-request-drafts\/:draft\/messages",
+                            "query": [],
+                            "raw": "{{baseUrl}}\/api\/ai-request-drafts\/:draft\/messages",
+                            "variable": [
+                                {
+                                    "id": "draft",
+                                    "key": "draft",
+                                    "value": 1,
+                                    "description": "L'identifiant du brouillon."
+                                }
+                            ]
                         },
                         "method": "POST",
                         "header": [
@@ -240,9 +293,9 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"input_message\":\"Envoie un colis \u00e0 Sara, 420 DH \u00e0 r\u00e9cup\u00e9rer\",\"driver_slug\":\"rayan-express\"}"
+                            "raw": "{\"content\":\"Je veux envoyer un colis \u00e0 Sara\",\"driver_slug\":\"rayan-express\"}"
                         },
-                        "description": "Envoie un message libre \u00e0 l'IA pour extraction de donn\u00e9es structur\u00e9es.\nUn brouillon est cr\u00e9\u00e9 et un job d'analyse est dispatch\u00e9 en arri\u00e8re-plan.\nAnti-doublon : si un brouillon identique existe (< 2 min), il est r\u00e9utilis\u00e9."
+                        "description": "Ajoute le message du client \u00e0 l'historique et dispatche un job qui g\u00e9n\u00e8re\nla r\u00e9ponse de l'IA (mod\u00e8le rapide) puis extrait les donn\u00e9es structur\u00e9es\n(mod\u00e8le puissant) pour pr\u00e9-remplir le formulaire de demande."
                     },
                     "response": [
                         {
@@ -314,11 +367,11 @@
                                 },
                                 {
                                     "key": "x-ratelimit-limit",
-                                    "value": "5"
+                                    "value": "10"
                                 },
                                 {
                                     "key": "x-ratelimit-remaining",
-                                    "value": "4"
+                                    "value": "9"
                                 },
                                 {
                                     "key": "access-control-allow-origin",
@@ -881,7 +934,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"delivery_request_id\":1,\"message_type\":\"n\",\"content\":\"Bonjour, j'arrive dans 10 min\",\"is_read\":false}"
+                            "raw": "{\"delivery_request_id\":1,\"message_type\":\"n\",\"content\":\"Bonjour, j'arrive dans 10 min\",\"is_read\":true}"
                         },
                         "description": "Envoie un message dans le chat d'une demande de livraison.\nLe message est diffus\u00e9 en temps r\u00e9el aux participants."
                     },
@@ -1220,7 +1273,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"service_id\":1,\"delivery_zone_id\":2,\"ai_request_draft_id\":5,\"recipient_name\":\"Sara\",\"recipient_phone\":\"+212600000000\",\"pickup_address\":\"12 Rue Principale, Agadir\",\"delivery_address\":\"45 Avenue Hassan II, Agadir\",\"package_description\":\"Petit carton 2kg\",\"product_amount\":150,\"amount_to_collect\":42.85,\"scheduled_at\":\"2026-08-09T21:18:18\"}"
+                            "raw": "{\"service_id\":1,\"delivery_zone_id\":2,\"ai_request_draft_id\":5,\"recipient_name\":\"Sara\",\"recipient_phone\":\"+212600000000\",\"pickup_address\":\"12 Rue Principale, Agadir\",\"delivery_address\":\"45 Avenue Hassan II, Agadir\",\"package_description\":\"Petit carton 2kg\",\"product_amount\":150,\"amount_to_collect\":42.85,\"scheduled_at\":\"2026-08-11T00:00:48\"}"
                         },
                         "description": "Cr\u00e9e une nouvelle demande de livraison dans le contexte d'un livreur sp\u00e9cifique.\nLe client doit \u00eatre rattach\u00e9 au livreur (inscription via `\/drivers\/{slug}\/register`)."
                     },
@@ -1380,7 +1433,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"recipient_name\":\"Sara\",\"recipient_phone\":\"ngzmiyvdljnikhwa\",\"pickup_address\":\"y\",\"delivery_address\":\"Nouvelle adresse\",\"package_description\":\"architecto\",\"product_amount\":39,\"amount_to_collect\":84,\"scheduled_at\":\"2026-08-09T21:18:18\"}"
+                            "raw": "{\"recipient_name\":\"Sara\",\"recipient_phone\":\"ngzmiyvdljnikhwa\",\"pickup_address\":\"y\",\"delivery_address\":\"Nouvelle adresse\",\"package_description\":\"architecto\",\"product_amount\":39,\"amount_to_collect\":84,\"scheduled_at\":\"2026-08-11T00:00:49\"}"
                         },
                         "description": "Met \u00e0 jour une demande non encore en cours de livraison."
                     },
@@ -1628,13 +1681,13 @@
                     ]
                 },
                 {
-                    "name": "G\u00e9n\u00e9rer un code de confirmation",
+                    "name": "Confirmer l'arriv\u00e9e du livreur",
                     "request": {
                         "url": {
                             "host": "{{baseUrl}}",
-                            "path": "api\/delivery-requests\/:deliveryRequest\/generate-code",
+                            "path": "api\/delivery-requests\/:deliveryRequest\/confirm-arrival",
                             "query": [],
-                            "raw": "{{baseUrl}}\/api\/delivery-requests\/:deliveryRequest\/generate-code",
+                            "raw": "{{baseUrl}}\/api\/delivery-requests\/:deliveryRequest\/confirm-arrival",
                             "variable": [
                                 {
                                     "id": "deliveryRequest",
@@ -1662,7 +1715,7 @@
                             }
                         ],
                         "body": null,
-                        "description": "G\u00e9n\u00e8re un code \u00e0 6 chiffres pour la remise du colis. Le code expire apr\u00e8s 30 minutes."
+                        "description": "Le livreur confirme qu'il est arriv\u00e9 \u00e0 l'adresse de livraison\n(transition \"en_livraison\" \u2192 \"livreur_arrive\"). Tous les boutons de\nchangement de statut sont c\u00f4t\u00e9 livreur : le client n'a aucun bouton."
                     },
                     "response": [
                         {
@@ -1687,13 +1740,13 @@
                     ]
                 },
                 {
-                    "name": "Confirmer la livraison",
+                    "name": "Confirmer la remise de la commande",
                     "request": {
                         "url": {
                             "host": "{{baseUrl}}",
-                            "path": "api\/delivery-requests\/:deliveryRequest\/confirm-delivery",
+                            "path": "api\/delivery-requests\/:deliveryRequest\/confirm-handover",
                             "query": [],
-                            "raw": "{{baseUrl}}\/api\/delivery-requests\/:deliveryRequest\/confirm-delivery",
+                            "raw": "{{baseUrl}}\/api\/delivery-requests\/:deliveryRequest\/confirm-handover",
                             "variable": [
                                 {
                                     "id": "deliveryRequest",
@@ -1720,11 +1773,8 @@
                                 "value": "application\/json"
                             }
                         ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\"code\":\"482951\"}"
-                        },
-                        "description": "Le client confirme la r\u00e9ception en fournissant le code de confirmation.\nUne preuve de livraison (RG06) doit \u00eatre pr\u00e9sente. Max 5 tentatives."
+                        "body": null,
+                        "description": "Le livreur confirme que le client a r\u00e9cup\u00e9r\u00e9 la commande (transition\n\"livreur_arrive\" \u2192 \"livree\"). Le client ne dispose d'aucun bouton de\ncl\u00f4ture : c'est le livreur, pr\u00e9sent sur place, qui valide la remise."
                     },
                     "response": [
                         {
@@ -1821,7 +1871,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"delivery_request_id\":1,\"latitude\":30.4278,\"longitude\":-9.5981,\"recorded_at\":\"2026-08-09T21:18:19\"}"
+                            "raw": "{\"delivery_request_id\":1,\"latitude\":30.4278,\"longitude\":-9.5981,\"recorded_at\":\"2026-08-11T00:00:50\"}"
                         },
                         "description": "Ajoute un point de g\u00e9olocalisation pour une demande de livraison.\nLa date d'enregistrement est d\u00e9finie automatiquement si non fournie."
                     },
@@ -1930,7 +1980,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"latitude\":30.428,\"longitude\":-9.5983,\"recorded_at\":\"2026-08-09T21:18:19\"}"
+                            "raw": "{\"latitude\":30.428,\"longitude\":-9.5983,\"recorded_at\":\"2026-08-11T00:00:50\"}"
                         },
                         "description": "Met \u00e0 jour les coordonn\u00e9es d'un point de g\u00e9olocalisation."
                     },
@@ -3613,7 +3663,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"name\":\"Envoi de colis\",\"description\":\"Envoi rapide de colis dans la ville\",\"base_price\":15,\"is_active\":false}"
+                            "raw": "{\"name\":\"Envoi de colis\",\"description\":\"Envoi rapide de colis dans la ville\",\"base_price\":15,\"is_active\":true}"
                         },
                         "description": "Ajoute un nouveau service au catalogue du livreur."
                     },
@@ -3722,7 +3772,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\"name\":\"Envoi de colis express\",\"description\":\"Eius et animi quos velit et.\",\"base_price\":20,\"is_active\":true}"
+                            "raw": "{\"name\":\"Envoi de colis express\",\"description\":\"Eius et animi quos velit et.\",\"base_price\":20,\"is_active\":false}"
                         },
                         "description": "Met \u00e0 jour les informations d'un service existant."
                     },

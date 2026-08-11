@@ -35,13 +35,13 @@ return [
         ],
     ],
 
-    'openrouter' => [
-        'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
-        'api_key' => env('OPENROUTER_API_KEY'),
-        'model' => env('OPENROUTER_MODEL', 'nvidia/nemotron-3-super-120b-a12b:free'),
-        'fallback_models' => env('OPENROUTER_FALLBACK_MODELS', 'nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'),
-        'chat_model' => env('OPENROUTER_CHAT_MODEL', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'),
-        'extract_model' => env('OPENROUTER_EXTRACT_MODEL', 'nvidia/nemotron-3-ultra-550b-a55b:free'),
+    'gemini' => [
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
+        'fallback_models' => env('GEMINI_FALLBACK_MODELS', 'gemini-3-flash-preview'),
+        'chat_model' => env('GEMINI_CHAT_MODEL', 'gemini-3.6-flash'),
+        'extract_model' => env('GEMINI_EXTRACT_MODEL', 'gemini-3.6-flash'),
     ],
 
 ];

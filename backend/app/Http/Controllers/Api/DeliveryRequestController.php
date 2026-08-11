@@ -10,7 +10,6 @@ use App\Http\Resources\DeliveryZoneResource;
 use App\Http\Resources\PublicTrackingResource;
 use App\Http\Resources\ServiceResource;
 use App\Jobs\CreateDeliveryRequestNotificationJob;
-use App\Jobs\ExpireConfirmationCodeJob;
 use App\Models\AiRequestDraft;
 use App\Models\DeliveryProof;
 use App\Models\DeliveryRequest;
@@ -18,7 +17,6 @@ use App\Models\DeliveryZone;
 use App\Models\DriverProfile;
 use App\Models\Service;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -317,102 +315,85 @@ class DeliveryRequestController extends Controller
     }
 
     /**
-     * Générer un code de confirmation
+     * Confirmer l'arrivée du livreur
      *
-     * Génère un code à 6 chiffres pour la remise du colis. Le code expire après 30 minutes.
+     * Le livreur confirme qu'il est arrivé à l'adresse de livraison
+     * (transition "en_livraison" → "livreur_arrive"). Tous les boutons de
+     * changement de statut sont côté livreur : le client n'a aucun bouton.
      *
      * @urlParam id int required L'identifiant de la demande. Example: 1
-     *
-     * @response 200 {"code": "482951"}
      */
-    public function generateCode(Request $request, $id)
+    public function confirmArrival(Request $request, $id)
     {
         $deliveryRequest = DeliveryRequest::findOrFail($id);
 
-        $this->authorize('generateCode', $deliveryRequest);
-
-        if (! $deliveryRequest->canGenerateCode()) {
-            throw ValidationException::withMessages([
-                'status' => 'Le code de confirmation ne peut être généré qu\'après confirmation du prix.',
-            ]);
-        }
-
-        $code = (string) random_int(100000, 999999);
-
-        $deliveryRequest->update([
-            'confirmation_code_hash' => Hash::make($code),
-            'confirmation_code_expires_at' => now()->addMinutes(30),
-            'confirmation_code_attempts' => 0,
-        ]);
-
-        ExpireConfirmationCodeJob::dispatch($deliveryRequest)
-            ->delay(now()->addMinutes(30))
-            ->afterCommit();
-
-        return response()->json(['code' => $code]);
-    }
-
-    /**
-     * Confirmer la livraison
-     *
-     * Le client confirme la réception en fournissant le code de confirmation.
-     * Une preuve de livraison (RG06) doit être présente. Max 5 tentatives.
-     *
-     * @urlParam id int required L'identifiant de la demande. Example: 1
-     * @bodyParam code string required Le code de confirmation à 6 chiffres. Example: 482951
-     */
-    public function confirmDelivery(Request $request, $id)
-    {
-        $validated = $request->validate([
-            'code' => ['required', 'string'],
-        ]);
-
-        $deliveryRequest = DeliveryRequest::findOrFail($id);
-
-        
-        $this->authorize('confirmDelivery', $deliveryRequest);
+        $this->authorize('confirmArrival', $deliveryRequest);
 
         if ($deliveryRequest->status !== DeliveryRequest::STATUS_EN_LIVRAISON) {
             throw ValidationException::withMessages([
-                'status' => 'La livraison ne peut être confirmée qu\'au statut "en_livraison".',
+                'status' => 'L\'arrivée du livreur ne peut être confirmée qu\'au statut "en_livraison".',
             ]);
         }
 
-        if ($deliveryRequest->proofs()->count() === 0) {
+        $deliveryRequest->transitionTo(
+            DeliveryRequest::STATUS_LIVREUR_ARRIVE,
+            changedBy: $request->user()->id,
+            comment: 'Le livreur confirme qu\'il est arrivé à domicile',
+        );
+
+        return new DeliveryRequestResource($deliveryRequest);
+    }
+
+    /**
+     * Confirmer la remise de la commande
+     *
+     * Le livreur confirme que le client a récupéré la commande (transition
+     * "livreur_arrive" → "livree"). Le client ne dispose d'aucun bouton de
+     * clôture : c'est le livreur, présent sur place, qui valide la remise.
+     *
+     * @urlParam id int required L'identifiant de la demande. Example: 1
+     */
+    public function confirmHandover(Request $request, $id)
+    {
+        $deliveryRequest = DeliveryRequest::findOrFail($id);
+
+        $this->authorize('confirmHandover', $deliveryRequest);
+
+        if ($deliveryRequest->status !== DeliveryRequest::STATUS_LIVREUR_ARRIVE) {
+            throw ValidationException::withMessages([
+                'status' => 'La remise ne peut être confirmée qu\'au statut "livreur_arrive".',
+            ]);
+        }
+
+        // RG06 : une preuve de livraison (remise) est requise avant de clôturer.
+        if (! $this->hasDeliveryProof($deliveryRequest)) {
             throw ValidationException::withMessages([
                 'proof' => 'Une preuve de livraison est requise avant la confirmation (RG06).',
-            ]);
-        }
-
-        if ($deliveryRequest->confirmation_code_hash === null
-            || $deliveryRequest->confirmation_code_expires_at === null
-            || now()->greaterThan($deliveryRequest->confirmation_code_expires_at)) {
-            throw ValidationException::withMessages([
-                'code' => 'Le code de confirmation est expiré ou inexistant. Générez un nouveau code.',
-            ]);
-        }
-
-        if ($deliveryRequest->confirmation_code_attempts >= 5) {
-            throw ValidationException::withMessages([
-                'code' => 'Trop de tentatives. Générez un nouveau code de confirmation.',
-            ]);
-        }
-
-        if (! Hash::check($validated['code'], $deliveryRequest->confirmation_code_hash)) {
-            $deliveryRequest->increment('confirmation_code_attempts');
-
-            throw ValidationException::withMessages([
-                'code' => 'Code de confirmation incorrect.',
             ]);
         }
 
         $deliveryRequest->transitionTo(
             DeliveryRequest::STATUS_LIVREE,
             changedBy: $request->user()->id,
-            comment: 'Code de confirmation vérifié par le client (RG06)',
+            comment: 'Livreur confirme la remise : colis récupéré par le client',
         );
 
         return new DeliveryRequestResource($deliveryRequest);
+    }
+
+    /**
+     * Une preuve de livraison (remise) existe-t-elle ? Les preuves de
+     * récupération (pickup) ne comptent pas : RG06 exige une preuve de remise
+     * réelle avant de clôturer la demande.
+     */
+    private function hasDeliveryProof(DeliveryRequest $deliveryRequest): bool
+    {
+        return $deliveryRequest->proofs()
+            ->whereNotIn('proof_type', [
+                DeliveryProof::TYPE_PICKUP_PHOTO,
+                DeliveryProof::TYPE_PICKUP_ID_CARD,
+            ])
+            ->exists();
     }
 
     private function ensureOwnedByDriver(DriverProfile $profile, array $data): void

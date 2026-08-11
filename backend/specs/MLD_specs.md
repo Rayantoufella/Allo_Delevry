@@ -143,7 +143,7 @@ Brouillon généré par l'IA à partir du message libre du client (P1).
 | product_amount | decimal(10,2) | nullable |
 | amount_to_collect | decimal(10,2) | nullable |
 | proposed_price | decimal(10,2) | nullable |
-| confirmation_code_hash | string | nullable (code stocké HACHÉ) |
+| ~~confirmation_code_hash~~ | ~~string~~ | **supprimée** (migration `2026_08_11_000000` — la génération de code a été retirée ; idem `confirmation_code_expires_at` / `confirmation_code_attempts`) |
 | scheduled_at | timestamp | nullable |
 | picked_up_at | timestamp | nullable |
 | delivered_at | timestamp | nullable |
@@ -272,7 +272,7 @@ Transaction Stripe / PayPal en mode Sandbox. Aucune donnée bancaire réelle (RG
 ## Règles de gestion à respecter (rappel)
 
 - **RG04** : `tracking_number` et `private_token` sont uniques.
-- **RG06** : le code de confirmation est stocké **haché** (`confirmation_code_hash`), jamais en clair.
+- **RG06** : la remise est confirmée par le **livreur** (`confirm-handover`) et exige une **preuve de livraison** hors pickup ; le code de confirmation (`confirmation_code_hash`) a été **supprimé** (boutons de statut tous côté livreur).
 - **RG07** : chaque changement de statut est historisé (table `request_status_histories`).
 - **RG09** : les montants ne peuvent pas être négatifs (à contrôler côté validation/modèle, pas dans la migration).
 - **RG16** : aucune donnée bancaire sensible n'est stockée.

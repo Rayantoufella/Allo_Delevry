@@ -106,7 +106,7 @@ Requête HTTP
 | `2026_07_22_150000` | `gps_locations` |
 | `2026_07_22_150001` | `payment_transactions` |
 | `2026_07_22_150002` | `role` + `phone` sur `users` |
-| `2026_08_04_150000` | `confirmation_code` + `confirmation_code_expires_at` sur `delivery_requests` |
+| `2026_08_04_150000` | `confirmation_code_hash` + `confirmation_code_expires_at` sur `delivery_requests` (legacy, **supprimées par la migration `2026_08_11_000000`**) |
 
 ## Actions passées (rapports liés)
 
