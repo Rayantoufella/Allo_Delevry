@@ -1,3 +1,6 @@
+# Variables locales docker-compose (ports)
+/.env
+
 # Backend Laravel
 backend/vendor/
 backend/node_modules/
