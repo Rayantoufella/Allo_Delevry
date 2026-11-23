@@ -142,7 +142,7 @@ async function handleLogin() {
               <input
                 v-model="email"
                 type="email"
-                :placeholder="isClient ? 'sara@email.com' : 'rayan@rayanexpress.ma'"
+                :placeholder="isClient ? 'client@example.com' : 'livreur@example.com'"
                 required
                 autocomplete="email"
               />

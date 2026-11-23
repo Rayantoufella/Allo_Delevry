@@ -14,21 +14,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            UserSeeder::class,
-            DriverProfilesSeeder::class,
-            DelevryZonesSeeder::class,
-            ServicesSeeder::class,
-            AiRequestDraftsSeeder::class,
-            DeliveryRequestsSeeder::class,
-            RequestStatusHistoriesSeeder::class,
-            ChatMessagesSeeder::class,
-            DeliveryProofsSeeder::class,
-            IncidentsSeeder::class,
-            ReviewsSeeder::class,
-            NotificationSeeder::class,
-            GpsLocationsSeeder::class,
-            PaymentTransactionsSeeder::class,
-        ]);
+        // Jeu de démonstration fictif et cohérent (voir README).
+        // Les autres seeders (données Faker en volume) restent appelables :
+        // php artisan db:seed --class=UserSeeder, etc.
+        $this->call(DemoSeeder::class);
     }
 }
