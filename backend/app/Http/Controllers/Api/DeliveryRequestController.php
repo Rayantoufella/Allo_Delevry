@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDeliveryRequest;
 use App\Http\Requests\UpdateDeliveryRequest;
 use App\Http\Resources\DeliveryRequestResource;
-use App\Http\Resources\DeliveryZoneResource;
 use App\Http\Resources\PublicTrackingResource;
-use App\Http\Resources\ServiceResource;
 use App\Jobs\CreateDeliveryRequestNotificationJob;
 use App\Models\AiRequestDraft;
 use App\Models\DeliveryProof;
@@ -59,6 +57,7 @@ class DeliveryRequestController extends Controller
      * Le client doit être rattaché au livreur (inscription via `/drivers/{slug}/register`).
      *
      * @urlParam slug string required Le slug du livreur. Example: rayan-express
+     *
      * @bodyParam recipient_name string required Nom du destinataire. Example: Sara
      * @bodyParam recipient_phone string required Téléphone du destinataire. Example: +212600000000
      * @bodyParam pickup_address string required Adresse de retrait. Example: 12 Rue Principale, Agadir
@@ -125,6 +124,7 @@ class DeliveryRequestController extends Controller
      * Met à jour une demande non encore en cours de livraison.
      *
      * @urlParam deliveryRequest int required L'identifiant de la demande. Example: 1
+     *
      * @bodyParam recipient_name string Nom du destinataire. Example: Sara
      * @bodyParam delivery_address string Adresse de livraison. Example: Nouvelle adresse
      */
@@ -180,6 +180,7 @@ class DeliveryRequestController extends Controller
      * La photo de récupération (pickup_photo) est requise avant le passage à "colis_recupere".
      *
      * @urlParam id int required L'identifiant de la demande. Example: 1
+     *
      * @bodyParam status string required Nouveau statut. Example: en_livraison
      * @bodyParam comment string Commentaire optionnel. Example: Colis récupéré
      * @bodyParam proposed_price float Prix proposé (requis pour le statut "prix_propose"). Example: 25.00

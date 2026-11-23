@@ -86,6 +86,7 @@ class AuthController extends Controller
      * @unauthenticated
      *
      * @urlParam slug string required Le slug unique du livreur. Example: rayan-express
+     *
      * @bodyParam name string required Le nom du client. Example: Sara
      * @bodyParam email string required L'adresse email. Example: sara@example.com
      * @bodyParam password string required Le mot de passe (min 8 caractères). Example: secret123
@@ -120,6 +121,7 @@ class AuthController extends Controller
      * @unauthenticated
      *
      * @urlParam slug string required Le slug du livreur. Example: rayan-express
+     *
      * @bodyParam email string required L'adresse email. Example: sara@example.com
      * @bodyParam password string required Le mot de passe. Example: secret123
      *

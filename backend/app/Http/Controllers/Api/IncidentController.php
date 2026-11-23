@@ -86,6 +86,7 @@ class IncidentController extends Controller
      * Met à jour les informations d'un incident existant.
      *
      * @urlParam id int required L'identifiant de l'incident. Example: 1
+     *
      * @bodyParam description string La nouvelle description. Example: Mise à jour du problème
      * @bodyParam status string Le nouveau statut. Example: resolved
      */

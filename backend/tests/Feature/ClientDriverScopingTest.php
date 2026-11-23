@@ -310,7 +310,7 @@ it('prevents a client from referencing an AI draft owned by a client of another 
 
     Sanctum::actingAs($clientA);
 
-    $this->postJson("/api/drivers/driver-a-draft/delivery-requests", [
+    $this->postJson('/api/drivers/driver-a-draft/delivery-requests', [
         'recipient_name' => 'Destinataire',
         'recipient_phone' => '0600000000',
         'pickup_address' => 'Adresse A',

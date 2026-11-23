@@ -72,6 +72,7 @@ class ServiceController extends Controller
      * Met à jour les informations d'un service existant.
      *
      * @urlParam id int required L'identifiant du service. Example: 1
+     *
      * @bodyParam name string Le nom. Example: Envoi de colis express
      * @bodyParam base_price float Le prix de base. Example: 20.00
      */

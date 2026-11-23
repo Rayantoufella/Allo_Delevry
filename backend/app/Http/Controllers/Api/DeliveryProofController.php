@@ -91,6 +91,7 @@ class DeliveryProofController extends Controller
      * Remplace le fichier ou modifie le type d'une preuve existante.
      *
      * @urlParam id int required L'identifiant de la preuve. Example: 1
+     *
      * @bodyParam proof_type string Le nouveau type. Example: photo
      * @bodyParam file file Le nouveau fichier.
      */

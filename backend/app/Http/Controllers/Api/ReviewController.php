@@ -87,6 +87,7 @@ class ReviewController extends Controller
      * Met à jour le commentaire ou la note d'un avis existant.
      *
      * @urlParam id int required L'identifiant de l'avis. Example: 1
+     *
      * @bodyParam rating int La nouvelle note. Example: 5
      * @bodyParam comment string Le nouveau commentaire. Example: Service excellent
      */

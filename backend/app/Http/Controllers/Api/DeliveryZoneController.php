@@ -75,6 +75,7 @@ class DeliveryZoneController extends Controller
      * Met à jour le nom ou le tarif d'une zone existante.
      *
      * @urlParam id int required L'identifiant de la zone. Example: 1
+     *
      * @bodyParam origin string Le lieu de départ. Example: Centre-ville
      * @bodyParam destination string Le lieu d'arrivée. Example: Al Houda
      * @bodyParam fixed_price float Le tarif fixe en DH. Example: 25.00

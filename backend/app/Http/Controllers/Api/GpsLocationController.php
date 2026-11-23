@@ -91,6 +91,7 @@ class GpsLocationController extends Controller
      * Met à jour les coordonnées d'un point de géolocalisation.
      *
      * @urlParam id int required L'identifiant de la position. Example: 1
+     *
      * @bodyParam latitude float La nouvelle latitude. Example: 30.4280
      * @bodyParam longitude float La nouvelle longitude. Example: -9.5983
      */

@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Event;
  * En environnement de test (BROADCAST_CONNECTION=null), on vérifie le
  * déclenchement des événements et leur canal via Event::fake().
  */
-
 it('diffuse un message de chat sur le canal privé de la conversation', function () {
     $client = User::factory()->client()->create();
     $driver = User::factory()->driver()->create();

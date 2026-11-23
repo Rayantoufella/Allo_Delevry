@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\AiAnalysisException;
 use App\Jobs\ProcessAiChatMessageJob;
 use App\Models\AiRequestDraft;
 use App\Models\DeliveryZone;
@@ -245,7 +246,7 @@ it('marks draft as failed when all models fail during chat', function () {
     try {
         $job->handle();
         $this->fail('AiAnalysisException attendue quand tous les modèles échouent.');
-    } catch (\App\Exceptions\AiAnalysisException $e) {
+    } catch (AiAnalysisException $e) {
         $job->failed($e);
     }
 

@@ -11,6 +11,7 @@ use App\Jobs\ProcessAiChatMessageJob;
 use App\Models\AiRequestDraft;
 use App\Models\DriverProfile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 /**
  * @group Assistant IA
@@ -82,6 +83,7 @@ class AiRequestDraftController extends Controller
      * (modèle puissant) pour pré-remplir le formulaire de demande.
      *
      * @urlParam draft int required L'identifiant du brouillon. Example: 1
+     *
      * @bodyParam content string required Le message du client. Example: Je veux envoyer un colis à Sara
      * @bodyParam driver_slug string required Le slug du livreur. Example: rayan-express
      *
@@ -111,7 +113,7 @@ class AiRequestDraftController extends Controller
 
             $createdAt = $message['created_at'] ?? null;
 
-            if ($createdAt !== null && \Illuminate\Support\Carbon::parse($createdAt)->diffInSeconds(now()) < 300) {
+            if ($createdAt !== null && Carbon::parse($createdAt)->diffInSeconds(now()) < 300) {
                 $isDuplicate = true;
                 break;
             }
@@ -168,6 +170,7 @@ class AiRequestDraftController extends Controller
      * Met à jour les données d'un brouillon existant (avant utilisation pour créer une demande).
      *
      * @urlParam id int required L'identifiant du brouillon. Example: 1
+     *
      * @bodyParam input_message string Le message original. Example: Nouveau message
      * @bodyParam generated_data array Les données structurées générées. Example: {"recipient_name": "Sara"}
      * @bodyParam status string Le statut. Example: done

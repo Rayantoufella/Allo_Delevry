@@ -97,6 +97,7 @@ class ChatMessageController extends Controller
      * Met à jour le contenu d'un message existant.
      *
      * @urlParam id int required L'identifiant du message. Example: 1
+     *
      * @bodyParam content string Le nouveau contenu. Example: Message modifié
      */
     public function update(UpdateChatMessageRequest $request, $id)

@@ -2,10 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\DeliveryProof;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Models\DeliveryProof;
 
 class StoreDeliveryProofRequest extends FormRequest
 {

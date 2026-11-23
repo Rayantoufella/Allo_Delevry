@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\AiAnalysisException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -34,7 +35,7 @@ class AiRequestAnalyzer
      * @param  array<int, array{role: string, content: string, created_at?: string}>  $history  Historique de la conversation
      * @param  array<int, string>  $activeServiceNames  Noms des services actifs du livreur
      * @param  array<int, array{name: string, price: float|null}>  $activeZones  Zones de livraison actives du livreur
-     * @return string  Texte de la réponse de l'assistant
+     * @return string Texte de la réponse de l'assistant
      *
      * @throws AiAnalysisException
      */
@@ -69,6 +70,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Erreur lors de l\'appel API Google AI : '.$e->getMessage(), $e);
+
                 continue;
             }
 
@@ -80,6 +82,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Erreur API Google AI (HTTP '.$response->status().').');
+
                 continue;
             }
 
@@ -93,6 +96,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Réponse IA vide ou format inattendu.');
+
                 continue;
             }
 
@@ -150,6 +154,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Erreur lors de l\'appel API Google AI : '.$e->getMessage(), $e);
+
                 continue;
             }
 
@@ -161,6 +166,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Erreur API Google AI (HTTP '.$response->status().').');
+
                 continue;
             }
 
@@ -174,6 +180,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Réponse IA vide ou format inattendu.');
+
                 continue;
             }
 
@@ -186,6 +193,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('JSON invalide retourné par l\'IA.');
+
                 continue;
             }
 
@@ -218,7 +226,7 @@ class AiRequestAnalyzer
      *
      * @param  array<string, mixed>  $payload
      */
-    private function sendRequest(array $payload): \Illuminate\Http\Client\Response
+    private function sendRequest(array $payload): Response
     {
         $model = $payload['model'];
         unset($payload['model']);
@@ -306,6 +314,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Erreur lors de l\'appel API Google AI : '.$e->getMessage(), $e);
+
                 continue;
             }
 
@@ -317,6 +326,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Erreur API Google AI (HTTP '.$response->status().').');
+
                 continue;
             }
 
@@ -330,6 +340,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('Réponse IA vide ou format inattendu.');
+
                 continue;
             }
 
@@ -343,6 +354,7 @@ class AiRequestAnalyzer
                     .($nextModel ? ", bascule sur {$nextModel}" : '')
                 );
                 $lastException = new AiAnalysisException('JSON invalide retourné par l\'IA.');
+
                 continue;
             }
 

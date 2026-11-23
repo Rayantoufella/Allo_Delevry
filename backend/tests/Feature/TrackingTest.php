@@ -17,7 +17,6 @@ use App\Models\User;
  * la timeline, les adresses, les participants (client/livreur + marque),
  * le service, la zone, le chat et les preuves — sans aucune donnée sensible.
  */
-
 it('renvoie le suivi complet d\'une demande via le jeton privé', function () {
     // Données de base : client, livreur (avec marque), service et zone.
     $client = User::factory()->client()->create();

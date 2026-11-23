@@ -51,7 +51,7 @@ it('performs the full RG06 flow with direct driver acceptance (fixed zone tariff
     // Upload pickup photo and pick up parcel.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
-        'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
+        'proof_type' => DeliveryProof::TYPE_PICKUP_PHOTO,
         'file' => UploadedFile::fake()->image('pickup.jpg'),
     ])->assertCreated();
 
@@ -118,7 +118,7 @@ it('performs the legacy RG06 flow via prix_propose with confirmPrice (backward c
     // Upload pickup photo and pick up parcel.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
-        'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
+        'proof_type' => DeliveryProof::TYPE_PICKUP_PHOTO,
         'file' => UploadedFile::fake()->image('pickup.jpg'),
     ])->assertCreated();
 
@@ -363,7 +363,7 @@ it('allows the transition to colis_recupere with a pickup photo (RG06)', functio
     Sanctum::actingAs($driver);
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
-        'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
+        'proof_type' => DeliveryProof::TYPE_PICKUP_PHOTO,
         'file' => UploadedFile::fake()->image('pickup.jpg'),
     ])->assertCreated();
 
@@ -389,10 +389,10 @@ it('accepts an optional pickup identity card proof (pickup_id_card)', function (
     Sanctum::actingAs($driver);
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $deliveryRequest->id,
-        'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_ID_CARD,
+        'proof_type' => DeliveryProof::TYPE_PICKUP_ID_CARD,
         'file' => UploadedFile::fake()->image('id-card.jpg'),
     ])->assertCreated()
-        ->assertJsonPath('proof_type', \App\Models\DeliveryProof::TYPE_PICKUP_ID_CARD);
+        ->assertJsonPath('proof_type', DeliveryProof::TYPE_PICKUP_ID_CARD);
 });
 
 it('rejects an unknown delivery proof type', function () {

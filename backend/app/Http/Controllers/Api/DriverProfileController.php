@@ -129,6 +129,7 @@ class DriverProfileController extends Controller
      * @authenticated
      *
      * @urlParam id int required L'identifiant du profil. Example: 1
+     *
      * @bodyParam brand_name string Le nom de la marque. Example: Rayan Express Updated
      * @bodyParam description string La description. Example: Nouvelle description
      * @bodyParam slug string Le slug. Example: rayan-express-v2

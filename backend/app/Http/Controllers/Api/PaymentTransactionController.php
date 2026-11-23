@@ -87,6 +87,7 @@ class PaymentTransactionController extends Controller
      * Met à jour les informations d'une transaction existante.
      *
      * @urlParam id int required L'identifiant de la transaction. Example: 1
+     *
      * @bodyParam amount float Le nouveau montant. Example: 50.00
      * @bodyParam status string Le nouveau statut. Example: completed
      */

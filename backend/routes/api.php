@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\RequestStatusHistoryController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\ServiceController;
 use Illuminate\Support\Facades\Route;
+
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');

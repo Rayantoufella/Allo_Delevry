@@ -2,6 +2,7 @@
 
 use App\Jobs\CreateDeliveryRequestNotificationJob;
 use App\Models\AiRequestDraft;
+use App\Models\DeliveryProof;
 use App\Models\DeliveryRequest;
 use App\Models\DeliveryZone;
 use App\Models\DriverProfile;
@@ -9,7 +10,6 @@ use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
@@ -90,7 +90,7 @@ it('runs the full delivery lifecycle end to end from creation by the client', fu
     // 3. Driver uploads the pickup photo, then picks up the parcel.
     $this->postJson('/api/delivery-proofs', [
         'delivery_request_id' => $requestId,
-        'proof_type' => \App\Models\DeliveryProof::TYPE_PICKUP_PHOTO,
+        'proof_type' => DeliveryProof::TYPE_PICKUP_PHOTO,
         'file' => UploadedFile::fake()->image('pickup.jpg'),
     ])->assertCreated();
 
