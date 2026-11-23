@@ -33,5 +33,7 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="GEMINI_FALLBACK_MODELS" value=""/>
+        <!-- Clé factice : les appels Gemini sont simulés par Http::fake, aucune requête réelle. -->
+        <env name="GEMINI_API_KEY" value="fake-key-for-tests" force="true"/>
     </php>
 </phpunit>
