@@ -18,6 +18,9 @@ x-backend: &backend
   # mémoire aux tests, sinon ils videraient la base de démo.
   environment:
     APP_URL: http://localhost:${API_PORT:-8000}
+    # URL publique des fichiers (preuves) : sans elle, asset() reprend l'hôte
+    # interne "nginx" vu à travers le proxy Vite, injoignable depuis le navigateur.
+    ASSET_URL: http://localhost:${API_PORT:-8000}
     FRONTEND_URL: http://localhost:${FRONTEND_PORT:-5173}
   networks:
     - allo_network
