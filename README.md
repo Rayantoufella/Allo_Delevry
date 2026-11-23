@@ -196,6 +196,10 @@ Backend : `backend/.env`, créé depuis `backend/.env.example` (valeurs de démo
 | **Commande livrée : timeline et preuves** | **Tableau de bord livreur** |
 | ![Livrée](docs/screenshots/02b-suivi-livree-preuves.png) | ![Dashboard](docs/screenshots/03-dashboard-livreur.png) |
 
+**Assistant IA : texte libre → formulaire pré-rempli, que le client vérifie avant d'envoyer**
+
+![Assistant IA](docs/screenshots/04-assistant-ia.png)
+
 ## Structure
 
 ```
